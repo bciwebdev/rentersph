@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
@@ -23,7 +23,8 @@ interface FavoriteItem {
   properties: Property | null;
 }
 
-export default function FavoritesPage() {
+// 1. Move the core view logic to a separate inner function component
+function FavoritesContent() {
   const { user, loading: authLoading } = useUser();
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,5 +168,18 @@ export default function FavoritesPage() {
         </div>
       )}
     </main>
+  );
+}
+
+// 2. Export the main default component wrapped completely in Suspense
+export default function FavoritesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    }>
+      <FavoritesContent />
+    </Suspense>
   );
 }
