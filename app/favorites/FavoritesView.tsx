@@ -23,7 +23,7 @@ interface FavoriteItem {
   properties: Property | null;
 }
 
-export default function FavoritesPage() {
+export default function FavoritesView() {
   const { user, loading: authLoading } = useUser();
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
