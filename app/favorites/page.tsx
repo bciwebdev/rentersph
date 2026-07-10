@@ -1,3 +1,6 @@
+// Force this route to render dynamically, completely bypassing build-time static generation crashes
+export const dynamic = "force-dynamic";
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -120,7 +123,7 @@ export default function FavoritesPage() {
             </svg>
           </div>
           <h3 className="text-base font-bold text-gray-900 mb-1">Your shortlist is empty</h3>
-          <p className="text-gray-500 text-xs mb-5">Click "Save Listing" on any item properties details page to organize your options here.</p>
+          <p className="text-gray-500 text-xs mb-5">Click \"Save Listing\" on any item properties details page to organize your options here.</p>
           <Link href="/" className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-md shadow-sm transition-colors">
             Explore Properties
           </Link>
