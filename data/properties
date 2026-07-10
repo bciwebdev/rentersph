@@ -1,0 +1,38 @@
+const featuredProperties = [
+  {
+    id: 1,
+    title: "Apartment in Davao City",
+    location: "Buhangin, Davao City",
+    price: "₱12,000 / month",
+    beds: 2,
+    baths: 1,
+    area: 45,
+  },
+  {
+    id: 2,
+    title: "Boarding House near UM",
+    location: "Matina, Davao City",
+    price: "₱4,500 / month",
+    beds: 1,
+    baths: 1,
+    area: 20,
+  },
+  {
+    id: 3,
+    title: "Condominium in Bajada",
+    location: "Bajada, Davao City",
+    price: "₱25,000 / month",
+    beds: 1,
+    baths: 1,
+    area: 32,
+  },
+  {
+    id: 4,
+    title: "House for Rent",
+    location: "Lanang, Davao City",
+    price: "₱35,000 / month",
+    beds: 3,
+    baths: 2,
+    area: 80,
+  },
+];
