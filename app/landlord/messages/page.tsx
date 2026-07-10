@@ -1,28 +1,40 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/lib/useUser";
-import Link from "next/link";
 
 export default function MessagesPage() {
-  const { user } = useUser();
+  const { user, loading } = useUser();
   const [threads, setThreads] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!user) return;
-    fetchThreads();
-  }, [user]);
+    if (!loading && user) {
+      fetchThreads(user.id);
+    }
+  }, [user, loading]);
 
-  async function fetchThreads() {
+  async function fetchThreads(userId: string) {
     const { data } = await supabase
       .from("message_threads")
       .select("*, properties(title)")
-      .eq("landlord_id", user.id)
+      .eq("landlord_id", userId)
       .order("created_at", { ascending: false });
 
-    setThreads(data || []);
+    setThreads(data ?? []);
+  }
+
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <div className="max-w-4xl mx-auto p-6">
+          Loading...
+        </div>
+      </>
+    );
   }
 
   return (
@@ -30,7 +42,7 @@ export default function MessagesPage() {
       <Navbar />
 
       <div className="max-w-4xl mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-4">
+        <h1 className="mb-4 text-2xl font-bold">
           Messages
         </h1>
 
@@ -42,7 +54,7 @@ export default function MessagesPage() {
               <Link
                 key={t.id}
                 href={`/landlord/messages/${t.id}`}
-                className="block border p-4 rounded hover:bg-gray-50"
+                className="block rounded border p-4 hover:bg-gray-50"
               >
                 <p className="font-semibold">
                   {t.properties?.title}
