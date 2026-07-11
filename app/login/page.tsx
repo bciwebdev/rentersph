@@ -22,19 +22,29 @@ export default function AuthPortal() {
     setMessage({ type: '', text: '' })
 
     if (isSignUp) {
-      // Clean sign up flow falling back to your default Supabase configuration URL
-      const { error } = await supabase.auth.signUp({
-        email,
-        password
+      // Stripped configuration to avoid URL path checking completely
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password
       })
+      
       if (error) {
         setMessage({ type: 'error', text: error.message })
+      } else if (data?.user && data.user.identities?.length === 0) {
+        // Safe check for Supabase handling existing emails
+        setMessage({ type: 'error', text: 'This email is already registered.' })
       } else {
-        setMessage({ type: 'success', text: 'Registration successful! Check your email for verification.' })
+        setMessage({ 
+          type: 'success', 
+          text: 'Registration initialized! Please check your inbox to confirm your account.' 
+        })
       }
     } else {
       // Handle Sign In Flow
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      const { error } = await supabase.auth.signInWithPassword({ 
+        email: email.trim(), 
+        password 
+      })
       if (error) {
         setMessage({ type: 'error', text: error.message })
       } else {
