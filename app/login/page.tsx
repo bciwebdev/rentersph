@@ -22,11 +22,10 @@ export default function AuthPortal() {
     setMessage({ type: '', text: '' })
 
     if (isSignUp) {
-      // Handle Sign Up Flow
+      // Clean sign up flow falling back to your default Supabase configuration URL
       const { error } = await supabase.auth.signUp({
         email,
-        password,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` }
+        password
       })
       if (error) {
         setMessage({ type: 'error', text: error.message })
