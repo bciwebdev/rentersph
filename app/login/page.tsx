@@ -2,120 +2,147 @@
 
 import React, { useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { Home, Mail, Lock, ArrowRight, UserPlus, LogIn } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-export default function LoginPage() {
+export default function AuthPortal() {
+  const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isForgotPassword, setIsForgotPassword] = useState(false)
-  
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState({ type: '', text: '' })
 
-  // Handles standard Email/Password Login
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuthAction = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setError('')
-    setMessage('')
+    setMessage({ type: '', text: '' })
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (error) {
-      setError(error.message)
-      setLoading(false)
+    if (isSignUp) {
+      // Handle Sign Up Flow
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` }
+      })
+      if (error) {
+        setMessage({ type: 'error', text: error.message })
+      } else {
+        setMessage({ type: 'success', text: 'Registration successful! Check your email for verification.' })
+      }
     } else {
-      setMessage('Success! Redirecting to dashboard...')
-      window.location.href = '/landlord'
+      // Handle Sign In Flow
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        setMessage({ type: 'error', text: error.message })
+      } else {
+        window.location.href = '/landlord'
+      }
     }
-  }
-
-  // Handles Forgot Password Recovery Email Trigger
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setMessage('')
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/login/reset-password`,
-    })
-
     setLoading(false)
-    if (error) {
-      setError(error.message)
-    } else {
-      setMessage('A secure password reset link has been sent to your registered email.')
-    }
   }
 
   return (
-    <div className="min-h-screen bg-green-500/50 flex items-center justify-center p-6 font-sans antialiased">
-      <div className="w-full max-w-md bg-white rounded-3xl p-8 border border-gray-200 shadow-md space-y-6">
+    <div className="min-h-screen bg-emerald-700 flex flex-col items-center justify-center p-4 sm:p-6">
+      
+      {/* Container Card */}
+      <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 border border-emerald-800 shadow-2xl space-y-6">
         
-        {/* Logo Header */}
+        {/* Branding Title */}
         <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-2">
-            <img src="/icon.png" alt="Logo" className="w-[24px] h-[24px] object-contain" />
-            <span className="text-2xl font-black text-gray-900 tracking-tight">
-              renters<span className="text-green-600">PH</span>
+          <div className="flex items-center justify-center gap-1.5 mx-auto">
+            <div className="w-5 h-5 bg-emerald-600 rounded flex items-center justify-center">
+              <Home className="w-3 text-white" />
+            </div>
+            <span className="font-black text-slate-950 text-xs tracking-tight">
+              renters<span className="text-emerald-600">PH</span>
             </span>
           </div>
-          <h1 className="text-xl font-bold text-gray-800">
-            {isForgotPassword ? 'Reset Your Password' : 'Landlord Portal'}
-          </h1>
-          <p className="text-xs text-gray-400 font-medium">
-            {isForgotPassword 
-              ? 'Enter your email to receive a recovery code link' 
-              : 'Log in to manage and boost your active rental listings'
-            }
+          <h2 className="text-xl font-black text-slate-950 tracking-tight">
+            {isSignUp ? 'Create Landlord Account' : 'Landlord Portal'}
+          </h2>
+          <p className="text-xs text-slate-400 font-medium px-4">
+            {isSignUp ? 'Register to start listing your rental properties.' : 'Log in to manage and boost your active rental listings.'}
           </p>
         </div>
 
-        {/* System Alert Banners */}
-        {error && <div className="p-3 bg-red-50 text-red-700 text-xs font-bold rounded-xl border border-red-100">⚠️ {error}</div>}
-        {message && <div className="p-3 bg-green-50 text-green-700 text-xs font-bold rounded-xl border border-green-100">✅ {message}</div>}
-
-        {/* Dynamic Form Controller */}
-        {!isForgotPassword ? (
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-[10px] font-black uppercase text-gray-400 mb-1 tracking-wider">Registered Email</label>
-              <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="landlord@email.com" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none" />
-            </div>
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-wider">Password</label>
-                <button type="button" onClick={() => { setIsForgotPassword(true); setError(''); setMessage(''); }} className="text-[10px] font-bold text-green-600 hover:underline">Forgot password?</button>
-              </div>
-              <input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none" />
-            </div>
-            <button type="submit" disabled={loading} className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold text-sm py-3 rounded-xl transition shadow-sm mt-2">
-              {loading ? 'Verifying Account...' : 'Sign In'}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleResetPassword} className="space-y-4">
-            <div>
-              <label className="block text-[10px] font-black uppercase text-gray-400 mb-1 tracking-wider">Your Registered Email Address</label>
-              <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="landlord@email.com" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none" />
-            </div>
-            <button type="submit" disabled={loading} className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold text-sm py-3 rounded-xl transition shadow-sm mt-2">
-              {loading ? 'Sending Link...' : 'Send Password Recovery Email'}
-            </button>
-            <div className="text-center pt-2">
-              <button type="button" onClick={() => { setIsForgotPassword(false); setError(''); setMessage(''); }} className="text-xs font-bold text-gray-500 hover:text-gray-700 hover:underline">← Back to Log In</button>
-            </div>
-          </form>
+        {/* Dynamic Warning/Success Notifications */}
+        {message.text && (
+          <div className={`p-4 rounded-xl text-xs font-bold border ${
+            message.type === 'error' ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'
+          }`}>
+            {message.text}
+          </div>
         )}
+
+        {/* Input Interactive Form */}
+        <form onSubmit={handleAuthAction} className="space-y-4">
+          <div>
+            <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider flex items-center gap-1">
+              <Mail className="w-3 h-3 text-slate-400" /> Registered Email
+            </label>
+            <input 
+              required 
+              type="email" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="landlord@email.com" 
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1">
+                <Lock className="w-3 h-3 text-slate-400" /> Password
+              </label>
+              {!isSignUp && (
+                <a href="#" className="text-[10px] font-bold text-emerald-600 hover:underline">
+                  Forgot password?
+                </a>
+              )}
+            </div>
+            <input 
+              required 
+              type="password" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••" 
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all"
+            />
+          </div>
+
+          {/* Core Submit Call To Action */}
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 text-white font-bold text-xs py-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-1.5 mt-2 uppercase tracking-wider"
+          >
+            {loading ? 'Authenticating...' : isSignUp ? (
+              <>Create Account <UserPlus className="w-3.5 h-3.5" /></>
+            ) : (
+              <>Sign In <LogIn className="w-3.5 h-3.5" /></>
+            )}
+          </button>
+        </form>
+
+        {/* Bottom Switch Authentication Mode Link Toggle */}
+        <div className="border-t border-slate-100 pt-4 text-center">
+          <button 
+            type="button"
+            onClick={() => {
+              setIsSignUp(!isSignUp)
+              setMessage({ type: '', text: '' })
+            }}
+            className="text-xs font-bold text-slate-500 hover:text-slate-800 transition inline-flex items-center gap-1"
+          >
+            {isSignUp ? "Already have an account? Sign In" : "New landlord? Create an account"} 
+            <ArrowRight className="w-3 h-3" />
+          </button>
+        </div>
 
       </div>
     </div>

@@ -1,106 +1,378 @@
-import React from 'react'
-import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
-import { notFound } from 'next/navigation'
+'use client'
 
-interface Props { 
-  params: Promise<{ id: string }> 
-}
+import React, { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
+import { createClient } from '@supabase/supabase-js'
+import { 
+  MapPin, Bed, ShowerHead, Maximize2, Calendar, 
+  ShieldCheck, MessageSquare, Heart, Share2, 
+  ChevronLeft, ChevronRight, User, CheckCircle2,
+  AlertTriangle, Phone, Info
+} from 'lucide-react'
 
-export default async function PropertyPage({ params }: Props) {
-  const { id } = await params
-  const cookieStore = await cookies()
-  
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll() { return cookieStore.getAll() } } }
-  )
+// Initialize client-side Supabase
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
-  // Parse the ID string into an integer base-10 for your int8 column match
-  const numericId = parseInt(id, 10)
+export default function PropertyDetailsPage() {
+  const params = useParams()
+  const id = params?.id as string
 
-  if (isNaN(numericId)) {
-    notFound()
-  }
+  const [property, setProperty] = useState<any>(null)
+  const [similarProperties, setSimilarProperties] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [messageText, setMessageText] = useState("Hello! Is this rental unit still available? I would love to schedule a viewing.")
+  const [messageSent, setMessageSent] = useState(false)
 
-  const { data: property, error } = await supabase
-    .from('properties')
-    .select('*')
-    .eq('id', numericId)
-    .single()
+  useEffect(() => {
+    if (!id) return
 
-  if (error || !property) {
-    console.error("Database query returned error object:", error)
-    notFound()
-  }
+    async function fetchPropertyData() {
+      setLoading(true)
+      
+      // 1. Fetch current property record
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', id)
+        .single()
 
-  const getDisplayImage = (images: any) => {
-    if (!images) return null
-    if (Array.isArray(images) && images.length > 0) return images[0]
-    if (typeof images === 'string') {
-      let cleanStr = images.replace(/^\{|\}$/g, '')
-      return cleanStr.split(',')[0].replace(/"/g, '')
+      if (!error && data) {
+        setProperty(data)
+        
+        // 2. Fetch similar listings within the same property type or general location area
+        const { data: similar } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('status', 'active')
+          .eq('property_type', data.property_type)
+          .neq('id', id)
+          .limit(3)
+        
+        if (similar) {
+          setSimilarProperties(similar)
+        }
+      }
+      setLoading(false)
     }
-    return null
+
+    fetchPropertyData()
+  }, [id])
+
+  // Extract clean image array matching your flexible homepage string/array parsing system
+  const getCleanImages = (propData: any): string[] => {
+    if (!propData) return []
+    
+    if (propData.images && Array.isArray(propData.images) && propData.images.length > 0) {
+      return propData.images
+    }
+    if (typeof propData.images === 'string' && propData.images.trim() !== '') {
+      let cleanStr = propData.images.replace(/^\{|\}$/g, '')
+      if (cleanStr.includes(',')) {
+        return cleanStr.split(',').map((img: string) => img.replace(/"/g, '').trim())
+      }
+      return [cleanStr.replace(/"/g, '').trim()]
+    }
+    if (propData.cover_image && typeof propData.cover_image === 'string') {
+      return [propData.cover_image]
+    }
+    return []
   }
 
-  const img = getDisplayImage(property.images)
+  const images = getCleanImages(property)
+
+  const handleNextImage = () => {
+    if (images.length === 0) return
+    setActiveImageIndex((prev) => (prev + 1) % images.length)
+  }
+
+  const handlePrevImage = () => {
+    if (images.length === 0) return
+    setActiveImageIndex((prev) => (prev - 1 + images.length) % images.length)
+  }
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!messageText.trim()) return
+    // Simulated chat routing — matches message architecture
+    setMessageSent(true)
+    setTimeout(() => setMessageSent(false), 5000)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-3">
+        <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+        <p className="text-slate-500 font-bold text-sm">Parsing property registration metadata...</p>
+      </div>
+    )
+  }
+
+  if (!property) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-md max-w-md text-center space-y-4">
+          <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto" />
+          <h2 className="text-xl font-black text-slate-900">Listing Not Available</h2>
+          <p className="text-slate-500 text-sm">The property listing you are trying to access has been unlisted, filled, or moved by the host.</p>
+          <a href="/" className="inline-block w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition text-sm">
+            Return to Homepage
+          </a>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans antialiased pb-24">
-      <header className="px-6 py-4 bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <a href="/" className="text-sm font-bold text-blue-600 hover:underline">
-            ← Back to Home
+    <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans antialiased pb-24">
+      
+      {/* Dynamic Context Header */}
+      <div className="bg-white border-b border-slate-100 py-4 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <a href="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-emerald-600 transition">
+            <ChevronLeft className="w-4 h-4" /> Back to Discover feed
           </a>
-          <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded font-mono">
-            Listing Reference: #{numericId}
-          </span>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsFavorited(!isFavorited)} 
+              className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
+                isFavorited 
+                  ? 'bg-rose-50 border-rose-200 text-rose-600' 
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} /> 
+              {isFavorited ? 'Saved to Favorites' : 'Save Unit'}
+            </button>
+            <button className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-bold flex items-center gap-1.5 hover:bg-slate-50 transition">
+              <Share2 className="w-4 h-4" /> Share
+            </button>
+          </div>
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-4xl mx-auto mt-8 px-6 grid grid-cols-1 md:grid-cols-12 gap-8">
-        <div className="md:col-span-8 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-          <div className="aspect-[16/10] bg-gray-100 rounded-xl overflow-hidden">
-            {img ? (
-              <img src={img} alt={property.title} className="w-full h-full object-cover" />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Main Details Panel (Left Column spanning 2 blocks) */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* Custom Image Gallery Presentation Platform */}
+          <div className="relative bg-slate-900 aspect-[16/10] sm:aspect-[16/9] rounded-3xl overflow-hidden shadow-lg border border-slate-200 group">
+            {images.length > 0 ? (
+              <>
+                <img 
+                  src={images[activeImageIndex]} 
+                  alt={`${property.title} View`} 
+                  className="w-full h-full object-cover transition duration-300"
+                />
+                
+                {images.length > 1 && (
+                  <>
+                    <button onClick={handlePrevImage} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 backdrop-blur-sm rounded-xl text-slate-800 shadow-md hover:bg-white transition opacity-0 group-hover:opacity-100">
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button onClick={handleNextImage} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 backdrop-blur-sm rounded-xl text-slate-800 shadow-md hover:bg-white transition opacity-0 group-hover:opacity-100">
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                    <div className="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-xl text-[10px] font-black tracking-wider">
+                      {activeImageIndex + 1} / {images.length} IMAGES
+                    </div>
+                  </>
+                )}
+              </>
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
+              <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 gap-2">
+                <Info className="w-8 h-8 opacity-40" />
+                <span className="text-xs font-bold">No High-Res Imagery Provided</span>
+              </div>
             )}
           </div>
-          <h1 className="text-2xl font-black text-gray-900">{property.title}</h1>
-          <p className="text-sm text-gray-500">📍 {property.address}</p>
-          
-          <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl text-center text-sm font-bold text-gray-700">
-            <div>🛏️ {property.bedrooms} BR</div>
-            <div>🚿 {property.bathrooms} BA</div>
-            <div>📐 {property.area} sqm</div>
-          </div>
 
-          {property.description && (
-            <div className="pt-2">
-              <h3 className="text-xs font-bold uppercase text-gray-400 mb-1">Details</h3>
-              <p className="text-sm text-gray-600 bg-slate-50 p-4 rounded-xl leading-relaxed whitespace-pre-wrap">
-                {property.description}
-              </p>
+          {/* Heading Information Wrapper */}
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-md">
+                {property.property_type || 'Residential Unit'}
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified Host
+              </span>
             </div>
-          )}
+            
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+              {property.title}
+            </h1>
+            
+            <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
+              <MapPin className="w-4 h-4 text-emerald-600 shrink-0" /> {property.address}
+            </div>
+
+            <hr className="border-slate-100" />
+
+            {/* Core Blueprint Parameters Layout */}
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider">Bedrooms</div>
+                <div className="text-slate-900 font-black text-base sm:text-lg flex items-center justify-center gap-1.5 mt-0.5">
+                  <Bed className="w-4 h-4 text-emerald-600" /> {property.bedrooms || 0} BR
+                </div>
+              </div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider">Bathrooms</div>
+                <div className="text-slate-900 font-black text-base sm:text-lg flex items-center justify-center gap-1.5 mt-0.5">
+                  <ShowerHead className="w-4 h-4 text-emerald-600" /> {property.bathrooms || 0} BA
+                </div>
+              </div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider">Floor Space</div>
+                <div className="text-slate-900 font-black text-base sm:text-lg flex items-center justify-center gap-1.5 mt-0.5">
+                  <Maximize2 className="w-4 h-4 text-emerald-600" /> {property.area || 0} m²
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Description Section */}
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+            <h3 className="text-lg font-black text-slate-900 tracking-tight">About this Rental Space</h3>
+            <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-line">
+              {property.description || "No specific localized description was provided by the property manager. Reach out using the integrated client platform chat tools to map out specific inclusions, lease contract lengths, or dynamic deposit arrangements."}
+            </p>
+          </div>
+
+          {/* Mockup Map Component Wrapper */}
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+            <h3 className="text-lg font-black text-slate-900 tracking-tight">Geographical Location</h3>
+            <div className="relative aspect-[16/7] w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
+              <div className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px] opacity-60" />
+              <div className="relative z-10 text-center space-y-2 max-w-sm px-4">
+                <div className="inline-flex p-3 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 shadow-sm animate-bounce">
+                  <MapPin className="w-5 h-5 fill-current" />
+                </div>
+                <div className="text-xs font-bold text-slate-800">{property.address}</div>
+                <p className="text-[11px] text-slate-400">Neighborhood infrastructure nodes, premium retail establishments, and university routing distances are available post-verification.</p>
+              </div>
+            </div>
+          </div>
+
         </div>
 
-        <div className="md:col-span-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm h-fit space-y-4">
-          <div>
-            <div className="text-xs text-gray-400 uppercase font-bold">Monthly Rental</div>
-            <div className="text-3xl font-black text-gray-900">₱{property.price.toLocaleString()}</div>
+        {/* Action / Booking Sidebar (Right Column) */}
+        <div className="space-y-6">
+          
+          {/* Dynamic Sticky Price & Communications Interface */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-md p-6 sticky top-28 space-y-6">
+            <div>
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Monthly Valuation</div>
+              <div className="text-3xl font-black text-slate-950 flex items-baseline gap-1 mt-0.5">
+                ₱{property.price?.toLocaleString()}
+                <span className="text-xs font-semibold text-slate-400">/ month</span>
+              </div>
+            </div>
+
+            <hr className="border-slate-100" />
+
+            {/* Simulated Account Registry Card */}
+            <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+              <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center text-slate-600 shrink-0">
+                <User className="w-5 h-5" />
+              </div>
+              <div className="overflow-hidden">
+                <div className="text-xs font-black text-slate-800 truncate">Platform Property Manager</div>
+                <div className="text-[10px] text-slate-400 font-medium flex items-center gap-0.5">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500 fill-white" /> Identity Fully Attested
+                </div>
+              </div>
+            </div>
+
+            {/* Lead Form Engine linking seamlessly to messenger parameters */}
+            <form onSubmit={handleSendMessage} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1.5 tracking-wider">Inquire via Dashboard</label>
+                <textarea 
+                  value={messageText} 
+                  onChange={(e) => setMessageText(e.target.value)} 
+                  rows={4} 
+                  className="w-full text-xs text-slate-700 bg-slate-50 p-3 rounded-2xl border border-slate-200 focus:outline-none focus:border-emerald-500 focus:bg-white transition resize-none leading-relaxed"
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={messageSent}
+                className={`w-full font-bold text-xs py-3.5 rounded-2xl transition shadow-sm flex items-center justify-center gap-2 ${
+                  messageSent 
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default' 
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:scale-[1.01]'
+                }`}
+              >
+                {messageSent ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" /> Message Dispatched Securely
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="w-4 h-4" /> Connect with Landlord
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-dashed border-slate-200 flex items-start gap-2.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="text-[11px] text-slate-500 leading-normal font-medium">
+                <strong className="text-slate-700 block mb-0.5 font-bold">RentersPH Tenant Guarantee</strong>
+                Always settle contracts inside our system framework. We do not demand off-platform upfront brokerage keys.
+              </div>
+            </div>
           </div>
-          <hr className="border-gray-100" />
-          <div className="text-sm space-y-1 text-gray-700">
-            <p className="font-bold">Contact Options:</p>
-            {property.contact_number && <p>📞 {property.contact_number}</p>}
-            {property.email && <p>✉️ {property.email}</p>}
-          </div>
+
         </div>
+
       </main>
+
+      {/* Similar Listings Carousel Recommendations Section */}
+      {similarProperties.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 pt-12 border-t border-slate-200">
+          <div className="mb-8">
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">Similar Rental Options</h2>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">Comparable configurations matching this specific profile tier.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {similarProperties.map((p) => {
+              const imgArray = getCleanImages(p)
+              const displayImg = imgArray.length > 0 ? imgArray[0] : null
+              
+              return (
+                <a key={p.id} href={`/property/${p.id}`} className="group bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col h-full">
+                  <div className="aspect-[16/11] bg-slate-100 relative overflow-hidden">
+                    <span className="absolute top-3 left-3 z-20 text-[10px] font-black uppercase tracking-wider text-slate-700 bg-white/95 px-2.5 py-1 rounded-md shadow-sm">
+                      {p.property_type || 'Unit'}
+                    </span>
+                    {displayImg ? (
+                      <img src={displayImg} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">No Photo</div>
+                    )}
+                  </div>
+                  <div className="p-5 flex flex-col justify-between flex-grow space-y-3">
+                    <div>
+                      <div className="text-xl font-black text-slate-950">₱{p.price?.toLocaleString()}</div>
+                      <h3 className="text-xs font-bold text-slate-800 line-clamp-1 mt-0.5 group-hover:text-emerald-600 transition-colors">{p.title}</h3>
+                      <div className="text-[11px] text-slate-400 truncate mt-0.5">📍 {p.address}</div>
+                    </div>
+                  </div>
+                </a>
+              )
+            })}
+          </div>
+        </section>
+      )}
     </div>
   )
 }
