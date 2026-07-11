@@ -1,13 +1,8 @@
 'use client'
 
 import React, { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 import { Home, Mail, Lock, ArrowRight, UserPlus, LogIn } from 'lucide-react'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 export default function AuthPortal() {
   const [isSignUp, setIsSignUp] = useState(false)
@@ -16,33 +11,39 @@ export default function AuthPortal() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
 
+  // Initialize browser-safe SSR client context
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
   const handleAuthAction = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setMessage({ type: '', text: '' })
 
+    const sanitizedEmail = email.trim()
+
     if (isSignUp) {
-      // Stripped configuration to avoid URL path checking completely
       const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: sanitizedEmail,
         password: password
       })
       
       if (error) {
         setMessage({ type: 'error', text: error.message })
       } else if (data?.user && data.user.identities?.length === 0) {
-        // Safe check for Supabase handling existing emails
         setMessage({ type: 'error', text: 'This email is already registered.' })
       } else {
         setMessage({ 
           type: 'success', 
-          text: 'Registration initialized! Please check your inbox to confirm your account.' 
+          text: 'Account created successfully! You can now sign in.' 
         })
+        setIsSignUp(false)
       }
     } else {
-      // Handle Sign In Flow
       const { error } = await supabase.auth.signInWithPassword({ 
-        email: email.trim(), 
+        email: sanitizedEmail, 
         password 
       })
       if (error) {
@@ -78,7 +79,7 @@ export default function AuthPortal() {
           </p>
         </div>
 
-        {/* Dynamic Warning/Success Notifications */}
+        {/* Dynamic Notifications */}
         {message.text && (
           <div className={`p-4 rounded-xl text-xs font-bold border ${
             message.type === 'error' ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'
@@ -124,7 +125,7 @@ export default function AuthPortal() {
             />
           </div>
 
-          {/* Core Submit Call To Action */}
+          {/* Submit Action */}
           <button 
             type="submit" 
             disabled={loading}
@@ -138,7 +139,7 @@ export default function AuthPortal() {
           </button>
         </form>
 
-        {/* Bottom Switch Authentication Mode Link Toggle */}
+        {/* Bottom Switch authentication layout toggle */}
         <div className="border-t border-slate-100 pt-4 text-center">
           <button 
             type="button"
