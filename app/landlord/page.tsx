@@ -6,13 +6,12 @@ import { useRouter } from 'next/navigation'
 import { 
   Building2, MapPin, Phone, Image as ImageIcon, 
   ShieldCheck, LogOut, FileText, Bed, ShowerHead, Maximize2,
-  QrCode, X, CreditCard, Hash, UserCheck
+  QrCode, X, CreditCard, Hash, UserCheck, UploadCloud, Trash2
 } from 'lucide-react'
 
 export default function CreateListingDashboard() {
   const router = useRouter()
 
-  // Initialize the cookie-aware browser client
   const [supabase] = useState(() => 
     createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,23 +19,22 @@ export default function CreateListingDashboard() {
     )
   )
 
-  // Track the active authenticated landlord ID
   const [userId, setUserId] = useState<string | null>(null)
 
-  // Route Guard: Ensure the user session exists from cookies, redirect if not
+  // Route Guard Checklist logic
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push('/login')
       } else {
-        setUserId(user.id) // Securely capture active landlord profile UID
+        setUserId(user.id)
       }
     }
     checkUser()
   }, [supabase, router])
 
-  // --- Form States Elements ---
+  // --- Form Field States ---
   const [title, setTitle] = useState('')
   const [propertyType, setPropertyType] = useState('Apartment')
   const [pricePerMonth, setPricePerMonth] = useState('')
@@ -51,14 +49,16 @@ export default function CreateListingDashboard() {
   const [emailAddress, setEmailAddress] = useState('')
   const [descriptionRules, setDescriptionRules] = useState('')
   const [listingPackage, setListingPackage] = useState('standard')
-  const [imageUrl, setImageUrl] = useState('') // Handled text URL mapping variant 
 
-  // --- GCash Modal Payment States ---
+  // --- Multi-Photo Selection States ---
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [imagePreviews, setImagePreviews] = useState<string[]>([])
+
+  // --- GCash Modal View Controls ---
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [gcashName, setGcashName] = useState('')
   const [gcashReference, setGcashReference] = useState('')
 
-  // --- UI Notification & State Handlers ---
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -68,7 +68,6 @@ export default function CreateListingDashboard() {
     window.location.href = '/login'
   }
 
-  // Calculate standard/boost pricing dynamic updates
   const getPackagePrice = () => {
     switch (listingPackage) {
       case 'standard': return 20
@@ -79,27 +78,63 @@ export default function CreateListingDashboard() {
     }
   }
 
-  // Intercept standard form submission to launch billing window first
+  // Handle local image picking up to 10 files max
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files)
+      
+      if (selectedFiles.length + filesArray.length > 10) {
+        setError('You can only upload up to a maximum of 10 photos per listing.')
+        return
+      }
+
+      setError('')
+      const newFiles = [...selectedFiles, ...filesArray]
+      setSelectedFiles(newFiles)
+
+      const newPreviews = filesArray.map(file => URL.createObjectURL(file))
+      setImagePreviews([...imagePreviews, ...newPreviews])
+    }
+  }
+
+  // Remove a photo locally before uploading
+  const removeSelectedPhoto = (index: number) => {
+    const updatedFiles = [...selectedFiles]
+    updatedFiles.splice(index, 1)
+    setSelectedFiles(updatedFiles)
+
+    const updatedPreviews = [...imagePreviews]
+    URL.revokeObjectURL(updatedPreviews[index])
+    updatedPreviews.splice(index, 1)
+    setImagePreviews(updatedPreviews)
+  }
+
   const handleTriggerPaymentVerification = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setSuccessMessage('')
+
+    if (selectedFiles.length === 0) {
+      setError('Please upload at least one photo of your property.')
+      return
+    }
+
     setShowPaymentModal(true)
   }
 
   const handleFinalDatabaseInsert = async () => {
     if (!userId) {
-      setError('Session expired or identity unauthenticated. Please refresh and log back in.')
+      setError('Identity authentication session timed out. Please refresh.')
       return
     }
 
     if (!gcashName.trim() || !gcashReference.trim()) {
-      setError('Please fill out all GCash verification fields.')
+      setError('Please provide your transaction execution confirmation records.')
       return
     }
 
     if (gcashReference.trim().length < 13) {
-      setError('GCash Reference Number must be at least 13 digits long.')
+      setError('Official GCash Reference Numbers must be exactly 13 digits.')
       return
     }
 
@@ -107,41 +142,63 @@ export default function CreateListingDashboard() {
     setError('')
     setShowPaymentModal(false)
 
-    // Insert payload mapped explicitly to the 'properties' schema
-    const { error: insertError } = await supabase
-      .from('properties')
-      .insert([
-        {
-          landlord_id: userId, // Tied to active authenticated session profile ID
-          title,
-          property_type: propertyType,
-          price_per_month: parseFloat(pricePerMonth),
-          bedrooms: parseInt(bedrooms) || 0,
-          bathrooms: parseInt(bathrooms) || 0,
-          area_sqm: parseFloat(areaSqm) || 0,
-          restroom_privacy: restroomPrivacy,
-          bathroom_privacy: bathroomPrivacy,
-          manual_address: manualAddress,
-          plus_code: plusCode || null,
-          contact_number: contactNumber,
-          email_address: emailAddress,
-          description_rules: descriptionRules,
-          listing_package: listingPackage,
-          gcash_name: gcashName.toUpperCase(),
-          payment_reference: gcashReference.trim(), // explicitly matches status report definitions
-          status: 'pending', // Flags verification matrix grid criteria
-          is_paid: false // Swapped over to verification dashboard toggle automation
-        }
-      ])
+    try {
+      const uploadedUrls: string[] = []
 
-    setLoading(false)
+      // 1. Upload files sequentially to your Supabase "property-images" storage bucket
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i]
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${userId}-${Date.now()}-${i}.${fileExt}`
+        const filePath = `${userId}/${fileName}`
 
-    if (insertError) {
-      setError(insertError.message)
-    } else {
-      setSuccessMessage('Listing submitted securely! Waiting for admin payment validation to flip your timeline live.')
+        const { error: uploadError } = await supabase.storage
+          .from('property-images')
+          .upload(filePath, file)
+
+        if (uploadError) throw new Error(`Photo upload failed: ${uploadError.message}`)
+
+        // Generate public web URL for this image asset
+        const { data: { publicUrl } } = supabase.storage
+          .from('property-images')
+          .getPublicUrl(filePath)
+
+        uploadedUrls.push(publicUrl)
+      }
+
+      // 2. Insert payload data directly matching your database architecture columns
+      const { error: insertError } = await supabase
+        .from('properties')
+        .insert([
+          {
+            landlord_id: userId,
+            title,
+            property_type: propertyType,
+            price_per_month: parseFloat(pricePerMonth),
+            bedrooms: parseInt(bedrooms) || 0,
+            bathrooms: parseInt(bathrooms) || 0,
+            area_sqm: parseFloat(areaSqm) || 0,
+            restroom_privacy: restroomPrivacy,
+            bathroom_privacy: bathroomPrivacy,
+            manual_address: manualAddress,
+            plus_code: plusCode || null,
+            contact_number: contactNumber,
+            email_address: emailAddress,
+            description_rules: descriptionRules,
+            listing_package: listingPackage,
+            gcash_name: gcashName.toUpperCase(),
+            payment_reference: gcashReference.trim(),
+            images: uploadedUrls, // Pushes array containing up to 10 direct image link tokens
+            status: 'pending', 
+            is_paid: false 
+          }
+        ])
+
+      if (insertError) throw insertError
+
+      setSuccessMessage('Real payload recorded with images! Check your mobile GCash App to verify receipt of funds against this reference token number.')
       
-      // Clear form inputs upon successful upload completion
+      // Clear all states after completion
       setTitle('')
       setPropertyType('Apartment')
       setPricePerMonth('')
@@ -153,10 +210,16 @@ export default function CreateListingDashboard() {
       setContactNumber('')
       setEmailAddress('')
       setDescriptionRules('')
-      setImageUrl('')
       setListingPackage('standard')
       setGcashName('')
       setGcashReference('')
+      setSelectedFiles([])
+      setImagePreviews([])
+
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred during resource creation.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -164,13 +227,13 @@ export default function CreateListingDashboard() {
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans antialiased py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         
-        {/* Header Control Bar */}
+        {/* Header Branding Control Header */}
         <div className="border-b border-slate-100 p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-emerald-600">
               <Building2 className="w-5 h-5" />
               <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-md">
-                Landlord Portal
+                Landlord Dashboard
               </span>
             </div>
             <h1 className="text-2xl font-black text-slate-950 tracking-tight">Create Rental Listing</h1>
@@ -180,23 +243,22 @@ export default function CreateListingDashboard() {
           <button 
             type="button"
             onClick={handleSignOut}
-            suppressHydrationWarning
             className="self-start sm:self-center px-4 py-2 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100/70 rounded-xl transition-all duration-200 flex items-center gap-1.5"
           >
             <LogOut className="w-3.5 h-3.5" /> Sign Out
           </button>
         </div>
 
-        {/* System Alert Banners */}
+        {/* Dynamic Warning Component Elements */}
         <div className="px-6 sm:px-8 pt-6 space-y-3">
           {error && <div className="p-4 bg-red-50 text-red-700 text-xs font-bold rounded-2xl border border-red-100">⚠️ Error: {error}</div>}
           {successMessage && <div className="p-4 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-2xl border border-emerald-100">✅ {successMessage}</div>}
         </div>
 
-        {/* Master Form Engine */}
+        {/* Submission Form Context Interface */}
         <form onSubmit={handleTriggerPaymentVerification} className="p-6 sm:p-8 space-y-8">
           
-          {/* Section 1: Core Specifications */}
+          {/* 1. Core Specifications */}
           <div className="space-y-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5 text-emerald-600" /> 1. Core Specifications
@@ -211,7 +273,7 @@ export default function CreateListingDashboard() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Modern Minimalist Studio near SM" 
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-all"
                 />
               </div>
 
@@ -222,7 +284,7 @@ export default function CreateListingDashboard() {
                     <select 
                       value={propertyType} 
                       onChange={(e) => setPropertyType(e.target.value)} 
-                      className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all appearance-none cursor-pointer"
+                      className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 appearance-none cursor-pointer"
                     >
                       <option>Apartment</option>
                       <option>Condominium</option>
@@ -241,7 +303,7 @@ export default function CreateListingDashboard() {
                     value={pricePerMonth}
                     onChange={(e) => setPricePerMonth(e.target.value)}
                     placeholder="18500" 
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 transition-all"
                   />
                 </div>
               </div>
@@ -257,7 +319,7 @@ export default function CreateListingDashboard() {
                     value={bedrooms}
                     onChange={(e) => setBedrooms(e.target.value)}
                     placeholder="1" 
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800"
                   />
                 </div>
                 <div>
@@ -270,7 +332,7 @@ export default function CreateListingDashboard() {
                     value={bathrooms}
                     onChange={(e) => setBathrooms(e.target.value)}
                     placeholder="1" 
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800"
                   />
                 </div>
                 <div>
@@ -283,7 +345,7 @@ export default function CreateListingDashboard() {
                     value={areaSqm}
                     onChange={(e) => setAreaSqm(e.target.value)}
                     placeholder="30" 
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800"
                   />
                 </div>
               </div>
@@ -291,43 +353,35 @@ export default function CreateListingDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider">Restroom Privacy</label>
-                  <div className="relative">
-                    <select 
-                      value={restroomPrivacy} 
-                      onChange={(e) => setRestroomPrivacy(e.target.value)} 
-                      className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all appearance-none cursor-pointer"
-                    >
-                      <option>Private (Own Toilet)</option>
-                      <option>Shared Toilet</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 text-xs">▼</div>
-                  </div>
+                  <select 
+                    value={restroomPrivacy} 
+                    onChange={(e) => setRestroomPrivacy(e.target.value)} 
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 appearance-none cursor-pointer"
+                  >
+                    <option>Private (Own Toilet)</option>
+                    <option>Shared Toilet</option>
+                  </select>
                 </div>
-
                 <div>
                   <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider">Bathroom Privacy</label>
-                  <div className="relative">
-                    <select 
-                      value={bathroomPrivacy} 
-                      onChange={(e) => setBathroomPrivacy(e.target.value)} 
-                      className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all appearance-none cursor-pointer"
-                    >
-                      <option>Private (Own Shower)</option>
-                      <option>Shared Shower</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 text-xs">▼</div>
-                  </div>
+                  <select 
+                    value={bathroomPrivacy} 
+                    onChange={(e) => setBathroomPrivacy(e.target.value)} 
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 appearance-none cursor-pointer"
+                  >
+                    <option>Private (Own Shower)</option>
+                    <option>Shared Shower</option>
+                  </select>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Section 2: Address Location */}
+          {/* 2. Address Location */}
           <div className="space-y-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-emerald-600" /> 2. Address Location
             </h3>
-            
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
               <div>
                 <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider">Manual Address</label>
@@ -337,10 +391,9 @@ export default function CreateListingDashboard() {
                   value={manualAddress}
                   onChange={(e) => setManualAddress(e.target.value)}
                   placeholder="Ecoland, Davao City" 
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800"
                 />
               </div>
-
               <div>
                 <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider">Google Maps Plus Code (Optional)</label>
                 <input 
@@ -348,18 +401,17 @@ export default function CreateListingDashboard() {
                   value={plusCode}
                   onChange={(e) => setPlusCode(e.target.value)}
                   placeholder="e.g. VFF7+HQ Davao City" 
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800"
                 />
               </div>
             </div>
           </div>
 
-          {/* Section 3: Contact Parameters */}
+          {/* 3. Contact Parameters */}
           <div className="space-y-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <Phone className="w-3.5 h-3.5 text-emerald-600" /> 3. Contact Parameters
             </h3>
-            
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
               <div>
                 <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider">Contact Number</label>
@@ -369,10 +421,9 @@ export default function CreateListingDashboard() {
                   value={contactNumber}
                   onChange={(e) => setContactNumber(e.target.value)}
                   placeholder="0917XXXXXXX" 
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800"
                 />
               </div>
-
               <div>
                 <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider">Email Address</label>
                 <input 
@@ -381,18 +432,17 @@ export default function CreateListingDashboard() {
                   value={emailAddress}
                   onChange={(e) => setEmailAddress(e.target.value)}
                   placeholder="landlord@email.com" 
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800"
                 />
               </div>
             </div>
           </div>
 
-          {/* Section 4: Detailed Description & Rules */}
+          {/* 4. Detailed Description & Rules */}
           <div className="space-y-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5 text-emerald-600" /> 4. Detailed Description & Rules
             </h3>
-            
             <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
               <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider">Property Description & Rules</label>
               <textarea 
@@ -401,77 +451,83 @@ export default function CreateListingDashboard() {
                 value={descriptionRules}
                 onChange={(e) => setDescriptionRules(e.target.value)}
                 placeholder="Provide details about payment terms, utilities, and roommate rules..." 
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all resize-none leading-relaxed"
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 resize-none leading-relaxed"
               />
             </div>
           </div>
 
-          {/* Section 5: High-Res Presentation Media */}
+          {/* 5. MULTI-PHOTO UPLOAD DROPZONE AREA */}
           <div className="space-y-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <ImageIcon className="w-3.5 h-3.5 text-emerald-600" /> 5. Presentation Media Link
+              <ImageIcon className="w-3.5 h-3.5 text-emerald-600" /> 5. Property Showcase Photos
             </h3>
-            
-            <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
-              <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider">Cover Image URL</label>
-              <input 
-                type="text" 
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://images.unsplash.com/photo-example" 
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all"
-              />
+            <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4">
+              
+              <label className="flex flex-col items-center justify-center w-full h-36 bg-white border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-2xl cursor-pointer transition p-4 text-center">
+                <UploadCloud className="w-8 h-8 text-slate-400 mb-2" />
+                <span className="text-xs font-bold text-slate-700">Click to upload property images</span>
+                <span className="text-[10px] font-semibold text-slate-400 mt-0.5">Select up to 10 photos max (PNG, JPG)</span>
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/*" 
+                  onChange={handleFileChange} 
+                  className="hidden" 
+                />
+              </label>
+
+              {/* Dynamic Photo Selection Grid View */}
+              {imagePreviews.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
+                  {imagePreviews.map((previewUrl, index) => (
+                    <div key={index} className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 group bg-slate-100">
+                      <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeSelectedPhoto(index)}
+                        className="absolute top-1.5 right-1.5 p-1 bg-slate-900/70 hover:bg-rose-600 text-white rounded-md transition shadow"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <div className="absolute bottom-1 left-1.5 text-[9px] font-bold px-1.5 bg-black/60 text-white rounded-md">
+                        #{index + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
             </div>
           </div>
 
-          {/* Section 6: Packages and Visibility */}
+          {/* 6. Listing Package */}
           <div className="space-y-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> 6. Listing Package & Visibility Rank
             </h3>
             
             <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100 space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider">
-                  Listing Package & Visibility Rank
-                </label>
-                
-                <div className="group relative cursor-pointer flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:text-emerald-700 transition">
-                  <span>What is boosting?</span>
-                  <span className="bg-emerald-50 text-emerald-600 rounded-full w-3.5 h-3.5 inline-flex items-center justify-center text-[9px] border border-emerald-200">?</span>
-                  
-                  <div className="absolute right-0 bottom-full mb-2 w-64 p-3 bg-slate-900 text-white font-medium text-xs rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 leading-relaxed">
-                    ⚡ <strong className="text-emerald-400 font-bold">Boost Purpose:</strong> Plugs your property directly to the absolute top of the search grid whenever a renter looks for accommodations matching your specific area location!
-                  </div>
-                </div>
-              </div>
-
-              <div className="relative">
-                <select 
-                  value={listingPackage} 
-                  onChange={(e) => setListingPackage(e.target.value)} 
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all appearance-none cursor-pointer"
-                >
-                  <option value="standard">Standard Listing — ₱20 (Active for 30 Days)</option>
-                  <option value="boost_5d">Standard + Boost Tier (5 Days) — ₱49</option>
-                  <option value="boost_2w">Standard + Boost Tier (2 Weeks) — ₱99</option>
-                  <option value="boost_1m">Standard + Boost Tier (1 Month) — ₱200</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 text-xs">▼</div>
-              </div>
-              
-              <p className="text-[10px] text-slate-400 font-medium pt-0.5">
-                * Standard tier active timeline begins immediately upon payment verification completion.
-              </p>
+              <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider">
+                Listing Package Option
+              </label>
+              <select 
+                value={listingPackage} 
+                onChange={(e) => setListingPackage(e.target.value)} 
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 cursor-pointer"
+              >
+                <option value="standard">Standard Listing — ₱20 (Active for 30 Days)</option>
+                <option value="boost_5d">Standard + Boost Tier (5 Days) — ₱49</option>
+                <option value="boost_2w">Standard + Boost Tier (2 Weeks) — ₱99</option>
+                <option value="boost_1m">Standard + Boost Tier (1 Month) — ₱200</option>
+              </select>
             </div>
           </div>
 
-          {/* Submit Actions Button */}
           <div className="pt-4">
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-bold text-sm py-4 rounded-2xl transition-all duration-200 shadow-sm hover:shadow hover:scale-[1.005] active:scale-[0.995]"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-bold text-sm py-4 rounded-2xl transition-all"
             >
               {loading ? 'Processing Parameters...' : 'Proceed to Payment Allocation'}
             </button>
@@ -480,12 +536,11 @@ export default function CreateListingDashboard() {
         </form>
       </div>
 
-      {/* --- Premium Minimalist GCash Overlay Modal --- */}
+      {/* --- Checkout Modal Screen --- */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white border border-slate-200 w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative animate-scale-up">
+          <div className="bg-white border border-slate-200 w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative">
             
-            {/* Close Button Trigger */}
             <button 
               type="button" 
               onClick={() => setShowPaymentModal(false)}
@@ -494,54 +549,42 @@ export default function CreateListingDashboard() {
               <X className="w-4 h-4" />
             </button>
 
-            {/* Modal Branding Header */}
             <div className="text-center space-y-1.5">
               <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto border border-blue-100">
                 <QrCode className="w-5 h-5" />
               </div>
-              <h2 className="text-lg font-black text-slate-950 tracking-tight">GCash Secure Billing Checkout</h2>
-              <p className="text-xs text-slate-400 font-medium">Scan the QR code asset to process your service transaction package fee.</p>
+              <h2 className="text-lg font-black text-slate-950 tracking-tight">GCash Secure Checkout</h2>
+              <p className="text-xs text-slate-400 font-medium">Scan the QR code below using your GCash app to send your payment.</p>
             </div>
 
-            {/* Price Tracker Badge */}
             <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-center justify-between text-xs font-bold text-slate-500">
-              <span>Selected Option Rank:</span>
+              <span>Total Bill Due:</span>
               <span className="text-slate-950 bg-white px-3 py-1 rounded-xl border border-slate-200 shadow-sm flex items-center gap-1.5">
                 <CreditCard className="w-3.5 h-3.5 text-blue-500" /> ₱{getPackagePrice()}
               </span>
             </div>
 
-            {/* QR Code Presentation Layer */}
-            <div className="mx-auto w-52 h-52 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center p-3 text-center overflow-hidden">
+            {/* --- Live Scanning Container --- */}
+            <div className="mx-auto w-56 h-56 bg-white rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center p-2 overflow-hidden">
               <img 
                 src="/gcash-qr.png" 
-                alt="RentersPH Official GCash QR Code" 
+                alt="Your Real GCash QR Code Asset" 
                 className="w-full h-full object-contain"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  const fallback = e.currentTarget.parentElement?.querySelector('.qr-fallback');
-                  if (fallback) fallback.classList.remove('hidden');
-                }}
               />
-              <div className="qr-fallback hidden text-[10px] text-slate-400 font-bold uppercase p-4 leading-normal">
-                ⚠️ Missing QR Asset<br/>
-                <span className="text-[9px] font-medium text-slate-500 lowercase block pt-1">Drop image into website/public/gcash-qr.png</span>
-              </div>
             </div>
 
-            {/* Verification Inputs Form Elements */}
             <div className="space-y-4 pt-2">
               <div>
                 <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider flex items-center gap-1">
-                  <UserCheck className="w-3 h-3 text-slate-400" /> Your GCash Account Name
+                  <UserCheck className="w-3 h-3 text-slate-400" /> Your Sender GCash Name
                 </label>
                 <input 
                   required 
                   type="text" 
                   value={gcashName}
                   onChange={(e) => setGcashName(e.target.value)}
-                  placeholder="e.g. JUAN DELA CRUZ" 
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all uppercase"
+                  placeholder="e.g. DAVE DELA CRUZ" 
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs uppercase"
                 />
               </div>
 
@@ -555,19 +598,18 @@ export default function CreateListingDashboard() {
                   maxLength={13}
                   value={gcashReference}
                   onChange={(e) => setGcashReference(e.target.value.replace(/\D/g, ''))}
-                  placeholder="e.g. 2026111222333" 
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 font-mono placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all tracking-wide"
+                  placeholder="Paste the 13-digit code from your GCash receipt" 
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono tracking-wide"
                 />
               </div>
             </div>
 
-            {/* Confirm Payment Submission Button */}
             <button
               type="button"
               onClick={handleFinalDatabaseInsert}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 text-center uppercase tracking-wider"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-3.5 rounded-xl uppercase tracking-wider transition-all"
             >
-              Submit Reference Payload
+              Submit Payment Reference
             </button>
 
           </div>
