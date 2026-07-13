@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { 
-  FileText, MapPin, Phone, Image, ArrowRight, LogOut, HelpCircle 
+  FileText, MapPin, Phone, Image, ArrowRight, LogOut, HelpCircle, Upload, X 
 } from 'lucide-react'
 
 const supabase = createClient(
@@ -33,18 +33,17 @@ export default function CreateRentalListingPage() {
   
   const [descriptionRules, setDescriptionRules] = useState('')
   
-  // Media Array (Max 10 Images)
-  const [images, setImages] = useState<string[]>([])
-  const [imageUrlInput, setImageUrlInput] = useState('')
+  // File Upload State (Holds actual File objects + local object URLs for preview)
+  const [selectedFiles, setSelectedFiles] = useState<{ file: File; previewUrl: string }[]>([])
 
-  // Pricing & Boosting States
+  // Pricing, Boosting, & Tooltip States
   const BASE_PRICE = 20
-  const [boostingOption, setBoostingOption] = useState('none') // 'none' | '5days' | '2weeks' | '1month'
+  const [boostingOption, setBoostingOption] = useState('none') 
+  const [showTooltip, setShowTooltip] = useState(false)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Calculate dynamic bill total
   const getBoostingPrice = () => {
     if (boostingOption === '5days') return 49
     if (boostingOption === '2weeks') return 99
@@ -53,19 +52,27 @@ export default function CreateRentalListingPage() {
   }
   const totalAmount = BASE_PRICE + getBoostingPrice()
 
-  const handleAddImage = () => {
-    if (!imageUrlInput.trim()) return
-    if (images.length >= 10) {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return
+    const filesArray = Array.from(e.target.files)
+    
+    if (selectedFiles.length + filesArray.length > 10) {
       setErrorMessage('You can only upload a maximum of 10 photos per listing.')
       return
     }
-    setImages((prev) => [...prev, imageUrlInput.trim()])
-    setImageUrlInput('')
+
+    const newSelections = filesArray.map(file => ({
+      file,
+      previewUrl: URL.createObjectURL(file)
+    }))
+
+    setSelectedFiles(prev => [...prev, ...newSelections])
     setErrorMessage(null)
   }
 
   const handleRemoveImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index))
+    URL.revokeObjectURL(selectedFiles[index].previewUrl)
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,9 +81,30 @@ export default function CreateRentalListingPage() {
     setErrorMessage(null)
 
     const parsedPrice = parseInt(price, 10) || 0
+    const uploadedImageUrls: string[] = []
 
     try {
-      const { data, error } = await supabase
+      // 1. Upload native device files to your Supabase Storage Bucket
+      for (const item of selectedFiles) {
+        const fileExt = item.file.name.split('.').pop()
+        const fileName = `${Math.random()}_${Date.now()}.${fileExt}`
+        const filePath = `listings/${fileName}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('property-images')
+          .upload(filePath, item.file)
+
+        if (uploadError) throw new Error(`Storage upload error: ${uploadError.message}`)
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('property-images')
+          .getPublicUrl(filePath)
+
+        uploadedImageUrls.push(publicUrl)
+      }
+
+      // 2. Insert row data into database
+      const { error: dbError } = await supabase
         .from('properties')
         .insert([
           {
@@ -94,16 +122,13 @@ export default function CreateRentalListingPage() {
             contact_number: contactNumber.trim(),
             email_address: emailAddress.trim(),
             description_rules: descriptionRules.trim(),
-            images: images.length > 0 ? images : null,
+            images: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
             boosting_tier: boostingOption,
             total_payable: totalAmount
           }
         ])
-        .select()
 
-      if (error) throw new Error(error.message)
-      
-      // Redirect to your payment allocation route with the total bill amount attached
+      if (dbError) throw new Error(dbError.message)
       router.push(`/landlord/payment?total=${totalAmount}`)
 
     } catch (err: any) {
@@ -280,30 +305,32 @@ export default function CreateRentalListingPage() {
             </h2>
             <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase flex justify-between">
-                  <span>Add Image URL Links (Max 10)</span>
-                  <span className="text-slate-400 font-medium">{images.length}/10 images added</span>
-                </label>
-                <div className="flex gap-2">
-                  <input 
-                    type="text" placeholder="https://example.com/photo.jpg" value={imageUrlInput}
-                    onChange={(e) => setImageUrlInput(e.target.value)}
-                    disabled={images.length >= 10}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 transition disabled:bg-slate-50 placeholder:text-slate-300"
-                  />
-                  <button type="button" onClick={handleAddImage} disabled={images.length >= 10} className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 text-white font-bold text-xs px-4 rounded-xl transition shrink-0">
-                    Add
-                  </button>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Upload Property Presentation Photos (Max 10)</label>
+                  <span className="text-[11px] text-slate-400 font-medium">{selectedFiles.length}/10 uploaded</span>
                 </div>
+                
+                <label className="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-xl p-8 flex flex-col items-center justify-center gap-2 cursor-pointer transition bg-slate-50/30">
+                  <Upload className="w-6 h-6 text-slate-400" />
+                  <span className="text-xs font-bold text-slate-600">Click to select files from your device</span>
+                  <span className="text-[10px] text-slate-400">Supports PNG, JPG, JPEG up to 10 photos total</span>
+                  <input 
+                    type="file" multiple accept="image/*" onChange={handleFileChange}
+                    disabled={selectedFiles.length >= 10} className="hidden" 
+                  />
+                </label>
               </div>
 
-              {images.length > 0 && (
+              {selectedFiles.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
-                  {images.map((img, idx) => (
+                  {selectedFiles.map((item, idx) => (
                     <div key={idx} className="relative aspect-square border rounded-xl overflow-hidden group bg-slate-50">
-                      <img src={img} alt="preview" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => handleRemoveImage(idx)} className="absolute inset-0 bg-rose-600/90 text-white font-bold text-[10px] opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-                        Remove
+                      <img src={item.previewUrl} alt="local preview" className="w-full h-full object-cover" />
+                      <button 
+                        type="button" onClick={() => handleRemoveImage(idx)} 
+                        className="absolute top-1 right-1 bg-slate-900/80 hover:bg-rose-600 text-white rounded-full p-1 transition"
+                      >
+                        <X className="w-3 h-3" />
                       </button>
                     </div>
                   ))}
@@ -319,18 +346,32 @@ export default function CreateRentalListingPage() {
             </h2>
             <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-5">
               
-              {/* Mandatory Base Tier Selector */}
               <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center relative">
                   <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Required Base Posting Plan</label>
-                  <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-0.5 cursor-pointer">What is boosting? <HelpCircle className="w-3 h-3" /></span>
+                  
+                  {/* Interactive Tooltip Component */}
+                  <div 
+                    className="relative"
+                    onMouseEnter={() => setShowTooltip(true)}
+                    onMouseLeave={() => setShowTooltip(false)}
+                  >
+                    <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-0.5 cursor-help">
+                      What is boosting? <HelpCircle className="w-3 h-3" />
+                    </span>
+                    {showTooltip && (
+                      <div className="absolute right-0 bottom-6 w-64 bg-slate-900 text-white text-[11px] font-medium p-3 rounded-xl shadow-xl z-50 leading-relaxed pointer-events-none">
+                        Boosting increases your listing's priority score, moving it directly to the top of prospective renters' feeds for maximum exposure and faster inquiries.
+                      </div>
+                    )}
+                  </div>
+
                 </div>
                 <div className="w-full bg-white border-2 border-emerald-500 rounded-xl px-4 py-3 text-xs text-slate-700 font-bold">
                   Standard Listing — ₱20 (Active for 30 Days)
                 </div>
               </div>
 
-              {/* Optional Boosting Upgrade Options */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase block">Optional Visibility Boosting Rank Upgrades</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
@@ -371,7 +412,6 @@ export default function CreateRentalListingPage() {
                 <p className="text-[10px] text-slate-400 font-medium mt-2">* Standard tier active timeline begins immediately upon payment verification completion.</p>
               </div>
 
-              {/* Dynamic Invoice Running Summary Box */}
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 flex justify-between items-center text-slate-700">
                 <span className="text-xs font-bold">Total Estimated Statement Amount:</span>
                 <span className="text-sm font-black text-emerald-600">₱{totalAmount}.00</span>
@@ -380,14 +420,13 @@ export default function CreateRentalListingPage() {
             </div>
           </div>
 
-          {/* Action Trigger Submit Button */}
           <div className="pt-4">
             <button
               type="submit"
               disabled={isSubmitting}
               className="w-full bg-[#009667] hover:bg-[#008057] text-white font-bold text-xs py-4 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
-              {isSubmitting ? 'Processing submission...' : 'Proceed to Payment Allocation'} <ArrowRight className="w-4 h-4" />
+              {isSubmitting ? 'Uploading photos & details...' : 'Proceed to Payment Allocation'} <ArrowRight className="w-4 h-4" />
             </button>
           </div>
 
