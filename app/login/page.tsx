@@ -3,18 +3,20 @@
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 
-// Safely instantiate outside the component so it runs exactly once
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
   const [showForgot, setShowForgot] = useState(false)
+
+  // Explicitly instantiate inside the component to ensure clean server/client cookie binding
+  const [supabase] = useState(() => 
+    createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  )
 
   // Login Handler
   const handleLogin = async (e: React.FormEvent) => {
