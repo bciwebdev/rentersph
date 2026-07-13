@@ -1,46 +1,48 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 
-// Safely instantiate outside the component so it runs exactly once 
-// and never triggers a client-side re-render crash loop.
+// Safely instantiate outside the component so it runs exactly once
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 export default function LoginPage() {
-  const router = useRouter()
-
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
   const [showForgot, setShowForgot] = useState(false)
 
-  // Login Handler (Preserving your exact original logic)
+  // Login Handler
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setMessage(null)
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (error) {
-      setMessage({ type: 'error', text: error.message })
+      if (error) {
+        setMessage({ type: 'error', text: error.message })
+        setLoading(false)
+        return
+      }
+
+      // Hard redirect forces Next.js to fully drop the login state and initialize the destination page
+      if (data?.user?.email === 'bciwebdev25@gmail.com') {
+        window.location.href = '/admin-portal-xyz'
+      } else {
+        window.location.href = '/landlord'
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'An unexpected connection error occurred.' })
       setLoading(false)
-      return
-    }
-
-    if (data?.user?.email === 'bciwebdev25@gmail.com') {
-      router.push('/admin-portal-xyz')
-    } else {
-      router.push('/landlord')
     }
   }
 

@@ -131,12 +131,12 @@ export default function HomePage() {
   const regularListings = filteredProperties.filter(p => !(p.boost_tier && p.boost_tier !== 'none' && p.boost_expires_at ? new Date(p.boost_expires_at) > new Date() : false))
 
   return (
-    <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans antialiased selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans antialiased selection:bg-emerald-500 selection:text-white relative">
       
       {/* Premium Sticky Navigation Bar */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm transition-all duration-300">
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm transition-all duration-300 pointer-events-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 no-underline group">
+          <Link href="/" className="flex items-center gap-2.5 no-underline group relative z-50 pointer-events-auto">
             <div className="bg-emerald-600 p-2 rounded-xl text-white shadow-emerald-200 shadow-md group-hover:bg-emerald-700 transition-colors">
               <Home className="w-5 h-5" />
             </div>
@@ -146,19 +146,18 @@ export default function HomePage() {
           </Link>
 
           {/* Desktop Navigation links */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-8 relative z-50 pointer-events-auto">
             <span onClick={() => { setPropertyType('All Types'); window.scrollTo({top: 800, behavior: 'smooth'}); }} className="text-sm font-semibold text-slate-600 cursor-pointer hover:text-emerald-600 transition-colors">Find Rentals</span>
             <span className="text-sm font-semibold text-slate-600 cursor-pointer hover:text-emerald-600 transition-colors">Favorites</span>
             
-            {/* FIX: Swapped out standard <a> tag for clean NextJS Link framework */}
-            <Link href="/login" className="inline-flex items-center gap-2 text-sm font-bold bg-slate-900 text-white px-5 py-3 rounded-xl hover:bg-slate-800 transition shadow-sm hover:shadow-md">
+            <Link href="/login" className="inline-flex items-center gap-2 text-sm font-bold bg-slate-900 text-white px-5 py-3 rounded-xl hover:bg-slate-800 transition shadow-sm hover:shadow-md cursor-pointer relative z-50 pointer-events-auto">
               <Building2 className="w-4 h-4 text-emerald-400" />
               Landlord Dashboard
             </Link>
           </nav>
 
           {/* Mobile hamburger menu switch */}
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-lg">
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-lg relative z-50 pointer-events-auto">
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
@@ -166,10 +165,10 @@ export default function HomePage() {
         {/* Mobile Navigation Drawer */}
         <AnimatePresence>
           {mobileMenuOpen && (
-            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute top-20 left-0 w-full bg-white border-b border-slate-200 shadow-xl px-6 py-6 flex flex-col gap-4 md:hidden">
+            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute top-20 left-0 w-full bg-white border-b border-slate-200 shadow-xl px-6 py-6 flex flex-col gap-4 md:hidden z-40 pointer-events-auto">
               <span onClick={() => { setPropertyType('All Types'); setMobileMenuOpen(false); window.scrollTo({top: 800, behavior: 'smooth'}); }} className="text-base font-bold text-slate-700 py-2 border-b border-slate-50 cursor-pointer">Find Rentals</span>
               <span className="text-base font-bold text-slate-700 py-2 border-b border-slate-50 cursor-pointer">Favorites</span>
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="w-full text-center font-bold bg-slate-900 text-white py-3 rounded-xl shadow-md">
+              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="w-full text-center font-bold bg-slate-900 text-white py-3 rounded-xl shadow-md cursor-pointer block relative z-50">
                 Landlord Dashboard
               </Link>
             </motion.div>
@@ -498,29 +497,12 @@ export default function HomePage() {
           </div>
           <div>
             <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[10px] mb-3">Explore Properties</h4>
-            <ul className="space-y-2 font-medium">
+            <ul className="space-y-2 font-medium list-none p-0">
               <li><span onClick={() => setPropertyType('Apartment')} className="hover:text-emerald-600 cursor-pointer">Apartments for Rent</span></li>
               <li><span onClick={() => setPropertyType('Condominium')} className="hover:text-emerald-600 cursor-pointer">Condominium Suites</span></li>
               <li><span onClick={() => setPropertyType('Boarding House')} className="hover:text-emerald-600 cursor-pointer">Boarding Rooms</span></li>
             </ul>
           </div>
-          <div>
-            <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[10px] mb-3">Landlords</h4>
-            <ul className="space-y-2 font-medium">
-              <li><Link href="/login" className="hover:text-emerald-600">List Your Property</Link></li>
-              <li><Link href="/login" className="hover:text-emerald-600">Premium Boost Tiers</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[10px] mb-3">Legal</h4>
-            <ul className="space-y-2 font-medium">
-              <li className="hover:text-emerald-600 cursor-pointer">Terms of Service</li>
-              <li className="hover:text-emerald-600 cursor-pointer">Privacy Policy</li>
-            </ul>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 border-t border-slate-100 text-center text-slate-400 font-medium">
-          &copy; {new Date().getFullYear()} RentersPH. All rights reserved.
         </div>
       </footer>
     </div>
