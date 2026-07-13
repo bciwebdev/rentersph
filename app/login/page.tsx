@@ -28,7 +28,8 @@ export default function LandlordLoginPage() {
     setMessage('')
 
     if (isSignUp) {
-      const { error: signUpError } = await supabase.auth.signUp({
+      // Create the account via Supabase Auth
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -38,10 +39,26 @@ export default function LandlordLoginPage() {
 
       if (signUpError) {
         setError(signUpError.message)
+        setLoading(false)
+        return
+      }
+
+      // DEVELOPMENT AUTO-BYPASS LOOP:
+      // Immediately log the user in using the credentials they just generated
+      // so they drop into the listing screen without checking email.
+      const { error: autoSignInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (autoSignInError) {
+        // Fallback warning text if your Supabase instance explicitly blocks unconfirmed emails
+        setError('Account created! However, your Supabase project configuration strictly requires manual email validation before logging in. Please check your Supabase dashboard > Authentication > Users to confirm this email.')
       } else {
-        setMessage('Registration successful! Check your inbox to verify your account.')
+        router.push('/landlord')
       }
     } else {
+      // Standard Sign In Processing
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -147,7 +164,7 @@ export default function LandlordLoginPage() {
             </div>
             <input 
               type="password" 
-              required={!isSignUp}
+              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
@@ -160,7 +177,7 @@ export default function LandlordLoginPage() {
             disabled={loading}
             className="w-full bg-[#00aa4f] hover:bg-[#009444] text-white font-extrabold text-base py-4 rounded-2xl transition-all duration-200 shadow-md transform active:scale-[0.99] disabled:opacity-50"
           >
-            {loading ? 'Processing Context...' : isSignUp ? 'Sign Up' : 'Sign In'}
+            {loading ? 'Processing Context...' : isSignUp ? 'Sign Up & Login' : 'Sign In'}
           </button>
         </form>
 
