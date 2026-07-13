@@ -1,20 +1,36 @@
 'use client'
 
-import React, { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import React, { useState, useEffect } from 'react'
+import { createBrowserClient } from '@supabase/ssr'
+import { useRouter } from 'next/navigation'
 import { 
-  Building2, MapPin, Phone, Image, 
+  Building2, MapPin, Phone, Image as ImageIcon, 
   ShieldCheck, LogOut, FileText, Bed, ShowerHead, Maximize2,
   QrCode, X, CreditCard, Hash, UserCheck
 } from 'lucide-react'
 
-// Initialize Supabase Client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 export default function CreateListingDashboard() {
+  const router = useRouter()
+
+  // Initialize the cookie-aware browser client
+  const [supabase] = useState(() => 
+    createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  )
+
+  // Route Guard: Ensure the user session exists from cookies, redirect if not
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/login')
+      }
+    }
+    checkUser()
+  }, [supabase, router])
+
   // --- Form States Elements ---
   const [title, setTitle] = useState('')
   const [propertyType, setPropertyType] = useState('Apartment')
@@ -379,7 +395,7 @@ export default function CreateListingDashboard() {
           {/* Section 5: High-Res Presentation Media */}
           <div className="space-y-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Image className="w-3.5 h-3.5 text-emerald-600" /> 5. High-Res Presentation Media
+              <ImageIcon className="w-3.5 h-3.5 text-emerald-600" /> 5. High-Res Presentation Media
             </h3>
             
             <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
@@ -524,7 +540,7 @@ export default function CreateListingDashboard() {
                   type="text" 
                   maxLength={13}
                   value={gcashReference}
-                  onChange={(e) => setGcashReference(e.target.value.replace(/\D/g, ''))} // Strips letters dynamically
+                  onChange={(e) => setGcashReference(e.target.value.replace(/\D/g, ''))}
                   placeholder="e.g. 2026111222333" 
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 font-mono placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all tracking-wide"
                 />
