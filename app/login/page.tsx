@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { useRouter } from 'next/navigation'
+import { useRouter } from 'navigation'
 
 export default function LandlordLoginPage() {
   const router = useRouter()
@@ -56,6 +56,29 @@ export default function LandlordLoginPage() {
     setLoading(false)
   }
 
+  // --- New Handled Password Recovery Engine ---
+  const handleForgotPassword = async () => {
+    setError('')
+    setMessage('')
+
+    if (!email.trim()) {
+      setError('Please enter your email address first so we know where to send the reset link.')
+      return
+    }
+
+    setLoading(true)
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/landlord`, // Automatically routes them to dashboard once verified
+    })
+    setLoading(false)
+
+    if (resetError) {
+      setError(resetError.message)
+    } else {
+      setMessage('Password reset link has been dispatched! Please monitor your email inbox.')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#6be4a6] flex items-center justify-center p-4 antialiased font-sans">
       <div className="bg-white w-full max-w-lg rounded-[40px] p-8 sm:p-12 space-y-8 shadow-xl border border-white/20">
@@ -95,7 +118,7 @@ export default function LandlordLoginPage() {
         <form onSubmit={handleAuth} className="space-y-6">
           <div className="space-y-2">
             <label className="block text-[11px] font-black uppercase text-[#8897a6] tracking-wider">
-              {isSignUp ? 'Desired Registration Email' : 'Registered Email'}
+              Email Address
             </label>
             <input 
               type="email" 
@@ -113,14 +136,19 @@ export default function LandlordLoginPage() {
                 Password
               </label>
               {!isSignUp && (
-                <button type="button" className="text-xs font-bold text-[#00aa4f] hover:underline bg-transparent border-none p-0 cursor-pointer">
+                <button 
+                  type="button" 
+                  onClick={handleForgotPassword}
+                  disabled={loading}
+                  className="text-xs font-bold text-[#00aa4f] hover:underline bg-transparent border-none p-0 cursor-pointer disabled:opacity-40"
+                >
                   Forgot password?
                 </button>
               )}
             </div>
             <input 
               type="password" 
-              required
+              required={!isSignUp}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
