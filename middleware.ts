@@ -28,13 +28,15 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+  const pathname = request.nextUrl.pathname
 
-  // Strict route protecting
-  if (request.nextUrl.pathname.startsWith('/landlord') && !user) {
+  // Protect the landlord dashboard path
+  if (pathname.startsWith('/landlord') && !user) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (request.nextUrl.pathname.startsWith('/login') && user) {
+  // Prevent logged in users from hitting the login page
+  if (pathname.startsWith('/login') && user) {
     return NextResponse.redirect(new URL('/landlord', request.url))
   }
 
