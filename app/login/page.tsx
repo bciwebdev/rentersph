@@ -1,16 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import { useRouter } from 'next/navigation'
 
-export default function LoginPage() {
+export default function AuthPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
-  const [showForgot, setShowForgot] = useState(false)
+  const [isSignUp, setIsSignUp] = useState(false) // Toggles registration state
 
-  // Explicitly instantiate inside the component to ensure clean server/client cookie binding
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+
   const [supabase] = useState(() => 
     createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,153 +21,107 @@ export default function LoginPage() {
     )
   )
 
-  // Login Handler
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setMessage(null)
+    setError('')
+    setMessage('')
 
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+    if (isSignUp) {
+      // --- Handle Sign Up Flow ---
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`, // Standard Supabase redirect URL template
+        },
+      })
+
+      if (signUpError) {
+        setError(signUpError.message)
+      } else {
+        setMessage('Registration successful! Please check your email inbox to verify your account.')
+      }
+    } else {
+      // --- Handle Sign In Flow ---
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) {
-        setMessage({ type: 'error', text: error.message })
-        setLoading(false)
-        return
-      }
-
-      // Hard redirect forces Next.js to fully drop the login state and initialize the destination page
-      if (data?.user?.email === 'bciwebdev25@gmail.com') {
-        window.location.href = '/admin-portal-xyz'
+      if (signInError) {
+        setError(signInError.message)
       } else {
-        window.location.href = '/landlord'
+        router.push('/landlord') // Force forward redirection to Dashboard
       }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'An unexpected connection error occurred.' })
-      setLoading(false)
-    }
-  }
-
-  // Password Recovery Handler
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setMessage(null)
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/login/reset-password`,
-    })
-
-    if (error) {
-      setMessage({ type: 'error', text: error.message })
-    } else {
-      setMessage({ type: 'success', text: 'Password recovery email sent! Check your inbox.' })
     }
     setLoading(false)
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-6 bg-gray-50">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md border border-gray-200">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
         
-        {!showForgot ? (
-          /* STANDARD LOGIN FORM */
-          <form onSubmit={handleLogin} className="space-y-6">
-            <h2 className="text-2xl font-bold text-center text-gray-800">Login to RentersPH</h2>
-            
-            {message && (
-              <div className={`p-3 text-sm rounded ${message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                {message.text}
-              </div>
-            )}
+        <div className="text-center space-y-1">
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+            {isSignUp ? 'Create a RentersPH Account' : 'Login to RentersPH'}
+          </h1>
+          <p className="text-xs text-slate-400">
+            {isSignUp ? 'Sign up as a landlord to post listings' : 'Manage your real estate listings seamlessly'}
+          </p>
+        </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email Address</label>
-              <input
-                type="email"
-                required
-                className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-gray-900 outline-none"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
+        {error && <div className="p-3 bg-red-50 text-red-700 text-xs font-semibold rounded-xl border border-red-100">⚠️ {error}</div>}
+        {message && <div className="p-3 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-xl border border-emerald-100">✅ {message}</div>}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
-              <input
-                type="password"
-                required
-                className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-gray-900 outline-none"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
+        <form onSubmit={handleAuth} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-1">Email Address</label>
+            <input 
+              type="email" 
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@email.com"
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 transition-all"
+            />
+          </div>
 
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => { setShowForgot(true); setMessage(null); }}
-                className="text-sm text-blue-600 hover:underline"
-              >
-                Forgot password?
-              </button>
-            </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-1">Password</label>
+            <input 
+              type="password" 
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 transition-all"
+            />
+          </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium p-2 rounded disabled:opacity-50 transition"
-            >
-              {loading ? 'Logging in...' : 'Sign In'}
-            </button>
-          </form>
-        ) : (
-          /* FORGOT PASSWORD FORM */
-          <form onSubmit={handleForgotPassword} className="space-y-6">
-            <h2 className="text-2xl font-bold text-center text-gray-800">Reset Password</h2>
-            <p className="text-sm text-gray-600 text-center">
-              Enter your email address and we will send you a link to reset your password.
-            </p>
-            
-            {message && (
-              <div className={`p-3 text-sm rounded ${message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                {message.text}
-              </div>
-            )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-3 rounded-xl transition-all"
+          >
+            {loading ? 'Processing...' : isSignUp ? 'Create Account' : 'Sign In'}
+          </button>
+        </form>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email Address</label>
-              <input
-                type="email"
-                required
-                className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-gray-900 outline-none"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium p-2 rounded disabled:opacity-50 transition"
-            >
-              {loading ? 'Sending Link...' : 'Send Recovery Email'}
-            </button>
-
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => { setShowForgot(false); setMessage(null); }}
-                className="text-sm text-gray-600 hover:underline"
-              >
-                Back to Login
-              </button>
-            </div>
-          </form>
-        )}
+        {/* The Missing Option Toggle Switch Container */}
+        <div className="text-center pt-2">
+          <button
+            type="button"
+            onClick={() => {
+              setIsSignUp(!isSignUp)
+              setError('')
+              setMessage('')
+            }}
+            className="text-xs font-semibold text-blue-600 hover:underline"
+          >
+            {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Create one"}
+          </button>
+        </div>
 
       </div>
     </div>

@@ -20,12 +20,17 @@ export default function CreateListingDashboard() {
     )
   )
 
+  // Track the active authenticated landlord ID
+  const [userId, setUserId] = useState<string | null>(null)
+
   // Route Guard: Ensure the user session exists from cookies, redirect if not
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push('/login')
+      } else {
+        setUserId(user.id) // Securely capture active landlord profile UID
       }
     }
     checkUser()
@@ -46,6 +51,7 @@ export default function CreateListingDashboard() {
   const [emailAddress, setEmailAddress] = useState('')
   const [descriptionRules, setDescriptionRules] = useState('')
   const [listingPackage, setListingPackage] = useState('standard')
+  const [imageUrl, setImageUrl] = useState('') // Handled text URL mapping variant 
 
   // --- GCash Modal Payment States ---
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -82,6 +88,11 @@ export default function CreateListingDashboard() {
   }
 
   const handleFinalDatabaseInsert = async () => {
+    if (!userId) {
+      setError('Session expired or identity unauthenticated. Please refresh and log back in.')
+      return
+    }
+
     if (!gcashName.trim() || !gcashReference.trim()) {
       setError('Please fill out all GCash verification fields.')
       return
@@ -96,17 +107,18 @@ export default function CreateListingDashboard() {
     setError('')
     setShowPaymentModal(false)
 
-    // Insert payment verified record payload explicitly to your Supabase table columns
+    // Insert payload mapped explicitly to the 'properties' schema
     const { error: insertError } = await supabase
-      .from('listings')
+      .from('properties')
       .insert([
         {
+          landlord_id: userId, // Tied to active authenticated session profile ID
           title,
           property_type: propertyType,
           price_per_month: parseFloat(pricePerMonth),
-          bedrooms: parseInt(bedrooms),
-          bathrooms: parseInt(bathrooms),
-          area_sqm: parseFloat(areaSqm),
+          bedrooms: parseInt(bedrooms) || 0,
+          bathrooms: parseInt(bathrooms) || 0,
+          area_sqm: parseFloat(areaSqm) || 0,
           restroom_privacy: restroomPrivacy,
           bathroom_privacy: bathroomPrivacy,
           manual_address: manualAddress,
@@ -115,9 +127,10 @@ export default function CreateListingDashboard() {
           email_address: emailAddress,
           description_rules: descriptionRules,
           listing_package: listingPackage,
-          gcash_name: gcashName,
-          gcash_reference: gcashReference,
-          listing_status: 'pending_payment' // Automatically signs onto admin dashboard review matrix!
+          gcash_name: gcashName.toUpperCase(),
+          payment_reference: gcashReference.trim(), // explicitly matches status report definitions
+          status: 'pending', // Flags verification matrix grid criteria
+          is_paid: false // Swapped over to verification dashboard toggle automation
         }
       ])
 
@@ -140,6 +153,7 @@ export default function CreateListingDashboard() {
       setContactNumber('')
       setEmailAddress('')
       setDescriptionRules('')
+      setImageUrl('')
       setListingPackage('standard')
       setGcashName('')
       setGcashReference('')
@@ -395,17 +409,18 @@ export default function CreateListingDashboard() {
           {/* Section 5: High-Res Presentation Media */}
           <div className="space-y-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <ImageIcon className="w-3.5 h-3.5 text-emerald-600" /> 5. High-Res Presentation Media
+              <ImageIcon className="w-3.5 h-3.5 text-emerald-600" /> 5. Presentation Media Link
             </h3>
             
             <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
-              <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider">Cover Image</label>
-              <div className="flex items-center justify-between w-full bg-white px-4 py-2 border border-slate-200 rounded-xl focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/5 transition-all">
-                <input 
-                  type="file" 
-                  className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-900 file:text-white hover:file:bg-slate-800 file:cursor-pointer cursor-pointer"
-                />
-              </div>
+              <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider">Cover Image URL</label>
+              <input 
+                type="text" 
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://images.unsplash.com/photo-example" 
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all"
+              />
             </div>
           </div>
 
@@ -421,7 +436,6 @@ export default function CreateListingDashboard() {
                   Listing Package & Visibility Rank
                 </label>
                 
-                {/* Clean Hover Tooltip Explanation */}
                 <div className="group relative cursor-pointer flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:text-emerald-700 transition">
                   <span>What is boosting?</span>
                   <span className="bg-emerald-50 text-emerald-600 rounded-full w-3.5 h-3.5 inline-flex items-center justify-center text-[9px] border border-emerald-200">?</span>
@@ -497,7 +511,7 @@ export default function CreateListingDashboard() {
               </span>
             </div>
 
-            {/* Real QR Code Presentation Layer mapping directly to /public/gcash-qr.png */}
+            {/* QR Code Presentation Layer */}
             <div className="mx-auto w-52 h-52 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center p-3 text-center overflow-hidden">
               <img 
                 src="/gcash-qr.png" 
