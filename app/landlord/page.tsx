@@ -15,7 +15,7 @@ const supabase = createClient(
 export default function CreateRentalListingPage() {
   const router = useRouter()
   
-  // States accurately mapped to your UI inputs
+  // Base Form States
   const [title, setTitle] = useState('')
   const [propertyType, setPropertyType] = useState('Apartment')
   const [price, setPrice] = useState('')
@@ -33,12 +33,25 @@ export default function CreateRentalListingPage() {
   
   const [descriptionRules, setDescriptionRules] = useState('')
   
-  // Media states allowing up to 10 photos
+  // Media Array (Max 10 Images)
   const [images, setImages] = useState<string[]>([])
   const [imageUrlInput, setImageUrlInput] = useState('')
 
+  // Pricing & Boosting States
+  const BASE_PRICE = 20
+  const [boostingOption, setBoostingOption] = useState('none') // 'none' | '5days' | '2weeks' | '1month'
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // Calculate dynamic bill total
+  const getBoostingPrice = () => {
+    if (boostingOption === '5days') return 49
+    if (boostingOption === '2weeks') return 99
+    if (boostingOption === '1month') return 199
+    return 0
+  }
+  const totalAmount = BASE_PRICE + getBoostingPrice()
 
   const handleAddImage = () => {
     if (!imageUrlInput.trim()) return
@@ -60,11 +73,10 @@ export default function CreateRentalListingPage() {
     setIsSubmitting(true)
     setErrorMessage(null)
 
-    // Structural fix: force string input to a base-10 number string right here
     const parsedPrice = parseInt(price, 10) || 0
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('properties')
         .insert([
           {
@@ -82,12 +94,17 @@ export default function CreateRentalListingPage() {
             contact_number: contactNumber.trim(),
             email_address: emailAddress.trim(),
             description_rules: descriptionRules.trim(),
-            images: images.length > 0 ? images : null
+            images: images.length > 0 ? images : null,
+            boosting_tier: boostingOption,
+            total_payable: totalAmount
           }
         ])
+        .select()
 
       if (error) throw new Error(error.message)
-      router.push('/landlord/payment')
+      
+      // Redirect to your payment allocation route with the total bill amount attached
+      router.push(`/landlord/payment?total=${totalAmount}`)
 
     } catch (err: any) {
       setErrorMessage(err.message || 'An error occurred.')
@@ -99,7 +116,6 @@ export default function CreateRentalListingPage() {
   return (
     <div className="min-h-screen bg-[#fcfdfe] text-[#1e293b] antialiased font-sans pb-16">
       
-      {/* Exact Top Navigation Header */}
       <header className="max-w-4xl mx-auto px-4 pt-8 pb-6 flex justify-between items-center border-b border-slate-100">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-[#0f172a]">Create Rental Listing</h1>
@@ -301,22 +317,70 @@ export default function CreateRentalListingPage() {
             <h2 className="text-xs font-black tracking-wider text-[#64748b] uppercase flex items-center gap-1.5">
               <FileText className="w-4 h-4 text-emerald-500" /> 6. Listing Package & Visibility Rank
             </h2>
-            <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-3">
+            <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-5">
+              
+              {/* Mandatory Base Tier Selector */}
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Listing Package & Visibility Rank</label>
+                  <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Required Base Posting Plan</label>
                   <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-0.5 cursor-pointer">What is boosting? <HelpCircle className="w-3 h-3" /></span>
                 </div>
-                <select className="w-full bg-white border-2 border-emerald-500 rounded-xl px-4 py-3 text-xs focus:outline-none text-slate-700 font-bold">
-                  <option>Standard Listing — ₱20 (Active for 30 Days)</option>
-                  <option>Premium Enhanced — ₱50 (Active for 30 Days)</option>
-                </select>
-                <p className="text-[10px] text-slate-400 font-medium">* Standard tier active timeline begins immediately upon payment verification completion.</p>
+                <div className="w-full bg-white border-2 border-emerald-500 rounded-xl px-4 py-3 text-xs text-slate-700 font-bold">
+                  Standard Listing — ₱20 (Active for 30 Days)
+                </div>
               </div>
+
+              {/* Optional Boosting Upgrade Options */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase block">Optional Visibility Boosting Rank Upgrades</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  
+                  <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === 'none' ? 'border-slate-900 bg-slate-50/50' : 'border-slate-200'}`}>
+                    <div className="flex items-center gap-2.5">
+                      <input type="radio" name="boosting" value="none" checked={boostingOption === 'none'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-slate-900" />
+                      <span className="text-xs font-bold text-slate-700">No Boost Upgrade</span>
+                    </div>
+                    <span className="text-xs font-medium text-slate-400">₱0</span>
+                  </label>
+
+                  <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '5days' ? 'border-emerald-500 bg-emerald-50/20' : 'border-slate-200'}`}>
+                    <div className="flex items-center gap-2.5">
+                      <input type="radio" name="boosting" value="5days" checked={boostingOption === '5days'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-emerald-600" />
+                      <span className="text-xs font-bold text-slate-700">5-Day Hot Boost</span>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-600">+ ₱49</span>
+                  </label>
+
+                  <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '2weeks' ? 'border-emerald-500 bg-emerald-50/20' : 'border-slate-200'}`}>
+                    <div className="flex items-center gap-2.5">
+                      <input type="radio" name="boosting" value="2weeks" checked={boostingOption === '2weeks'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-emerald-600" />
+                      <span className="text-xs font-bold text-slate-700">2-Week Visibility Surge</span>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-600">+ ₱99</span>
+                  </label>
+
+                  <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '1month' ? 'border-emerald-500 bg-emerald-50/20' : 'border-slate-200'}`}>
+                    <div className="flex items-center gap-2.5">
+                      <input type="radio" name="boosting" value="1month" checked={boostingOption === '1month'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-emerald-600" />
+                      <span className="text-xs font-bold text-slate-700">1-Month Market Domination</span>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-600">+ ₱199</span>
+                  </label>
+
+                </div>
+                <p className="text-[10px] text-slate-400 font-medium mt-2">* Standard tier active timeline begins immediately upon payment verification completion.</p>
+              </div>
+
+              {/* Dynamic Invoice Running Summary Box */}
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 flex justify-between items-center text-slate-700">
+                <span className="text-xs font-bold">Total Estimated Statement Amount:</span>
+                <span className="text-sm font-black text-emerald-600">₱{totalAmount}.00</span>
+              </div>
+
             </div>
           </div>
 
-          {/* Exact Primary Green Action Button */}
+          {/* Action Trigger Submit Button */}
           <div className="pt-4">
             <button
               type="submit"
