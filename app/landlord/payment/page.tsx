@@ -29,6 +29,7 @@ function PaymentContent() {
     setStatusMessage(null)
 
     try {
+      // Find the most recent property record to link the payment
       const { data: activeListings, error: fetchError } = await supabase
         .from('properties')
         .select('id')
@@ -41,11 +42,12 @@ function PaymentContent() {
 
       const latestId = activeListings[0].id
 
+      // Update using 'status' column (matching your DB) instead of 'payment_status'
       const { error: updateError } = await supabase
         .from('properties')
         .update({ 
           payment_reference: referenceNumber.trim(),
-          payment_status: 'pending_verification' 
+          status: 'pending_verification' 
         })
         .eq('id', latestId)
 
