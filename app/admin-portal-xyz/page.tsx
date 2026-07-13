@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { ShieldAlert, CheckCircle, Clock, MapPin, User, Hash, DollarSign, LogOut } from 'lucide-react'
+import { ShieldAlert, CheckCircle, Clock, MapPin, Hash, DollarSign, LogOut, ImageIcon, Lock } from 'lucide-react'
 
 // Initialize Supabase Client
 const supabase = createClient(
@@ -10,126 +10,195 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Authorized Admin Email Parameter
 const ALLOWED_ADMIN_EMAIL = 'bciwebdev25@gmail.com'
 
-interface Listing {
+interface Property {
   id: string
   title: string
   property_type: string
-  price_per_month: number
-  manual_address: string
-  contact_number: string
-  email_address: string
-  listing_package: string
-  listing_status: string
-  gcash_name: string
-  gcash_reference: string
+  price: number
+  address: string
+  images: string[]
+  is_paid: boolean
+  payment_reference: string | null
+  status: string
   created_at: string
 }
 
 export default function AdminVerificationDashboard() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [listings, setListings] = useState<Listing[]>([])
+  const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending_payment' | 'active'>('pending_payment')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved'>('pending')
+  
+  // Login Form States
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loginError, setLoginError] = useState<string | null>(null)
+  const [loginLoading, setLoginLoading] = useState(false)
+
+  // Check active session on load
+  const checkUserAndFetch = async () => {
+    setLoading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (user && user.email === ALLOWED_ADMIN_EMAIL) {
+      setUserEmail(user.email)
+      setIsAuthenticated(true)
+      
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (!error && data) {
+        setProperties(data)
+      }
+    } else {
+      setIsAuthenticated(false)
+    }
+    setLoading(false)
+  }
 
   useEffect(() => {
-    const checkUserAndFetch = async () => {
-      setLoading(true)
-      
-      // Fetch active session credentials
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      
-      if (user && user.email === ALLOWED_ADMIN_EMAIL) {
-        setUserEmail(user.email)
-        setIsAuthenticated(true)
-        
-        // Fetch listings directly inside the valid auth chain
-        const { data, error } = await supabase
-          .from('listings')
-          .select('*')
-          .order('created_at', { ascending: false })
-
-        if (!error && data) {
-          setListings(data)
-        }
-      }
-      setLoading(false)
-    }
-
     checkUserAndFetch()
   }, [])
 
-  // Approve Action: Upgrades status to 'active', enabling user search discovery
+  // Handle Direct Admin Login
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoginError(null)
+    setLoginLoading(true)
+
+    if (email !== ALLOWED_ADMIN_EMAIL) {
+      setLoginError('Access Denied: Unauthorized administrative profile.')
+      setLoginLoading(false)
+      return
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      setLoginError(error.message)
+      setLoginLoading(false)
+    } else if (data.user) {
+      await checkUserAndFetch()
+    }
+  }
+
+  // Manual Approval Action
   const handleApprove = async (id: string) => {
     setActionLoadingId(id)
     const { error } = await supabase
-      .from('listings')
-      .update({ listing_status: 'active' })
+      .from('properties')
+      .update({ 
+        status: 'approved',
+        is_paid: true
+      })
       .eq('id', id)
 
     if (!error) {
-      // Update local state arrays fluidly
-      setListings(prev => prev.map(item => item.id === id ? { ...item, listing_status: 'active' } : item))
+      setProperties(prev => prev.map(item => item.id === id ? { ...item, status: 'approved', is_paid: true } : item))
     }
     setActionLoadingId(null)
   }
 
   const handleAdminSignOut = async () => {
     await supabase.auth.signOut()
-    window.location.href = '/login'
+    setIsAuthenticated(false)
+    setUserEmail(null)
   }
 
-  const filteredListings = listings.filter(item => {
+  const filteredProperties = properties.filter(item => {
     if (filterStatus === 'all') return true
-    return item.listing_status === filterStatus
+    return item.status === filterStatus
   })
 
-  // Loading indicator while auth completes verification handshakes
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center font-sans">
         <div className="text-center space-y-2">
           <div className="w-6 h-6 border-2 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-xs font-bold text-slate-500 tracking-wider uppercase">Verifying Authorization Credentials...</p>
+          <p className="text-xs font-bold text-slate-500 tracking-wider uppercase">Verifying Gateway Credentials...</p>
         </div>
       </div>
     )
   }
 
-  // Security Wall: Blocks rendering entirely if email token doesn't match
+  // IF NOT AUTHENTICATED: Show Separate Admin Login Page
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 text-center font-sans antialiased">
-        <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl max-w-sm space-y-4 shadow-2xl">
-          <ShieldAlert className="w-12 h-12 text-rose-500 mx-auto animate-pulse" />
-          <h1 className="text-white font-black text-lg tracking-tight">403 — Unauthorized Access</h1>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            This workspace routing channel is strictly restricted. Please authenticate through authorized profiles to review administrative models.
-          </p>
-          <a href="/login" className="inline-block w-full bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs py-3 rounded-xl transition text-center shadow-sm">
-            Go to Portal Login
-          </a>
+        <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl w-full max-w-md space-y-6 shadow-2xl text-left">
+          <div className="text-center space-y-2">
+            <Lock className="w-10 h-10 text-amber-500 mx-auto" />
+            <h1 className="text-white font-black text-xl tracking-tight">Admin System Gateway</h1>
+            <p className="text-xs text-slate-400">Authenticate via root administrative credentials to access database management channels.</p>
+          </div>
+
+          <form onSubmit={handleAdminLogin} className="space-y-4">
+            <div>
+              <label className="block text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-1">Admin Email Address</label>
+              <input 
+                type="email" 
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@example.com"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 transition"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-1">Gateway Password</label>
+              <input 
+                type="password" 
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 transition"
+              />
+            </div>
+
+            {loginError && (
+              <div className="bg-rose-950/50 border border-rose-900 text-rose-400 p-3 rounded-xl text-xs font-medium flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 shrink-0" />
+                <span>{loginError}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="w-full bg-white hover:bg-slate-100 disabled:bg-slate-700 disabled:text-slate-400 text-slate-950 font-bold text-sm py-3 rounded-xl transition shadow-sm text-center cursor-pointer"
+            >
+              {loginLoading ? 'Opening Workspace...' : 'Authenticate Credentials'}
+            </button>
+          </form>
         </div>
       </div>
     )
   }
 
+  // IF AUTHENTICATED: Render Dashboard UI
   return (
     <div className="min-h-screen bg-slate-50/60 text-slate-900 font-sans antialiased py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto space-y-8">
         
-        {/* Admin Header Tracker */}
+        {/* Admin Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="space-y-1">
             <span className="text-[10px] font-black uppercase tracking-wider bg-slate-950 text-white px-2.5 py-1 rounded-md">
               Root Administrator Control
             </span>
             <h1 className="text-2xl font-black text-slate-950 tracking-tight pt-1">Payment Verification Queue</h1>
-            <p className="text-xs text-slate-400 font-medium">Review submitted GCash reference details to manual approve storefront visibility.</p>
+            <p className="text-xs text-slate-400 font-medium">Review submitted GCash reference details and screenshots to manually approve storefront visibility.</p>
           </div>
           
           <div className="flex items-center gap-3 self-start sm:self-center">
@@ -138,9 +207,9 @@ export default function AdminVerificationDashboard() {
             </div>
             <button 
               onClick={handleAdminSignOut}
-              className="px-3 py-2 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 rounded-xl transition flex items-center gap-1.5"
+              className="px-3 py-2 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer"
             >
-              <LogOut className="w-3.5 h-3.5" /> Exit
+              <LogOut className="w-3.5 h-3.5" /> Exit Portal
             </button>
           </div>
         </div>
@@ -148,66 +217,73 @@ export default function AdminVerificationDashboard() {
         {/* Filter Toolbar Controls */}
         <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
           <button 
-            onClick={() => setFilterStatus('pending_payment')}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition ${filterStatus === 'pending_payment' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-slate-500 hover:text-slate-800'}`}
+            onClick={() => setFilterStatus('pending')}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${filterStatus === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-slate-500 hover:text-slate-800'}`}
           >
-            Pending Review ({listings.filter(l => l.listing_status === 'pending_payment').length})
+            Pending Review ({properties.filter(p => p.status === 'pending').length})
           </button>
           <button 
-            onClick={() => setFilterStatus('active')}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition ${filterStatus === 'active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-slate-500 hover:text-slate-800'}`}
+            onClick={() => setFilterStatus('approved')}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${filterStatus === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-slate-500 hover:text-slate-800'}`}
           >
-            Active Listings ({listings.filter(l => l.listing_status === 'active').length})
+            Active Listings ({properties.filter(p => p.status === 'approved').length})
           </button>
           <button 
             onClick={() => setFilterStatus('all')}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition ${filterStatus === 'all' ? 'bg-slate-200 text-slate-800' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${filterStatus === 'all' ? 'bg-slate-200 text-slate-800' : 'text-slate-500 hover:text-slate-800'}`}
           >
             All Archive
           </button>
         </div>
 
         {/* Data Grid Listings */}
-        {filteredListings.length === 0 ? (
-          <div className="text-center py-25 bg-white rounded-3xl border border-slate-200 text-xs text-slate-400 font-medium">
-            No properties listings currently match this status filter profile.
+        {filteredProperties.length === 0 ? (
+          <div className="text-center bg-white rounded-3xl border border-slate-200 text-xs text-slate-400 font-medium py-20">
+            No property listings currently match this status filter profile.
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6">
-            {filteredListings.map((item) => (
+            {filteredProperties.map((item) => (
               <div 
                 key={item.id} 
-                className={`bg-white rounded-3xl border transition shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 ${item.listing_status === 'pending_payment' ? 'border-amber-200 hover:border-amber-300' : 'border-slate-200'}`}
+                className={`bg-white rounded-3xl border transition shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 ${item.status === 'pending' ? 'border-amber-200 hover:border-amber-300' : 'border-slate-200'}`}
               >
                 
                 {/* Column 1: Core Property Parameters */}
                 <div className="p-6 lg:col-span-5 space-y-3 border-b lg:border-b-0 lg:border-r border-slate-100">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-black text-base text-slate-950 tracking-tight leading-tight">{item.title}</h3>
-                    <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${item.listing_package.startsWith('boost') ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                      {item.listing_package}
-                    </span>
-                  </div>
-                  
+                  <h3 className="font-black text-base text-slate-950 tracking-tight leading-tight">{item.title || 'Untitled Listing'}</h3>
                   <div className="space-y-1.5 text-xs text-slate-500 font-medium">
-                    <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {item.manual_address}</div>
-                    <div className="flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {item.email_address} ({item.contact_number})</div>
-                    <div className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-slate-400 shrink-0" /> ₱{item.price_per_month.toLocaleString()}/month • {item.property_type}</div>
+                    <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {item.address || 'No Address Provided'}</div>
+                    <div className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-slate-400 shrink-0" /> ₱{item.price?.toLocaleString() || 0}/month • {item.property_type || 'N/A'}</div>
                   </div>
                 </div>
 
-                {/* Column 2: GCash Declaration Reference Elements */}
+                {/* Column 2: GCash Reference & Receipt Screenshots */}
                 <div className="p-6 lg:col-span-4 bg-slate-50/40 flex flex-col justify-center space-y-2 border-b lg:border-b-0 lg:border-r border-slate-100">
                   <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
                     <Hash className="w-3 h-3 text-blue-500" /> Declared Transaction Payload
                   </span>
                   
-                  <div className="space-y-1 bg-white p-3 rounded-xl border border-slate-200">
+                  <div className="space-y-2 bg-white p-3 rounded-xl border border-slate-200">
                     <div className="text-xs text-slate-500 font-medium">
-                      Account Name: <span className="font-bold text-slate-950 uppercase">{item.gcash_name || 'N/A'}</span>
+                      Reference #: <span className="font-mono font-bold text-blue-600 bg-blue-50/50 px-1.5 py-0.5 rounded text-[11px] select-all">{item.payment_reference || 'NULL'}</span>
                     </div>
-                    <div className="text-xs text-slate-500 font-medium">
-                      Reference #: <span className="font-mono font-bold text-blue-600 bg-blue-50/50 px-1.5 py-0.5 rounded text-[11px] select-all cursor-pointer" title="Click to copy">{item.gcash_reference || 'N/A'}</span>
+                    
+                    <div className="pt-1">
+                      {item.images && item.images.length > 0 ? (
+                        <a 
+                          href={item.images[0]} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition cursor-pointer"
+                        >
+                          <ImageIcon className="w-3 h-3" /> View Payment Screenshot ↗
+                        </a>
+                      ) : (
+                        <span className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded font-semibold">
+                          No Screenshot Uploaded
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -216,8 +292,8 @@ export default function AdminVerificationDashboard() {
                 <div className="p-6 lg:col-span-3 flex flex-col justify-center items-stretch gap-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold text-slate-400 uppercase">Status</span>
-                    <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${item.listing_status === 'pending_payment' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
-                      {item.listing_status === 'pending_payment' ? (
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${item.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+                      {item.status === 'pending' ? (
                         <>
                           <Clock className="w-3 h-3 text-amber-500" /> Pending Approval
                         </>
@@ -229,12 +305,12 @@ export default function AdminVerificationDashboard() {
                     </span>
                   </div>
 
-                  {item.listing_status === 'pending_payment' && (
+                  {item.status === 'pending' && (
                     <button
                       type="button"
                       disabled={actionLoadingId === item.id}
                       onClick={() => handleApprove(item.id)}
-                      className="w-full bg-slate-950 hover:bg-slate-900 disabled:bg-slate-300 text-white text-xs font-bold py-3 rounded-xl shadow-sm transition-all text-center flex items-center justify-center gap-1.5"
+                      className="w-full bg-slate-950 hover:bg-slate-900 disabled:bg-slate-300 text-white text-xs font-bold py-3 rounded-xl shadow-sm transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       {actionLoadingId === item.id ? 'Activating Trigger...' : 'Approve & Publish Live'}
                     </button>
