@@ -4,10 +4,10 @@ import React, { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { 
-  MapPin, Bed, ShowerHead, Maximize2, Calendar, 
-  ShieldCheck, MessageSquare, Heart, Share2, 
+  MapPin, Bed, ShowerHead, Maximize2, 
+  ShieldCheck, Heart, Share2, 
   ChevronLeft, ChevronRight, User, CheckCircle2,
-  AlertTriangle, Phone, Info
+  AlertTriangle, Phone, Mail, Info, FileText
 } from 'lucide-react'
 
 // Initialize client-side Supabase
@@ -25,8 +25,6 @@ export default function PropertyDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [isFavorited, setIsFavorited] = useState(false)
-  const [messageText, setMessageText] = useState("Hello! Is this rental unit still available? I would love to schedule a viewing.")
-  const [messageSent, setMessageSent] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -34,7 +32,7 @@ export default function PropertyDetailsPage() {
     async function fetchPropertyData() {
       setLoading(true)
       
-      // 1. Fetch current property record
+      // 1. Fetch current property record matching the correct structural columns
       const { data, error } = await supabase
         .from('properties')
         .select('*')
@@ -44,11 +42,10 @@ export default function PropertyDetailsPage() {
       if (!error && data) {
         setProperty(data)
         
-        // 2. Fetch similar listings within the same property type or general location area
+        // 2. Fetch similar listings within the same property type
         const { data: similar } = await supabase
           .from('properties')
           .select('*')
-          .eq('status', 'active')
           .eq('property_type', data.property_type)
           .neq('id', id)
           .limit(3)
@@ -63,7 +60,7 @@ export default function PropertyDetailsPage() {
     fetchPropertyData()
   }, [id])
 
-  // Extract clean image array matching your flexible homepage string/array parsing system
+  // Extract clean image array matching your structural parsing logic
   const getCleanImages = (propData: any): string[] => {
     if (!propData) return []
     
@@ -76,9 +73,6 @@ export default function PropertyDetailsPage() {
         return cleanStr.split(',').map((img: string) => img.replace(/"/g, '').trim())
       }
       return [cleanStr.replace(/"/g, '').trim()]
-    }
-    if (propData.cover_image && typeof propData.cover_image === 'string') {
-      return [propData.cover_image]
     }
     return []
   }
@@ -93,14 +87,6 @@ export default function PropertyDetailsPage() {
   const handlePrevImage = () => {
     if (images.length === 0) return
     setActiveImageIndex((prev) => (prev - 1 + images.length) % images.length)
-  }
-
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!messageText.trim()) return
-    // Simulated chat routing — matches message architecture
-    setMessageSent(true)
-    setTimeout(() => setMessageSent(false), 5000)
   }
 
   if (loading) {
@@ -208,7 +194,7 @@ export default function PropertyDetailsPage() {
             </h1>
             
             <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
-              <MapPin className="w-4 h-4 text-emerald-600 shrink-0" /> {property.address}
+              <MapPin className="w-4 h-4 text-emerald-600 shrink-0" /> {property.manual_address || property.address}
             </div>
 
             <hr className="border-slate-100" />
@@ -228,9 +214,9 @@ export default function PropertyDetailsPage() {
                 </div>
               </div>
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <div className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider">Floor Space</div>
-                <div className="text-slate-900 font-black text-base sm:text-lg flex items-center justify-center gap-1.5 mt-0.5">
-                  <Maximize2 className="w-4 h-4 text-emerald-600" /> {property.area || 0} m²
+                <div className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider">Bathroom Type</div>
+                <div className="text-slate-900 font-black text-[11px] truncate flex items-center justify-center gap-1 mt-1">
+                  {property.bathroom_privacy || 'Standard'}
                 </div>
               </div>
             </div>
@@ -240,11 +226,11 @@ export default function PropertyDetailsPage() {
           <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
             <h3 className="text-lg font-black text-slate-900 tracking-tight">About this Rental Space</h3>
             <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-line">
-              {property.description || "No specific localized description was provided by the property manager. Reach out using the integrated client platform chat tools to map out specific inclusions, lease contract lengths, or dynamic deposit arrangements."}
+              {property.description_rules || property.description || "No detailed rules or descriptions provided."}
             </p>
           </div>
 
-          {/* Mockup Map Component Wrapper */}
+          {/* Geographical Location View Wrapper */}
           <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
             <h3 className="text-lg font-black text-slate-900 tracking-tight">Geographical Location</h3>
             <div className="relative aspect-[16/7] w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
@@ -253,30 +239,33 @@ export default function PropertyDetailsPage() {
                 <div className="inline-flex p-3 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 shadow-sm animate-bounce">
                   <MapPin className="w-5 h-5 fill-current" />
                 </div>
-                <div className="text-xs font-bold text-slate-800">{property.address}</div>
-                <p className="text-[11px] text-slate-400">Neighborhood infrastructure nodes, premium retail establishments, and university routing distances are available post-verification.</p>
+                <div className="text-xs font-bold text-slate-800">{property.manual_address || property.address}</div>
+                {property.plus_code && (
+                  <div className="inline-block bg-white border border-slate-200 text-slate-700 font-mono text-[10px] px-2 py-0.5 rounded-md mt-1 shadow-sm">
+                    Plus Code: {property.plus_code}
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
         </div>
 
-        {/* Action / Booking Sidebar (Right Column) */}
+        {/* Free Renter Connection Action Panel (Right Column) */}
         <div className="space-y-6">
           
-          {/* Dynamic Sticky Price & Communications Interface */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-md p-6 sticky top-28 space-y-6">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-md p-6 sticky top-8 space-y-6">
             <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Monthly Valuation</div>
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Monthly Rent</div>
               <div className="text-3xl font-black text-slate-950 flex items-baseline gap-1 mt-0.5">
-                ₱{property.price?.toLocaleString()}
+                ₱{property.price?.toLocaleString() || '0'}
                 <span className="text-xs font-semibold text-slate-400">/ month</span>
               </div>
             </div>
 
             <hr className="border-slate-100" />
 
-            {/* Simulated Account Registry Card */}
+            {/* Account Card */}
             <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
               <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center text-slate-600 shrink-0">
                 <User className="w-5 h-5" />
@@ -284,49 +273,42 @@ export default function PropertyDetailsPage() {
               <div className="overflow-hidden">
                 <div className="text-xs font-black text-slate-800 truncate">Platform Property Manager</div>
                 <div className="text-[10px] text-slate-400 font-medium flex items-center gap-0.5">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-500 fill-white" /> Identity Fully Attested
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500 fill-white" /> Identity Attested
                 </div>
               </div>
             </div>
 
-            {/* Lead Form Engine linking seamlessly to messenger parameters */}
-            <form onSubmit={handleSendMessage} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1.5 tracking-wider">Inquire via Dashboard</label>
-                <textarea 
-                  value={messageText} 
-                  onChange={(e) => setMessageText(e.target.value)} 
-                  rows={4} 
-                  className="w-full text-xs text-slate-700 bg-slate-50 p-3 rounded-2xl border border-slate-200 focus:outline-none focus:border-emerald-500 focus:bg-white transition resize-none leading-relaxed"
-                />
+            {/* Free Offline Communication Channel Triggers */}
+            <div className="space-y-3 pt-2">
+              <div className="space-y-1">
+                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Connect with Host</h4>
+                <p className="text-[11px] text-slate-400 leading-normal">
+                  No booking or hidden platform checkout fees required. Deal directly with the landlord offline.
+                </p>
               </div>
 
-              <button 
-                type="submit" 
-                disabled={messageSent}
-                className={`w-full font-bold text-xs py-3.5 rounded-2xl transition shadow-sm flex items-center justify-center gap-2 ${
-                  messageSent 
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default' 
-                    : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:scale-[1.01]'
-                }`}
+              {/* Direct Call Anchor */}
+              <a 
+                href={`tel:${property.contact_number}`}
+                className="flex items-center justify-center gap-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3.5 rounded-xl uppercase tracking-wider transition-all shadow-sm"
               >
-                {messageSent ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" /> Message Dispatched Securely
-                  </>
-                ) : (
-                  <>
-                    <MessageSquare className="w-4 h-4" /> Connect with Landlord
-                  </>
-                )}
-              </button>
-            </form>
+                <Phone className="w-4 h-4" /> Call Landlord ({property.contact_number})
+              </a>
+
+              {/* Direct Email Link */}
+              <a 
+                href={`mailto:${property.email_address}?subject=Inquiry regarding ${encodeURIComponent(property.title)}`}
+                className="flex items-center justify-center gap-2 w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs py-3.5 rounded-xl uppercase tracking-wider transition-all"
+              >
+                <Mail className="w-4 h-4 text-slate-400" /> Send Email Inquiry
+              </a>
+            </div>
 
             <div className="bg-slate-50 p-3.5 rounded-2xl border border-dashed border-slate-200 flex items-start gap-2.5">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <div className="text-[11px] text-slate-500 leading-normal font-medium">
-                <strong className="text-slate-700 block mb-0.5 font-bold">RentersPH Tenant Guarantee</strong>
-                Always settle contracts inside our system framework. We do not demand off-platform upfront brokerage keys.
+                <strong className="text-slate-700 block mb-0.5 font-bold">Offline Payment Rule</strong>
+                Arrange security deposits and monthly terms securely with the owner directly.
               </div>
             </div>
           </div>
@@ -364,7 +346,7 @@ export default function PropertyDetailsPage() {
                     <div>
                       <div className="text-xl font-black text-slate-950">₱{p.price?.toLocaleString()}</div>
                       <h3 className="text-xs font-bold text-slate-800 line-clamp-1 mt-0.5 group-hover:text-emerald-600 transition-colors">{p.title}</h3>
-                      <div className="text-[11px] text-slate-400 truncate mt-0.5">📍 {p.address}</div>
+                      <div className="text-[11px] text-slate-400 truncate mt-0.5">📍 {p.manual_address || p.address}</div>
                     </div>
                   </div>
                 </a>
