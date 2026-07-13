@@ -3,15 +3,16 @@ import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 
 export async function GET(request: Request) {
+  // 1. Properly extract the URL details from the request
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const next = requestUrl.searchParams.get('next') ?? '/'
   const origin = requestUrl.origin
 
-  // 1. Await the cookies promise right here
+  // 2. Await the async cookies for Next.js 15
   const cookieStore = await cookies()
 
-  // 2. Use the resolved cookieStore inside the server client
+  // 3. Initialize Supabase Server Client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -34,13 +35,18 @@ export async function GET(request: Request) {
     }
   )
 
+  // 4. Exchange code for session if present
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
+      // Check if "next" is already a full URL or a relative path
+      if (next.startsWith('http')) {
+        return NextResponse.redirect(next)
+      }
       return NextResponse.redirect(`${origin}${next}`)
     }
   }
 
-  // Return the user to an error context or the login page if the code exchange failed
+  // If code exchange fails or isn't present, safely return to login
   return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
 }
