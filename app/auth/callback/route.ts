@@ -9,7 +9,9 @@ export async function GET(request: Request) {
   const next = searchParams.get('next') || '/login/reset-password'
 
   if (code) {
-    const cookieStore = cookies()
+    // Await the cookies instance to satisfy Next.js asynchronous cookies API
+    const cookieStore = await cookies()
+    
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
