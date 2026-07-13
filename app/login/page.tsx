@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { useRouter } from 'navigation'
+import { useRouter } from 'next/navigation'
 
 export default function LandlordLoginPage() {
   const router = useRouter()
@@ -56,7 +56,6 @@ export default function LandlordLoginPage() {
     setLoading(false)
   }
 
-  // --- New Handled Password Recovery Engine ---
   const handleForgotPassword = async () => {
     setError('')
     setMessage('')
@@ -68,7 +67,7 @@ export default function LandlordLoginPage() {
 
     setLoading(true)
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/landlord`, // Automatically routes them to dashboard once verified
+      redirectTo: `${window.location.origin}/landlord`,
     })
     setLoading(false)
 
