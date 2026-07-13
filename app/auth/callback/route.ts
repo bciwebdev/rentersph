@@ -1,48 +1,44 @@
-import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { session } = body;
+export async function GET(request: Request) {
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get('code')
+  // Next path defaults to the reset-password page if none is provided
+  const next = searchParams.get('next') || '/login/reset-password'
 
-    if (!session) {
-      return NextResponse.json({ error: 'No session provided' }, { status: 400 });
-    }
-
-    const cookieStore = await cookies();
-    
-    // Initialize SSR client to manually anchor cookies into server space
+  if (code) {
+    const cookieStore = cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           getAll() {
-            return cookieStore.getAll();
+            return cookieStore.getAll()
           },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
+            } catch {
+              // The `setAll` method can be called from a Server Component
+              // which can sometimes throw if middleware has already run.
+            }
           },
         },
       }
-    );
+    )
 
-    // Set the session explicitly on the server client so it writes out auth cookies
-    const { error } = await supabase.auth.setSession({
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
-    });
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (!error) {
+      return NextResponse.redirect(`${origin}${next}`)
     }
-
-    return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
   }
+
+  // Return the user to an error context or the login page if the code exchange failed
+  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
 }
