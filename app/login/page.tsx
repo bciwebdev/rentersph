@@ -17,7 +17,7 @@ export default function LoginPage() {
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
   const [showForgot, setShowForgot] = useState(false)
 
-  // Working Login Flow (Unchanged)
+  // Login Handler (Preserving your exact original logic)
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -41,7 +41,7 @@ export default function LoginPage() {
     }
   }
 
-  // New Recovery Email Flow
+  // Password Recovery Handler
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -64,7 +64,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md border border-gray-200">
         
         {!showForgot ? (
-          /* LOGIN FORM */
+          /* STANDARD LOGIN FORM */
           <form onSubmit={handleLogin} className="space-y-6">
             <h2 className="text-2xl font-bold text-center text-gray-800">Login to RentersPH</h2>
             
@@ -79,7 +79,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 required
-                className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-gray-900 outline-none"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -90,7 +90,7 @@ export default function LoginPage() {
               <input
                 type="password"
                 required
-                className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-gray-900 outline-none"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -133,7 +133,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 required
-                className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-gray-900 outline-none"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
