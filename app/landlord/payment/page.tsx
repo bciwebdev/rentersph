@@ -29,7 +29,6 @@ function PaymentContent() {
     setStatusMessage(null)
 
     try {
-      // Find the most recent un-submitted property listing from this browser session to update it
       const { data: activeListings, error: fetchError } = await supabase
         .from('properties')
         .select('id')
@@ -37,12 +36,11 @@ function PaymentContent() {
         .limit(1)
 
       if (fetchError || !activeListings || activeListings.length === 0) {
-        throw new Error('Could not find a corresponding listing record to bind this payment to.')
+        throw new Error('Could not find a corresponding listing record.')
       }
 
       const latestId = activeListings[0].id
 
-      // Update that specific listing row with the real incoming reference code string
       const { error: updateError } = await supabase
         .from('properties')
         .update({ 
@@ -78,33 +76,29 @@ function PaymentContent() {
 
         <hr className="border-slate-100" />
 
-        {/* Dynamic Billing Box */}
         <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 flex justify-between items-center text-slate-700">
           <span className="text-xs font-bold">Total Billable Amount:</span>
           <span className="text-lg font-black text-emerald-600">₱{total}.00</span>
         </div>
 
-        {/* Live Image Container serving from your public root directory asset */}
-        <div className="border border-slate-100 p-4 bg-white rounded-xl flex justify-center items-center shadow-[0_2px_10px_rgba(0,0,0,0.01)]">
+        <div className="border border-slate-100 p-6 bg-white rounded-xl flex justify-center items-center shadow-[0_2px_10px_rgba(0,0,0,0.01)]">
           <img 
-            src="/qrcode.png" 
+            src="/gcash-qr.png" 
             alt="Payment Merchant QR Destination Code"
-            className="w-56 h-56 object-contain"
+            className="w-64 h-64 mx-auto block object-contain select-none"
+            style={{ imageRendering: 'pixelated' }}
             onError={(e) => {
-              // Fallback error catcher in case filename differs
-              console.error("QR Code image could not be loaded at path: /qrcode.png")
+              console.error("QR Code image could not be loaded at path: /gcash-qr.png")
             }}
           />
         </div>
 
-        {/* Status Error Messaging Log */}
         {statusMessage && (
           <p className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-100 p-2.5 rounded-xl">
             {statusMessage}
           </p>
         )}
 
-        {/* Reference Verification Input Form */}
         <div className="space-y-1.5 text-left">
           <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">
             Transaction Reference / Ref Number
@@ -119,7 +113,6 @@ function PaymentContent() {
           />
         </div>
 
-        {/* Control Submissions Actions */}
         <div className="space-y-2 pt-2">
           <button
             onClick={handleConfirmPayment}
