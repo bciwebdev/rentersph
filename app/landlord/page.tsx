@@ -31,7 +31,7 @@ export default function LandlordPortalPage() {
   const [propertiesLoading, setPropertiesLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [myProperties, setMyProperties] = useState<any[]>([])
-  const [currentView, setCurrentView] = useState<ViewState>('dashboard') // Defaulting to dashboard
+  const [currentView, setCurrentView] = useState<ViewState>('dashboard')
   
   // Base Form States
   const [title, setTitle] = useState('')
@@ -62,7 +62,6 @@ export default function LandlordPortalPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Cleanup local Object URLs when component unmounts to prevent memory leaks
   useEffect(() => {
     return () => {
       selectedFiles.forEach(item => URL.revokeObjectURL(item.previewUrl))
@@ -81,15 +80,13 @@ export default function LandlordPortalPage() {
         
         setUserId(user.id)
         setEmailAddress(user.email || '')
-        
-        // Ensure we force the view state to dashboard on first load
         setCurrentView('dashboard')
         
-        // Fetch properties matching this specific logged-in landlord
+        // Comprehensive fallback filter: search by user_id OR matching email address
         const { data: properties, error: dbError } = await supabase
           .from('properties')
           .select('*')
-          .eq('user_id', user.id)
+          .or(`user_id.eq.${user.id},email_address.eq.${user.email}`)
           .order('created_at', { ascending: false })
 
         if (!dbError && properties) {
@@ -99,7 +96,7 @@ export default function LandlordPortalPage() {
         router.push('/login')
       } finally {
         setPropertiesLoading(false)
-        setSessionLoading(false) // Trigger final UI render only after everything is resolved
+        setSessionLoading(false)
       }
     }
     initializePortal()
@@ -141,7 +138,6 @@ export default function LandlordPortalPage() {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
-  // Additive Functionality: Delete Listing Method
   const handleDeleteProperty = async (propertyId: string) => {
     const isConfirmed = confirm("Are you sure you want to permanently delete this property listing?")
     if (!isConfirmed) return
@@ -153,15 +149,12 @@ export default function LandlordPortalPage() {
         .eq('id', propertyId)
 
       if (error) throw error
-
-      // Optimistically remove from state so the card vanishes instantly
       setMyProperties(prev => prev.filter(prop => prop.id !== propertyId))
     } catch (err: any) {
       alert(err.message || "Failed to delete the listing.")
     }
   }
 
-  // Additive Functionality: Extend Listing Method
   const handleExtendProperty = async (propertyId: string) => {
     try {
       const updatedTimestamp = new Date().toISOString()
@@ -173,7 +166,6 @@ export default function LandlordPortalPage() {
 
       if (error) throw error
 
-      // Update local state value instantly
       setMyProperties(prev => prev.map(prop => 
         prop.id === propertyId ? { ...prop, created_at: updatedTimestamp } : prop
       ))
@@ -281,7 +273,6 @@ export default function LandlordPortalPage() {
   return (
     <div className="min-h-screen bg-[#fcfdfe] text-[#1e293b] antialiased font-sans pb-16">
       
-      {/* Dynamic Navigation Header */}
       <header className="max-w-4xl mx-auto px-4 pt-8 pb-6 flex justify-between items-center border-b border-slate-100">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-[#0f172a]">
@@ -313,7 +304,6 @@ export default function LandlordPortalPage() {
 
       <main className="max-w-4xl mx-auto px-4 mt-8">
         
-        {/* ================= VIEW 1: LANDLORD DASHBOARD LISTINGS ================= */}
         {currentView === 'dashboard' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center bg-white border border-[#f1f5f9] p-5 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
@@ -371,7 +361,6 @@ export default function LandlordPortalPage() {
                       </div>
                     </div>
                     
-                    {/* Footers containing Information & Additive Management Actions */}
                     <div className="flex flex-col border-t border-slate-50 bg-slate-50/50">
                       <div className="px-5 py-2.5 flex items-center justify-between text-[11px] font-semibold text-slate-400 border-b border-slate-100">
                         <span>{property.property_type}</span>
@@ -404,7 +393,6 @@ export default function LandlordPortalPage() {
           </div>
         )}
 
-        {/* ================= VIEW 2: CREATE LISTING FORM ================= */}
         {currentView === 'create' && (
           <form onSubmit={handleSubmit} className="space-y-8">
             {errorMessage && (
