@@ -4,28 +4,34 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import { 
-  FileText, MapPin, Phone, Image, ArrowRight, LogOut, HelpCircle, Upload, X, Plus, Building2, Layers
+  FileText, MapPin, Phone, Image as ImageIcon, ArrowRight, LogOut, HelpCircle, Upload, X, Plus, Building2, RefreshCw, Trash2
 } from 'lucide-react'
 
-// Layout/View Toggles
 type ViewState = 'dashboard' | 'create'
+
+interface SelectedFile {
+  file: File
+  previewUrl: string
+}
 
 export default function LandlordPortalPage() {
   const router = useRouter()
   
-  const [supabase] = useState(() => 
-    createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-  )
+  const [supabase] = useState(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!url || !key) {
+      console.error("Supabase environment variables are missing!")
+    }
+    return createBrowserClient(url || '', key || '')
+  })
   
   // Route Protection & Dynamic Data States
   const [sessionLoading, setSessionLoading] = useState(true)
   const [propertiesLoading, setPropertiesLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [myProperties, setMyProperties] = useState<any[]>([])
-  const [currentView, setCurrentView] = useState<ViewState>('dashboard')
+  const [currentView, setCurrentView] = useState<ViewState>('dashboard') // Defaulting to dashboard
   
   // Base Form States
   const [title, setTitle] = useState('')
@@ -46,7 +52,7 @@ export default function LandlordPortalPage() {
   const [descriptionRules, setDescriptionRules] = useState('')
   
   // File Upload State
-  const [selectedFiles, setSelectedFiles] = useState<{ file: File; previewUrl: string }[]>([])
+  const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([])
 
   // Pricing, Boosting, & Tooltip States
   const BASE_PRICE = 20
@@ -55,6 +61,13 @@ export default function LandlordPortalPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // Cleanup local Object URLs when component unmounts to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      selectedFiles.forEach(item => URL.revokeObjectURL(item.previewUrl))
+    }
+  }, [selectedFiles])
 
   // Verify Auth Session and Load Personal Listings
   useEffect(() => {
@@ -68,7 +81,9 @@ export default function LandlordPortalPage() {
         
         setUserId(user.id)
         setEmailAddress(user.email || '')
-        setSessionLoading(false)
+        
+        // Ensure we force the view state to dashboard on first load
+        setCurrentView('dashboard')
         
         // Fetch properties matching this specific logged-in landlord
         const { data: properties, error: dbError } = await supabase
@@ -84,6 +99,7 @@ export default function LandlordPortalPage() {
         router.push('/login')
       } finally {
         setPropertiesLoading(false)
+        setSessionLoading(false) // Trigger final UI render only after everything is resolved
       }
     }
     initializePortal()
@@ -125,6 +141,49 @@ export default function LandlordPortalPage() {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
+  // Additive Functionality: Delete Listing Method
+  const handleDeleteProperty = async (propertyId: string) => {
+    const isConfirmed = confirm("Are you sure you want to permanently delete this property listing?")
+    if (!isConfirmed) return
+
+    try {
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', propertyId)
+
+      if (error) throw error
+
+      // Optimistically remove from state so the card vanishes instantly
+      setMyProperties(prev => prev.filter(prop => prop.id !== propertyId))
+    } catch (err: any) {
+      alert(err.message || "Failed to delete the listing.")
+    }
+  }
+
+  // Additive Functionality: Extend Listing Method
+  const handleExtendProperty = async (propertyId: string) => {
+    try {
+      const updatedTimestamp = new Date().toISOString()
+      
+      const { error } = await supabase
+        .from('properties')
+        .update({ created_at: updatedTimestamp })
+        .eq('id', propertyId)
+
+      if (error) throw error
+
+      // Update local state value instantly
+      setMyProperties(prev => prev.map(prop => 
+        prop.id === propertyId ? { ...prop, created_at: updatedTimestamp } : prop
+      ))
+      
+      alert("Listing active lifecycle successfully extended!")
+    } catch (err: any) {
+      alert(err.message || "Failed to extend the listing lifecycle.")
+    }
+  }
+
   const resetForm = () => {
     setTitle('')
     setPropertyType('Apartment')
@@ -138,6 +197,7 @@ export default function LandlordPortalPage() {
     setPlusCode('')
     setContactNumber('')
     setDescriptionRules('')
+    selectedFiles.forEach(item => URL.revokeObjectURL(item.previewUrl))
     setSelectedFiles([])
     setBoostingOption('none')
   }
@@ -196,6 +256,8 @@ export default function LandlordPortalPage() {
         ])
 
       if (dbError) throw new Error(dbError.message)
+      
+      router.refresh()
       router.push(`/landlord/payment?total=${totalAmount}`)
 
     } catch (err: any) {
@@ -289,7 +351,7 @@ export default function LandlordPortalPage() {
                         <img src={property.images[0]} alt="Property image" className="w-full h-40 object-cover" />
                       ) : (
                         <div className="w-full h-40 bg-slate-50 flex items-center justify-center text-slate-300">
-                          <Image className="w-8 h-8" />
+                          <ImageIcon className="w-8 h-8" />
                         </div>
                       )}
                       <div className="p-5 space-y-2">
@@ -308,10 +370,33 @@ export default function LandlordPortalPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="px-5 pb-5 pt-2 border-t border-slate-50 flex items-center justify-between text-[11px] font-semibold text-slate-400">
-                      <span>{property.property_type}</span>
-                      <span>{property.bedrooms} BR · {property.bathrooms} BA</span>
+                    
+                    {/* Footers containing Information & Additive Management Actions */}
+                    <div className="flex flex-col border-t border-slate-50 bg-slate-50/50">
+                      <div className="px-5 py-2.5 flex items-center justify-between text-[11px] font-semibold text-slate-400 border-b border-slate-100">
+                        <span>{property.property_type}</span>
+                        <span>{property.bedrooms} BR · {property.bathrooms} BA</span>
+                      </div>
+                      <div className="grid grid-cols-2 text-[11px] font-bold">
+                        <button
+                          type="button"
+                          onClick={() => handleExtendProperty(property.id)}
+                          className="py-2.5 flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100 border-r border-slate-100 transition cursor-pointer"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+                          Extend
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProperty(property.id)}
+                          className="py-2.5 flex items-center justify-center gap-1.5 text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                          Delete
+                        </button>
+                      </div>
                     </div>
+
                   </div>
                 ))}
               </div>
@@ -319,7 +404,7 @@ export default function LandlordPortalPage() {
           </div>
         )}
 
-        {/* ================= VIEW 2: ORIGINAL CREATE LISTING FORM ================= */}
+        {/* ================= VIEW 2: CREATE LISTING FORM ================= */}
         {currentView === 'create' && (
           <form onSubmit={handleSubmit} className="space-y-8">
             {errorMessage && (
@@ -467,7 +552,7 @@ export default function LandlordPortalPage() {
             {/* 5. HIGH-RES PRESENTATION MEDIA */}
             <div className="space-y-3">
               <h2 className="text-xs font-black tracking-wider text-[#64748b] uppercase flex items-center gap-1.5">
-                <Image className="w-4 h-4 text-[#00aa4f]" /> 5. High-Res Presentation Media
+                <ImageIcon className="w-4 h-4 text-[#00aa4f]" /> 5. High-Res Presentation Media
               </h2>
               <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-4">
                 <div className="space-y-1.5">
@@ -583,9 +668,10 @@ export default function LandlordPortalPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs py-4 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs py-4 rounded-xl tracking-wide flex items-center justify-center gap-1.5 transition disabled:opacity-50 cursor-pointer shadow-sm"
               >
-                {isSubmitting ? 'Uploading photos & details...' : 'Proceed to Payment Allocation'} <ArrowRight className="w-4 h-4" />
+                {isSubmitting ? 'Uploading photos & details...' : 'Proceed to Payment Allocation'}
+                {!isSubmitting && <ArrowRight className="w-4 h-4" />}
               </button>
             </div>
           </form>
