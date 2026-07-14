@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { 
@@ -14,6 +14,10 @@ const supabase = createClient(
 
 export default function CreateRentalListingPage() {
   const router = useRouter()
+  
+  // Route Protection Session States
+  const [sessionLoading, setSessionLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
   
   // Base Form States
   const [title, setTitle] = useState('')
@@ -44,6 +48,22 @@ export default function CreateRentalListingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
+  // Verify and Enforce Landlord Login Session on Mount
+  useEffect(() => {
+    const checkAuthSession = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error || !user) {
+        router.push('/login')
+      } else {
+        setUserId(user.id)
+        // Automatically prefill their account email into the field if empty
+        setEmailAddress(user.email || '')
+        setSessionLoading(false)
+      }
+    }
+    checkAuthSession()
+  }, [router])
+
   const getBoostingPrice = () => {
     if (boostingOption === '5days') return 49
     if (boostingOption === '2weeks') return 99
@@ -51,6 +71,11 @@ export default function CreateRentalListingPage() {
     return 0
   }
   const totalAmount = BASE_PRICE + getBoostingPrice()
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
@@ -103,11 +128,12 @@ export default function CreateRentalListingPage() {
         uploadedImageUrls.push(publicUrl)
       }
 
-      // 2. Insert row data into database
+      // 2. Insert row data into database (including authenticated user_id)
       const { error: dbError } = await supabase
         .from('properties')
         .insert([
           {
+            user_id: userId,
             title: title.trim(),
             property_type: propertyType,
             price: parsedPrice, 
@@ -124,7 +150,8 @@ export default function CreateRentalListingPage() {
             description_rules: descriptionRules.trim(),
             images: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
             boosting_tier: boostingOption,
-            total_payable: totalAmount
+            total_payable: totalAmount,
+            status: 'pending' // Enforces default initial state status
           }
         ])
 
@@ -138,6 +165,17 @@ export default function CreateRentalListingPage() {
     }
   }
 
+  if (sessionLoading) {
+    return (
+      <div className="min-h-screen bg-[#fcfdfe] flex items-center justify-center font-sans">
+        <div className="text-center space-y-2">
+          <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Verifying Landlord Account Session...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#fcfdfe] text-[#1e293b] antialiased font-sans pb-16">
       
@@ -146,7 +184,11 @@ export default function CreateRentalListingPage() {
           <h1 className="text-2xl font-black tracking-tight text-[#0f172a]">Create Rental Listing</h1>
           <p className="text-xs text-slate-400 mt-0.5">Fill out the details below to add your unit to rentersPH.</p>
         </div>
-        <button type="button" className="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition">
+        <button 
+          type="button" 
+          onClick={handleSignOut}
+          className="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
+        >
           <LogOut className="w-3.5 h-3.5" /> Sign Out
         </button>
       </header>
@@ -424,7 +466,7 @@ export default function CreateRentalListingPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-[#009667] hover:bg-[#008057] text-white font-bold text-xs py-4 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-1.5"
+              className="w-full bg-[#009667] hover:bg-[#008057] text-white font-bold text-xs py-4 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
             >
               {isSubmitting ? 'Uploading photos & details...' : 'Proceed to Payment Allocation'} <ArrowRight className="w-4 h-4" />
             </button>
