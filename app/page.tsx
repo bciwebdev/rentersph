@@ -9,7 +9,7 @@ import {
   Sparkles, Zap, Star, CheckCircle, Menu, X
 } from 'lucide-react'
 
-// FIX: Use createBrowserClient from @supabase/ssr to eliminate the 'getAll'/'set' cookie ts(2339) runtime compilation errors
+// FIX: Use createBrowserClient from @supabase/ssr to eliminate cookie runtime compilation errors
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -47,7 +47,8 @@ export default function HomePage() {
       const { data, error } = await supabase
         .from('properties')
         .select('*')
-        .eq('status', 'active')
+        // FIX: Broaden lookup to capture your approved "LIVE ON SITE" status as well as "active" and "approved" variations
+        .in('status', ['LIVE ON SITE', 'active', 'Active', 'approved', 'Approved'])
         .order('created_at', { ascending: false })
       
       if (!error && data) {
