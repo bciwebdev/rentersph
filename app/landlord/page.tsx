@@ -37,7 +37,7 @@ export default function CreateRentalListingPage() {
   
   const [descriptionRules, setDescriptionRules] = useState('')
   
-  // File Upload State (Holds actual File objects + local object URLs for preview)
+  // File Upload State
   const [selectedFiles, setSelectedFiles] = useState<{ file: File; previewUrl: string }[]>([])
 
   // Pricing, Boosting, & Tooltip States
@@ -56,7 +56,6 @@ export default function CreateRentalListingPage() {
         router.push('/login')
       } else {
         setUserId(user.id)
-        // Automatically prefill their account email into the field if empty
         setEmailAddress(user.email || '')
         setSessionLoading(false)
       }
@@ -109,7 +108,6 @@ export default function CreateRentalListingPage() {
     const uploadedImageUrls: string[] = []
 
     try {
-      // 1. Upload native device files to your Supabase Storage Bucket
       for (const item of selectedFiles) {
         const fileExt = item.file.name.split('.').pop()
         const fileName = `${Math.random()}_${Date.now()}.${fileExt}`
@@ -128,7 +126,6 @@ export default function CreateRentalListingPage() {
         uploadedImageUrls.push(publicUrl)
       }
 
-      // 2. Insert row data into database (including authenticated user_id)
       const { error: dbError } = await supabase
         .from('properties')
         .insert([
@@ -151,7 +148,7 @@ export default function CreateRentalListingPage() {
             images: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
             boosting_tier: boostingOption,
             total_payable: totalAmount,
-            status: 'pending' // Enforces default initial state status
+            status: 'pending'
           }
         ])
 
@@ -178,7 +175,6 @@ export default function CreateRentalListingPage() {
 
   return (
     <div className="min-h-screen bg-[#fcfdfe] text-[#1e293b] antialiased font-sans pb-16">
-      
       <header className="max-w-4xl mx-auto px-4 pt-8 pb-6 flex justify-between items-center border-b border-slate-100">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-[#0f172a]">Create Rental Listing</h1>
@@ -195,7 +191,6 @@ export default function CreateRentalListingPage() {
 
       <main className="max-w-4xl mx-auto px-4 mt-8">
         <form onSubmit={handleSubmit} className="space-y-8">
-          
           {errorMessage && (
             <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold p-4 rounded-xl">
               {errorMessage}
@@ -208,7 +203,6 @@ export default function CreateRentalListingPage() {
               <FileText className="w-4 h-4 text-emerald-500" /> 1. Core Specifications
             </h2>
             <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-4">
-              
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Listing Title</label>
                 <input 
@@ -269,7 +263,6 @@ export default function CreateRentalListingPage() {
                   </select>
                 </div>
               </div>
-
             </div>
           </div>
 
@@ -387,12 +380,9 @@ export default function CreateRentalListingPage() {
               <FileText className="w-4 h-4 text-emerald-500" /> 6. Listing Package & Visibility Rank
             </h2>
             <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-5">
-              
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center relative">
                   <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Required Base Posting Plan</label>
-                  
-                  {/* Interactive Tooltip Component */}
                   <div 
                     className="relative"
                     onMouseEnter={() => setShowTooltip(true)}
@@ -407,7 +397,6 @@ export default function CreateRentalListingPage() {
                       </div>
                     )}
                   </div>
-
                 </div>
                 <div className="w-full bg-white border-2 border-emerald-500 rounded-xl px-4 py-3 text-xs text-slate-700 font-bold">
                   Standard Listing — ₱20 (Active for 30 Days)
@@ -417,7 +406,6 @@ export default function CreateRentalListingPage() {
               <div className="space-y-2">
                 <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase block">Optional Visibility Boosting Rank Upgrades</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  
                   <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === 'none' ? 'border-slate-900 bg-slate-50/50' : 'border-slate-200'}`}>
                     <div className="flex items-center gap-2.5">
                       <input type="radio" name="boosting" value="none" checked={boostingOption === 'none'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-slate-900" />
@@ -449,7 +437,6 @@ export default function CreateRentalListingPage() {
                     </div>
                     <span className="text-xs font-bold text-emerald-600">+ ₱199</span>
                   </label>
-
                 </div>
                 <p className="text-[10px] text-slate-400 font-medium mt-2">* Standard tier active timeline begins immediately upon payment verification completion.</p>
               </div>
@@ -458,7 +445,6 @@ export default function CreateRentalListingPage() {
                 <span className="text-xs font-bold">Total Estimated Statement Amount:</span>
                 <span className="text-sm font-black text-emerald-600">₱{totalAmount}.00</span>
               </div>
-
             </div>
           </div>
 
@@ -471,7 +457,6 @@ export default function CreateRentalListingPage() {
               {isSubmitting ? 'Uploading photos & details...' : 'Proceed to Payment Allocation'} <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-
         </form>
       </main>
     </div>

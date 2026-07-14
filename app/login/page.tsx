@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 
@@ -21,6 +21,17 @@ export default function LandlordLoginPage() {
     )
   )
 
+  // Redirect to dashboard immediately if user is already logged in
+  useEffect(() => {
+    const checkActiveUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        router.push('/landlord')
+      }
+    }
+    checkActiveUser()
+  }, [router, supabase])
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -29,8 +40,8 @@ export default function LandlordLoginPage() {
 
     if (isSignUp) {
       // Create the account via Supabase Auth
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
@@ -45,14 +56,12 @@ export default function LandlordLoginPage() {
 
       // DEVELOPMENT AUTO-BYPASS LOOP:
       // Immediately log the user in using the credentials they just generated
-      // so they drop into the listing screen without checking email.
       const { error: autoSignInError } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       })
 
       if (autoSignInError) {
-        // Fallback warning text if your Supabase instance explicitly blocks unconfirmed emails
         setError('Account created! However, your Supabase project configuration strictly requires manual email validation before logging in. Please check your Supabase dashboard > Authentication > Users to confirm this email.')
       } else {
         router.push('/landlord')
@@ -60,7 +69,7 @@ export default function LandlordLoginPage() {
     } else {
       // Standard Sign In Processing
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       })
 
@@ -83,7 +92,7 @@ export default function LandlordLoginPage() {
     }
 
     setLoading(true)
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${window.location.origin}/landlord`,
     })
     setLoading(false)
@@ -175,9 +184,9 @@ export default function LandlordLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#00aa4f] hover:bg-[#009444] text-white font-extrabold text-base py-4 rounded-2xl transition-all duration-200 shadow-md transform active:scale-[0.99] disabled:opacity-50"
+            className="w-full bg-[#00aa4f] hover:bg-[#009444] text-white font-extrabold text-base py-4 rounded-2xl transition-all duration-200 shadow-md transform active:scale-[0.99] disabled:opacity-50 cursor-pointer"
           >
-            {loading ? 'Processing Context...' : isSignUp ? 'Sign Up & Login' : 'Sign In'}
+            {loading ? 'Processing Auth...' : isSignUp ? 'Sign Up & Login' : 'Sign In'}
           </button>
         </form>
 
