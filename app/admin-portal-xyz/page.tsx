@@ -21,6 +21,7 @@ interface Property {
   images: string[]
   is_paid: boolean
   payment_reference: string | null
+  payment_screenshot: string | null // Added column link
   status: string
   created_at: string
 }
@@ -114,7 +115,6 @@ export default function AdminVerificationDashboard() {
     setUserEmail(null)
   }
 
-  // Helper helper function to capture standard 'pending' and GCash 'pending_verification' statuses
   const isPending = (status: string) => {
     return status === 'pending' || status === 'pending_verification'
   }
@@ -276,9 +276,9 @@ export default function AdminVerificationDashboard() {
                     </div>
                     
                     <div className="pt-1">
-                      {item.images && item.images.length > 0 ? (
+                      {item.payment_screenshot ? (
                         <a 
-                          href={item.images[0]} 
+                          href={item.payment_screenshot} 
                           target="_blank" 
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition cursor-pointer"

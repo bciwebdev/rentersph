@@ -1,9 +1,9 @@
 'use client'
 
-import React, { Suspense, useState } from 'react'
+import React, { Suspense, useState, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
-import { CreditCard, CheckCircle, ArrowLeft, QrCode } from 'lucide-react'
+import { CheckCircle, ArrowLeft, QrCode, Upload, FileText } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,8 +16,16 @@ function PaymentContent() {
   
   const total = searchParams.get('total') || '20'
   const [referenceNumber, setReferenceNumber] = useState('')
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [isVerifying, setIsVerifying] = useState(false)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setReceiptFile(e.target.files[0])
+    }
+  }
 
   const handleConfirmPayment = async () => {
     if (!referenceNumber.trim()) {
@@ -25,11 +33,16 @@ function PaymentContent() {
       return
     }
 
+    if (!receiptFile) {
+      setStatusMessage('Please upload a screenshot of your payment receipt to proceed.')
+      return
+    }
+
     setIsVerifying(true)
     setStatusMessage(null)
 
     try {
-      // Find the most recent property record to link the payment
+      // 1. Fetch the latest property ID
       const { data: activeListings, error: fetchError } = await supabase
         .from('properties')
         .select('id')
@@ -42,18 +55,37 @@ function PaymentContent() {
 
       const latestId = activeListings[0].id
 
-      // Update using 'status' column (matching your DB) instead of 'payment_status'
+      // 2. Upload the file to the 'receipts' bucket
+      const fileExt = receiptFile.name.split('.').pop()
+      const fileName = `${latestId}-${Date.now()}.${fileExt}`
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('receipts')
+        .upload(fileName, receiptFile, {
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (uploadError) throw new Error(`Receipt upload failed: ${uploadError.message}`)
+
+      // 3. Get the public URL of the uploaded receipt
+      const { data: { publicUrl } } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(fileName)
+
+      // 4. Update the properties table record
       const { error: updateError } = await supabase
         .from('properties')
         .update({ 
           payment_reference: referenceNumber.trim(),
+          payment_screenshot: publicUrl,
           status: 'pending_verification' 
         })
         .eq('id', latestId)
 
       if (updateError) throw new Error(updateError.message)
 
-      alert('Thank you! Your reference number has been recorded. Your listing will go live as soon as your payment is verified.')
+      alert('Thank you! Your reference number and receipt have been recorded. Your listing will go live as soon as your payment is verified.')
       router.push('/landlord')
 
     } catch (err: any) {
@@ -101,18 +133,51 @@ function PaymentContent() {
           </p>
         )}
 
-        <div className="space-y-1.5 text-left">
-          <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">
-            Transaction Reference / Ref Number
-          </label>
-          <input 
-            type="text" 
-            required 
-            placeholder="Enter the 13-digit payment reference code" 
-            value={referenceNumber}
-            onChange={(e) => setReferenceNumber(e.target.value)}
-            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-300 font-medium"
-          />
+        <div className="space-y-4 text-left">
+          {/* Reference Input */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">
+              Transaction Reference / Ref Number
+            </label>
+            <input 
+              type="text" 
+              required 
+              placeholder="Enter the 13-digit payment reference code" 
+              value={referenceNumber}
+              onChange={(e) => setReferenceNumber(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-300 font-medium"
+            />
+          </div>
+
+          {/* Receipt Screenshot Upload */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">
+              Upload Payment Screenshot
+            </label>
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-xl p-4 text-center cursor-pointer transition bg-slate-50/50 hover:bg-emerald-50/10 flex flex-col items-center justify-center gap-1"
+            >
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                className="hidden"
+              />
+              {receiptFile ? (
+                <div className="flex items-center gap-2 text-emerald-600">
+                  <FileText className="w-4 h-4" />
+                  <span className="text-xs font-bold truncate max-w-[240px]">{receiptFile.name}</span>
+                </div>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4 text-slate-400" />
+                  <span className="text-[11px] text-slate-500 font-semibold">Click to select receipt image</span>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="space-y-2 pt-2">
@@ -121,7 +186,7 @@ function PaymentContent() {
             disabled={isVerifying}
             className="w-full bg-[#009667] hover:bg-[#008057] text-white font-bold text-xs py-3.5 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
-            <CheckCircle className="w-4 h-4" /> {isVerifying ? 'Saving confirmation...' : 'I Have Made the Payment'}
+            <CheckCircle className="w-4 h-4" /> {isVerifying ? 'Uploading Receipt...' : 'I Have Made the Payment'}
           </button>
 
           <button
