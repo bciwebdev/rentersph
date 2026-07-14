@@ -21,7 +21,7 @@ interface Property {
   images: string[]
   is_paid: boolean
   payment_reference: string | null
-  payment_screenshot: string | null // Added column link
+  payment_screenshot: string | null
   status: string
   created_at: string
 }
@@ -98,13 +98,16 @@ export default function AdminVerificationDashboard() {
     const { error } = await supabase
       .from('properties')
       .update({ 
-        status: 'approved',
+        status: 'LIVE ON SITE', // Matches front-end filters exactly
         is_paid: true
       })
       .eq('id', id)
 
     if (!error) {
-      setProperties(prev => prev.map(item => item.id === id ? { ...item, status: 'approved', is_paid: true } : item))
+      setProperties(prev => prev.map(item => item.id === id ? { ...item, status: 'LIVE ON SITE', is_paid: true } : item))
+    } else {
+      console.error("Database update failed:", error.message)
+      alert(`Failed to approve listing: ${error.message}`)
     }
     setActionLoadingId(null)
   }
@@ -122,7 +125,7 @@ export default function AdminVerificationDashboard() {
   const filteredProperties = properties.filter(item => {
     if (filterStatus === 'all') return true
     if (filterStatus === 'pending') return isPending(item.status)
-    return item.status === filterStatus
+    return item.status === 'LIVE ON SITE'
   })
 
   if (loading) {
@@ -232,7 +235,7 @@ export default function AdminVerificationDashboard() {
             onClick={() => setFilterStatus('approved')}
             className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${filterStatus === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-slate-500 hover:text-slate-800'}`}
           >
-            Active Listings ({properties.filter(p => p.status === 'approved').length})
+            Active Listings ({properties.filter(p => p.status === 'LIVE ON SITE').length})
           </button>
           <button 
             onClick={() => setFilterStatus('all')}
