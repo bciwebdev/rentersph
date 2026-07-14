@@ -2,18 +2,21 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 import { 
   FileText, MapPin, Phone, Image, ArrowRight, LogOut, HelpCircle, Upload, X 
 } from 'lucide-react'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 export default function CreateRentalListingPage() {
   const router = useRouter()
+  
+  // Use createBrowserClient exactly like the login page to share session/cookies correctly
+  const [supabase] = useState(() => 
+    createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  )
   
   // Route Protection Session States
   const [sessionLoading, setSessionLoading] = useState(true)
@@ -51,17 +54,21 @@ export default function CreateRentalListingPage() {
   // Verify and Enforce Landlord Login Session on Mount
   useEffect(() => {
     const checkAuthSession = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser()
-      if (error || !user) {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+        if (error || !user) {
+          router.push('/login')
+        } else {
+          setUserId(user.id)
+          setEmailAddress(user.email || '')
+          setSessionLoading(false)
+        }
+      } catch (err) {
         router.push('/login')
-      } else {
-        setUserId(user.id)
-        setEmailAddress(user.email || '')
-        setSessionLoading(false)
       }
     }
     checkAuthSession()
-  }, [router])
+  }, [router, supabase])
 
   const getBoostingPrice = () => {
     if (boostingOption === '5days') return 49
@@ -166,7 +173,7 @@ export default function CreateRentalListingPage() {
     return (
       <div className="min-h-screen bg-[#fcfdfe] flex items-center justify-center font-sans">
         <div className="text-center space-y-2">
-          <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <div className="w-5 h-5 border-2 border-[#00aa4f] border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Verifying Landlord Account Session...</p>
         </div>
       </div>
@@ -200,7 +207,7 @@ export default function CreateRentalListingPage() {
           {/* 1. CORE SPECIFICATIONS */}
           <div className="space-y-3">
             <h2 className="text-xs font-black tracking-wider text-[#64748b] uppercase flex items-center gap-1.5">
-              <FileText className="w-4 h-4 text-emerald-500" /> 1. Core Specifications
+              <FileText className="w-4 h-4 text-[#00aa4f]" /> 1. Core Specifications
             </h2>
             <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-4">
               <div className="space-y-1.5">
@@ -208,14 +215,14 @@ export default function CreateRentalListingPage() {
                 <input 
                   type="text" required placeholder="e.g. Modern Minimalist Studio near SM" value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-300"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition placeholder:text-slate-300"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Property Type</label>
-                  <select value={propertyType} onChange={(e) => setPropertyType(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 text-slate-600 transition">
+                  <select value={propertyType} onChange={(e) => setPropertyType(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] text-slate-600 transition">
                     <option value="Apartment">Apartment</option>
                     <option value="Condominium">Condominium</option>
                     <option value="House">House</option>
@@ -227,7 +234,7 @@ export default function CreateRentalListingPage() {
                   <input 
                     type="number" required placeholder="18500" value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-300"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition placeholder:text-slate-300"
                   />
                 </div>
               </div>
@@ -235,29 +242,29 @@ export default function CreateRentalListingPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Bedrooms</label>
-                  <input type="number" min="0" value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 transition" />
+                  <input type="number" min="0" value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Bathrooms</label>
-                  <input type="number" min="0" value={bathrooms} onChange={(e) => setBathrooms(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 transition" />
+                  <input type="number" min="0" value={bathrooms} onChange={(e) => setBathrooms(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Area (SQM)</label>
-                  <input type="number" min="1" value={area} onChange={(e) => setArea(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 transition" />
+                  <input type="number" min="1" value={area} onChange={(e) => setArea(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Restroom Privacy</label>
-                  <select value={restroomPrivacy} onChange={(e) => setRestroomPrivacy(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 text-slate-600 transition">
+                  <select value={restroomPrivacy} onChange={(e) => setRestroomPrivacy(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] text-slate-600 transition">
                     <option value="Private (Own Toilet)">Private (Own Toilet)</option>
                     <option value="Shared Restroom">Shared Restroom</option>
                   </select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Bathroom Privacy</label>
-                  <select value={bathroomPrivacy} onChange={(e) => setBathroomPrivacy(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 text-slate-600 transition">
+                  <select value={bathroomPrivacy} onChange={(e) => setBathroomPrivacy(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] text-slate-600 transition">
                     <option value="Private (Own Shower)">Private (Own Shower)</option>
                     <option value="Shared Bathroom">Shared Bathroom</option>
                   </select>
@@ -269,7 +276,7 @@ export default function CreateRentalListingPage() {
           {/* 2. ADDRESS LOCATION */}
           <div className="space-y-3">
             <h2 className="text-xs font-black tracking-wider text-[#64748b] uppercase flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 text-emerald-500" /> 2. Address Location
+              <MapPin className="w-4 h-4 text-[#00aa4f]" /> 2. Address Location
             </h2>
             <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -277,7 +284,7 @@ export default function CreateRentalListingPage() {
                 <input 
                   type="text" required placeholder="Ecoland, Davao City" value={manualAddress}
                   onChange={(e) => setManualAddress(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-300"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition placeholder:text-slate-300"
                 />
               </div>
               <div className="space-y-1.5">
@@ -285,7 +292,7 @@ export default function CreateRentalListingPage() {
                 <input 
                   type="text" placeholder="e.g. VFF7+HQ Davao City" value={plusCode}
                   onChange={(e) => setPlusCode(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-300"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition placeholder:text-slate-300"
                 />
               </div>
             </div>
@@ -294,7 +301,7 @@ export default function CreateRentalListingPage() {
           {/* 3. CONTACT PARAMETERS */}
           <div className="space-y-3">
             <h2 className="text-xs font-black tracking-wider text-[#64748b] uppercase flex items-center gap-1.5">
-              <Phone className="w-4 h-4 text-emerald-500" /> 3. Contact Parameters
+              <Phone className="w-4 h-4 text-[#00aa4f]" /> 3. Contact Parameters
             </h2>
             <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -302,7 +309,7 @@ export default function CreateRentalListingPage() {
                 <input 
                   type="tel" required placeholder="0917XXXXXXX" value={contactNumber}
                   onChange={(e) => setContactNumber(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-300"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition placeholder:text-slate-300"
                 />
               </div>
               <div className="space-y-1.5">
@@ -310,7 +317,7 @@ export default function CreateRentalListingPage() {
                 <input 
                   type="email" required placeholder="landlord@email.com" value={emailAddress}
                   onChange={(e) => setEmailAddress(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-300"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition placeholder:text-slate-300"
                 />
               </div>
             </div>
@@ -319,7 +326,7 @@ export default function CreateRentalListingPage() {
           {/* 4. DETAILED DESCRIPTION & RULES */}
           <div className="space-y-3">
             <h2 className="text-xs font-black tracking-wider text-[#64748b] uppercase flex items-center gap-1.5">
-              <FileText className="w-4 h-4 text-emerald-500" /> 4. Detailed Description & Rules
+              <FileText className="w-4 h-4 text-[#00aa4f]" /> 4. Detailed Description & Rules
             </h2>
             <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
               <div className="space-y-1.5">
@@ -327,7 +334,7 @@ export default function CreateRentalListingPage() {
                 <textarea 
                   rows={5} placeholder="Provide details about payment terms, utilities, and roommate rules..." value={descriptionRules}
                   onChange={(e) => setDescriptionRules(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-emerald-500 transition resize-none placeholder:text-slate-300 leading-relaxed"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition resize-none placeholder:text-slate-300 leading-relaxed"
                 />
               </div>
             </div>
@@ -336,7 +343,7 @@ export default function CreateRentalListingPage() {
           {/* 5. HIGH-RES PRESENTATION MEDIA */}
           <div className="space-y-3">
             <h2 className="text-xs font-black tracking-wider text-[#64748b] uppercase flex items-center gap-1.5">
-              <Image className="w-4 h-4 text-emerald-500" /> 5. High-Res Presentation Media
+              <Image className="w-4 h-4 text-[#00aa4f]" /> 5. High-Res Presentation Media
             </h2>
             <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-4">
               <div className="space-y-1.5">
@@ -345,7 +352,7 @@ export default function CreateRentalListingPage() {
                   <span className="text-[11px] text-slate-400 font-medium">{selectedFiles.length}/10 uploaded</span>
                 </div>
                 
-                <label className="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-xl p-8 flex flex-col items-center justify-center gap-2 cursor-pointer transition bg-slate-50/30">
+                <label className="border-2 border-dashed border-slate-200 hover:border-[#00aa4f] rounded-xl p-8 flex flex-col items-center justify-center gap-2 cursor-pointer transition bg-slate-50/30">
                   <Upload className="w-6 h-6 text-slate-400" />
                   <span className="text-xs font-bold text-slate-600">Click to select files from your device</span>
                   <span className="text-[10px] text-slate-400">Supports PNG, JPG, JPEG up to 10 photos total</span>
@@ -377,7 +384,7 @@ export default function CreateRentalListingPage() {
           {/* 6. LISTING PACKAGE & VISIBILITY RANK */}
           <div className="space-y-3">
             <h2 className="text-xs font-black tracking-wider text-[#64748b] uppercase flex items-center gap-1.5">
-              <FileText className="w-4 h-4 text-emerald-500" /> 6. Listing Package & Visibility Rank
+              <FileText className="w-4 h-4 text-[#00aa4f]" /> 6. Listing Package & Visibility Rank
             </h2>
             <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-5">
               <div className="space-y-1.5">
@@ -388,7 +395,7 @@ export default function CreateRentalListingPage() {
                     onMouseEnter={() => setShowTooltip(true)}
                     onMouseLeave={() => setShowTooltip(false)}
                   >
-                    <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-0.5 cursor-help">
+                    <span className="text-[11px] text-[#00aa4f] font-bold flex items-center gap-0.5 cursor-help">
                       What is boosting? <HelpCircle className="w-3 h-3" />
                     </span>
                     {showTooltip && (
@@ -398,7 +405,7 @@ export default function CreateRentalListingPage() {
                     )}
                   </div>
                 </div>
-                <div className="w-full bg-white border-2 border-emerald-500 rounded-xl px-4 py-3 text-xs text-slate-700 font-bold">
+                <div className="w-full bg-white border-2 border-[#00aa4f] rounded-xl px-4 py-3 text-xs text-slate-700 font-bold">
                   Standard Listing — ₱20 (Active for 30 Days)
                 </div>
               </div>
@@ -414,28 +421,28 @@ export default function CreateRentalListingPage() {
                     <span className="text-xs font-medium text-slate-400">₱0</span>
                   </label>
 
-                  <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '5days' ? 'border-emerald-500 bg-emerald-50/20' : 'border-slate-200'}`}>
+                  <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '5days' ? 'border-[#00aa4f] bg-emerald-50/20' : 'border-slate-200'}`}>
                     <div className="flex items-center gap-2.5">
-                      <input type="radio" name="boosting" value="5days" checked={boostingOption === '5days'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-emerald-600" />
+                      <input type="radio" name="boosting" value="5days" checked={boostingOption === '5days'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-[#00aa4f]" />
                       <span className="text-xs font-bold text-slate-700">5-Day Hot Boost</span>
                     </div>
-                    <span className="text-xs font-bold text-emerald-600">+ ₱49</span>
+                    <span className="text-xs font-bold text-[#00aa4f]">+ ₱49</span>
                   </label>
 
-                  <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '2weeks' ? 'border-emerald-500 bg-emerald-50/20' : 'border-slate-200'}`}>
+                  <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '2weeks' ? 'border-[#00aa4f] bg-emerald-50/20' : 'border-slate-200'}`}>
                     <div className="flex items-center gap-2.5">
-                      <input type="radio" name="boosting" value="2weeks" checked={boostingOption === '2weeks'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-emerald-600" />
+                      <input type="radio" name="boosting" value="2weeks" checked={boostingOption === '2weeks'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-[#00aa4f]" />
                       <span className="text-xs font-bold text-slate-700">2-Week Visibility Surge</span>
                     </div>
-                    <span className="text-xs font-bold text-emerald-600">+ ₱99</span>
+                    <span className="text-xs font-bold text-[#00aa4f]">+ ₱99</span>
                   </label>
 
-                  <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '1month' ? 'border-emerald-500 bg-emerald-50/20' : 'border-slate-200'}`}>
+                  <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '1month' ? 'border-[#00aa4f] bg-emerald-50/20' : 'border-slate-200'}`}>
                     <div className="flex items-center gap-2.5">
-                      <input type="radio" name="boosting" value="1month" checked={boostingOption === '1month'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-emerald-600" />
+                      <input type="radio" name="boosting" value="1month" checked={boostingOption === '1month'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-[#00aa4f]" />
                       <span className="text-xs font-bold text-slate-700">1-Month Market Domination</span>
                     </div>
-                    <span className="text-xs font-bold text-emerald-600">+ ₱199</span>
+                    <span className="text-xs font-bold text-[#00aa4f]">+ ₱199</span>
                   </label>
                 </div>
                 <p className="text-[10px] text-slate-400 font-medium mt-2">* Standard tier active timeline begins immediately upon payment verification completion.</p>
@@ -443,7 +450,7 @@ export default function CreateRentalListingPage() {
 
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 flex justify-between items-center text-slate-700">
                 <span className="text-xs font-bold">Total Estimated Statement Amount:</span>
-                <span className="text-sm font-black text-emerald-600">₱{totalAmount}.00</span>
+                <span className="text-sm font-black text-[#00aa4f]">₱{totalAmount}.00</span>
               </div>
             </div>
           </div>
@@ -452,7 +459,7 @@ export default function CreateRentalListingPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-[#009667] hover:bg-[#008057] text-white font-bold text-xs py-4 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs py-4 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
             >
               {isSubmitting ? 'Uploading photos & details...' : 'Proceed to Payment Allocation'} <ArrowRight className="w-4 h-4" />
             </button>
