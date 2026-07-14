@@ -114,8 +114,14 @@ export default function AdminVerificationDashboard() {
     setUserEmail(null)
   }
 
+  // Helper helper function to capture standard 'pending' and GCash 'pending_verification' statuses
+  const isPending = (status: string) => {
+    return status === 'pending' || status === 'pending_verification'
+  }
+
   const filteredProperties = properties.filter(item => {
     if (filterStatus === 'all') return true
+    if (filterStatus === 'pending') return isPending(item.status)
     return item.status === filterStatus
   })
 
@@ -220,7 +226,7 @@ export default function AdminVerificationDashboard() {
             onClick={() => setFilterStatus('pending')}
             className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${filterStatus === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-slate-500 hover:text-slate-800'}`}
           >
-            Pending Review ({properties.filter(p => p.status === 'pending').length})
+            Pending Review ({properties.filter(p => isPending(p.status)).length})
           </button>
           <button 
             onClick={() => setFilterStatus('approved')}
@@ -246,7 +252,7 @@ export default function AdminVerificationDashboard() {
             {filteredProperties.map((item) => (
               <div 
                 key={item.id} 
-                className={`bg-white rounded-3xl border transition shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 ${item.status === 'pending' ? 'border-amber-200 hover:border-amber-300' : 'border-slate-200'}`}
+                className={`bg-white rounded-3xl border transition shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 ${isPending(item.status) ? 'border-amber-200 hover:border-amber-300' : 'border-slate-200'}`}
               >
                 
                 {/* Column 1: Core Property Parameters */}
@@ -292,8 +298,8 @@ export default function AdminVerificationDashboard() {
                 <div className="p-6 lg:col-span-3 flex flex-col justify-center items-stretch gap-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold text-slate-400 uppercase">Status</span>
-                    <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${item.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
-                      {item.status === 'pending' ? (
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${isPending(item.status) ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+                      {isPending(item.status) ? (
                         <>
                           <Clock className="w-3 h-3 text-amber-500" /> Pending Approval
                         </>
@@ -305,7 +311,7 @@ export default function AdminVerificationDashboard() {
                     </span>
                   </div>
 
-                  {item.status === 'pending' && (
+                  {isPending(item.status) && (
                     <button
                       type="button"
                       disabled={actionLoadingId === item.id}
