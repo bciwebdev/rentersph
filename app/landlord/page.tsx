@@ -44,8 +44,9 @@ export default function LandlordPortalPage() {
   const [myProperties, setMyProperties] = useState<any[]>([])
   const [currentView, setCurrentView] = useState<ViewState>('dashboard')
   
-  // Track which property card currently has the Boost option menu hovering/open
+  // Hover State Trackers
   const [activeBoostPopoverId, setActiveBoostPopoverId] = useState<string | null>(null)
+  const [activeExtendPopoverId, setActiveExtendPopoverId] = useState<string | null>(null)
   
   const [title, setTitle] = useState('')
   const [propertyType, setPropertyType] = useState('Apartment')
@@ -359,16 +360,85 @@ export default function LandlordPortalPage() {
                       
                       {/* ACTION CONTROLS WRAPPER CELL */}
                       <div className="grid grid-cols-3 text-[11px] font-bold relative">
-                        <button
-                          type="button"
-                          onClick={() => router.push(`/landlord/payment?total=20&propertyId=${property.id}&type=extension`)}
-                          className="py-2.5 flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 border-r border-slate-100 transition cursor-pointer"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
-                          Extend
-                        </button>
                         
-                        {/* THE HOVER TRIGGER CONTAINER FOR VISIBILITY UPGRADE OVERLAYS */}
+                        {/* EXTEND BUTTON WITH HOVER OPTIONS */}
+                        <div 
+                          className="relative flex"
+                          onMouseEnter={() => setActiveExtendPopoverId(property.id)}
+                          onMouseLeave={() => setActiveExtendPopoverId(null)}
+                        >
+                          <button
+                            type="button"
+                            className="w-full py-2.5 flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 border-r border-slate-100 transition cursor-pointer"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+                            Extend
+                          </button>
+
+                          {activeExtendPopoverId === property.id && (
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl p-3 z-40 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                              <p className="text-[10px] uppercase font-black tracking-wider text-slate-400 border-b border-slate-50 pb-1.5 px-1">
+                                Extension Options
+                              </p>
+                              
+                              {/* Standard Extension */}
+                              <button
+                                type="button"
+                                onClick={() => router.push(`/landlord/payment?total=20&propertyId=${property.id}&type=extension`)}
+                                className="w-full text-left p-2 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                              >
+                                <div>
+                                  <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">Standard 30-Day Extension</p>
+                                  <p className="text-[9px] text-slate-400 font-medium">Extend listing presence</p>
+                                </div>
+                                <span className="text-slate-700 font-black text-[11px]">₱20</span>
+                              </button>
+
+                              {/* Nested Boost Upgrades underneath Extend */}
+                              <p className="text-[9px] uppercase font-black tracking-wider text-[#00aa4f] pt-1 px-1">
+                                Extend with Boost
+                              </p>
+
+                              <button
+                                type="button"
+                                onClick={() => router.push(`/landlord/payment?total=69&propertyId=${property.id}&type=extension&tier=5days`)}
+                                className="w-full text-left p-2 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                              >
+                                <div>
+                                  <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 5-Day Hot Boost</p>
+                                  <p className="text-[9px] text-slate-400 font-medium">Extend + Blitz Promotion</p>
+                                </div>
+                                <span className="text-[#00aa4f] font-black text-[11px]">₱69</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => router.push(`/landlord/payment?total=119&propertyId=${property.id}&type=extension&tier=2weeks`)}
+                                className="w-full text-left p-2 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                              >
+                                <div>
+                                  <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 2-Week Visibility Surge</p>
+                                  <p className="text-[9px] text-slate-400 font-medium">Extend + Horizon Lift</p>
+                                </div>
+                                <span className="text-[#00aa4f] font-black text-[11px]">₱119</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => router.push(`/landlord/payment?total=219&propertyId=${property.id}&type=extension&tier=1month`)}
+                                className="w-full text-left p-2 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                              >
+                                <div>
+                                  <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 1-Month Domination</p>
+                                  <p className="text-[9px] text-slate-400 font-medium">Extend + Premium Pinning</p>
+                                </div>
+                                <span className="text-[#00aa4f] font-black text-[11px]">₱219</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* BOOST BUTTON WITH HOVER OPTIONS */}
                         <div 
                           className="relative flex"
                           onMouseEnter={() => setActiveBoostPopoverId(property.id)}
@@ -382,7 +452,6 @@ export default function LandlordPortalPage() {
                             Boost
                           </button>
 
-                          {/* DYNAMIC HOVERING POPOVER MODAL DISPLAYED EXACTLY ABOVE THE TRIGGER GRID ELEMENT */}
                           {activeBoostPopoverId === property.id && (
                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl p-3 z-40 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-150">
                               <p className="text-[10px] uppercase font-black tracking-wider text-slate-400 border-b border-slate-50 pb-1.5 px-1">
