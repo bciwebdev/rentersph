@@ -34,12 +34,9 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   
-  // Filter states
+  // Filter states (Cleaned up: removed bedrooms, minPrice, and maxPrice)
   const [search, setSearch] = useState('')
   const [propertyType, setPropertyType] = useState('All Types')
-  const [bedrooms, setBedrooms] = useState('Any Count')
-  const [minPrice, setMinPrice] = useState('')
-  const [maxPrice, setMaxPrice] = useState('')
 
   useEffect(() => {
     async function fetchProperties() {
@@ -84,23 +81,6 @@ export default function HomePage() {
 
     if (propertyType !== 'All Types') {
       temp = temp.filter(p => p.property_type === propertyType)
-    }
-
-    if (bedrooms !== 'Any Count') {
-      const bedCount = parseInt(bedrooms, 10)
-      if (bedrooms === '3') {
-        temp = temp.filter(p => p.bedrooms >= bedCount)
-      } else {
-        temp = temp.filter(p => p.bedrooms === bedCount)
-      }
-    }
-
-    if (minPrice !== '') {
-      temp = temp.filter(p => p.price >= parseFloat(minPrice))
-    }
-
-    if (maxPrice !== '') {
-      temp = temp.filter(p => p.price <= parseFloat(maxPrice))
     }
 
     setFilteredProperties(temp)
@@ -197,60 +177,57 @@ export default function HomePage() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[350px] bg-gradient-to-tr from-emerald-200/20 to-teal-200/20 blur-3xl rounded-full -z-10" />
       </section>
 
-      {/* Integrated Search & Filter Panel */}
+      {/* Integrated Search & Filter Panel (UPDATED TO SINGLE LINE: LOCATION, PROPERTY TYPE, SEARCH BUTTON) */}
       <section className="max-w-5xl mx-auto px-4 -mt-10 mb-16 relative z-20">
-        <motion.form onSubmit={handleApplyFilters} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-xl space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative">
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5 tracking-wider">Where</label>
-              <div className="relative">
-                <MapPin className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
-                <input value={search} onChange={(e) => setSearch(e.target.value)} type="text" placeholder="e.g. Davao City, Condominium..." className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5 tracking-wider">Property Type</label>
-              <div className="relative">
-                <Building2 className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
-                <select value={propertyType} onChange={(e) => setPropertyType(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-700 focus:outline-none focus:border-emerald-500 focus:bg-white transition cursor-pointer appearance-none">
-                  <option value="All Types">All Types</option>
-                  <option value="Apartment">Apartment</option>
-                  <option value="Condominium">Condominium</option>
-                  <option value="House">House</option>
-                  <option value="Boarding House">Boarding House</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5 tracking-wider">Bedrooms</label>
-              <div className="relative">
-                <Bed className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
-                <select value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-700 focus:outline-none focus:border-emerald-500 focus:bg-white transition cursor-pointer appearance-none">
-                  <option value="Any Count">Any Count</option>
-                  <option value="1">1 Bedroom</option>
-                  <option value="2">2 Bedrooms</option>
-                  <option value="3">3+ Bedrooms</option>
-                </select>
-              </div>
+        <motion.form 
+          onSubmit={handleApplyFilters} 
+          initial={{ opacity: 0, y: 30 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ delay: 0.1, duration: 0.5 }} 
+          className="bg-white p-3 sm:p-4 rounded-2xl md:rounded-full border border-slate-200 shadow-xl flex flex-col md:flex-row items-stretch md:items-center gap-3"
+        >
+          {/* 1. Where (Location) Field */}
+          <div className="flex-1 flex items-center gap-3 px-4 py-2 border-b md:border-b-0 md:border-r border-slate-100">
+            <MapPin className="w-5 h-5 text-slate-400 shrink-0" />
+            <div className="flex-1">
+              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Where</label>
+              <input 
+                value={search} 
+                onChange={(e) => setSearch(e.target.value)} 
+                type="text" 
+                placeholder="e.g. Davao City, Condominium..." 
+                className="w-full bg-transparent text-xs font-bold text-slate-800 placeholder-slate-400 outline-none mt-0.5" 
+              />
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-3 border-t border-slate-100">
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="w-full sm:w-36">
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1 tracking-wider">Min Price (PHP)</label>
-                <input value={minPrice} onChange={(e) => setMinPrice(e.target.value)} type="number" placeholder="0" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:border-emerald-500" />
-              </div>
-              <span className="text-slate-300 mt-4 text-xs font-semibold">to</span>
-              <div className="w-full sm:w-36">
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1 tracking-wider">Max Price (PHP)</label>
-                <input value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} type="number" placeholder="No Limit" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:border-emerald-500" />
-              </div>
+          {/* 2. Property Type Field */}
+          <div className="flex-1 flex items-center gap-3 px-4 py-2 border-b md:border-b-0 md:border-r border-slate-100">
+            <Building2 className="w-5 h-5 text-slate-400 shrink-0" />
+            <div className="flex-1">
+              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Property Type</label>
+              <select 
+                value={propertyType} 
+                onChange={(e) => setPropertyType(e.target.value)} 
+                className="w-full bg-transparent text-xs font-bold text-slate-800 outline-none mt-0.5 cursor-pointer appearance-none"
+              >
+                <option value="All Types">All Types</option>
+                <option value="Apartment">Apartment</option>
+                <option value="Condominium">Condominium</option>
+                <option value="House">House</option>
+                <option value="Boarding House">Boarding House</option>
+              </select>
             </div>
-            <button type="submit" className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-8 py-3.5 rounded-2xl transition-all duration-300 shadow-md shadow-emerald-200 flex items-center justify-center gap-2 hover:scale-[1.02]">
-              <Search className="w-4 h-4" /> Apply Active Filters
-            </button>
           </div>
+
+          {/* 3. Streamlined Search Action Button */}
+          <button 
+            type="submit" 
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-8 py-4 md:py-3.5 rounded-xl md:rounded-full flex items-center justify-center gap-2 transition duration-200 cursor-pointer shadow-sm hover:shadow-md shrink-0 md:mr-1"
+          >
+            <Search className="w-4 h-4" />
+            <span>Apply Filters</span>
+          </button>
         </motion.form>
       </section>
 
@@ -500,8 +477,7 @@ export default function HomePage() {
             <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[10px] mb-3">Explore Properties</h4>
             <ul className="space-y-2 font-medium list-none p-0">
               <li><span onClick={() => setPropertyType('Apartment')} className="hover:text-emerald-600 cursor-pointer">Apartments for Rent</span></li>
-              <li><span onClick={() => setPropertyType('Condominium')} className="hover:text-emerald-600 cursor-pointer">Condominium Suites</span></li>
-              <li><span onClick={() => setPropertyType('Boarding House')} className="hover:text-emerald-600 cursor-pointer">Boarding Rooms</span></li>
+              <li><span onClick={() => setPropertyType('Condominium')} className="hover:text-emerald-600 cursor-pointer">Condominiums for Rent</span></li>
             </ul>
           </div>
         </div>
