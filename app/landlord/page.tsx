@@ -14,6 +14,7 @@ interface SelectedFile {
   previewUrl: string
 }
 
+// 1. ADDED ACCURATE REMAINING DAYS CALCULATION LOGIC HERE
 function calculateDaysLeft(expiresAtString: string | null): number {
   if (!expiresAtString) return 30
   
@@ -247,17 +248,6 @@ export default function LandlordPortalPage() {
     }
   }
 
-  if (sessionLoading) {
-    return (
-      <div className="min-h-screen bg-[#fcfdfe] flex items-center justify-center font-sans">
-        <div className="text-center space-y-2">
-          <div className="w-5 h-5 border-2 border-[#00aa4f] border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Verifying Landlord Account Session...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-[#fcfdfe] text-[#1e293b] antialiased font-sans pb-16">
       
@@ -322,361 +312,438 @@ export default function LandlordPortalPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {myProperties.map((property) => {
-                  const daysRemaining = calculateDaysLeft(property.expires_at);
-                  
-                  return (
-                    <div key={property.id} className="bg-white border border-[#f1f5f9] rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col justify-between">
-                      <div>
-                        {property.images && property.images.length > 0 ? (
-                          <img src={property.images[0]} alt="Property image" className="w-full h-40 object-cover" />
-                        ) : (
-                          <div className="w-full h-40 bg-slate-50 flex items-center justify-center text-slate-300">
-                            <ImageIcon className="w-8 h-8" />
-                          </div>
-                        )}
-                        <div className="p-5 space-y-2">
-                          <div className="flex justify-between items-start gap-2">
-                            <h4 className="text-sm font-black text-slate-800 line-clamp-1">{property.title}</h4>
-                            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                              property.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
-                            }`}>
-                              {property.status === 'approved' 
-                                ? `LIVE ON SITE (${daysRemaining} Days Left)` 
-                                : (property.status || 'pending')}
-                            </span>
-                          </div>
-                          <p className="text-xs font-black text-[#00aa4f]">₱{property.price.toLocaleString()} / mo</p>
-                          <div className="flex items-center gap-1.5 text-slate-400 text-xs">
-                            <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                            <span className="truncate">{property.manual_address}</span>
-                          </div>
+                {myProperties.map((property) => (
+                  <div key={property.id} className="bg-white border border-[#f1f5f9] rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col justify-between">
+                    <div>
+                      {property.images && property.images.length > 0 ? (
+                        <img src={property.images[0]} alt="Property image" className="w-full h-40 object-cover" />
+                      ) : (
+                        <div className="w-full h-40 bg-slate-50 flex items-center justify-center text-slate-300">
+                          <ImageIcon className="w-8 h-8" />
+                        </div>
+                      )}
+                      <div className="p-5 space-y-2">
+                        <div className="flex justify-between items-start gap-2">
+                          <h4 className="text-sm font-black text-slate-800 line-clamp-1">{property.title}</h4>
+                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                            property.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
+                          }`}>
+                            {property.status === 'approved' ? 'LIVE ON SITE' : (property.status || 'pending')}
+                          </span>
+                        </div>
+                        <p className="text-xs font-black text-[#00aa4f]">₱{property.price.toLocaleString()} / mo</p>
+                        <div className="flex items-center gap-1.5 text-slate-400 text-xs">
+                          <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                          <span className="truncate">{property.manual_address}</span>
+                        </div>
 
-                          {property.status === 'approved' && (
-                            <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex items-center justify-between text-xs font-semibold text-slate-600">
-                              <span className="text-slate-400 text-[11px]">Listing Expiry Status:</span>
-                              <span className={`font-black flex items-center gap-1 ${
-                                daysRemaining <= 5 ? 'text-rose-600 animate-pulse' : 'text-slate-700'
-                              }`}>
-                                Remaining Days: {daysRemaining}
-                              </span>
-                            </div>
-                          )}
+                        {/* 2. INJECTED VISIBLE REMAINING DAYS COMPONENT INSIDE THE LANDLORD LISTING CARD */}
+                        <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex items-center justify-between text-xs font-semibold text-slate-600">
+                          <span className="text-slate-400 text-[11px]">Time Remaining:</span>
+                          <span className={`font-black flex items-center gap-1 ${
+                            calculateDaysLeft(property.expires_at) <= 5 ? 'text-rose-600 animate-pulse' : 'text-slate-700'
+                          }`}>
+                            {calculateDaysLeft(property.expires_at)} days left
+                          </span>
                         </div>
-                      </div>
-                      
-                      <div className="flex flex-col border-t border-slate-50 bg-slate-50/50">
-                        <div className="px-5 py-2.5 flex items-center justify-between text-[11px] font-semibold text-slate-400 border-b border-slate-100">
-                          <span>{property.property_type}</span>
-                          <span>{property.bedrooms} BR · {property.bathrooms} BA</span>
-                        </div>
-                        <div className="grid grid-cols-2 text-[11px] font-bold">
-                          <button
-                            type="button"
-                            onClick={() => router.push(`/landlord/payment?total=20&propertyId=${property.id}&type=extension`)}
-                            className="py-2.5 flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100 border-r border-slate-100 transition cursor-pointer"
-                          >
-                            <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
-                            Extend
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteProperty(property.id)}
-                            className="py-2.5 flex items-center justify-center gap-1.5 text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                            Delete
-                          </button>
-                        </div>
-                      </div>
 
+                      </div>
                     </div>
-                  )
-                })}
+                    
+                    <div className="flex flex-col border-t border-slate-50 bg-slate-50/50">
+                      <div className="px-5 py-2.5 flex items-center justify-between text-[11px] font-semibold text-slate-400 border-b border-slate-100">
+                        <span>{property.property_type}</span>
+                        <span>{property.bedrooms} BR · {property.bathrooms} BA</span>
+                      </div>
+                      <div className="grid grid-cols-2 text-[11px] font-bold">
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/landlord/payment?total=20&propertyId=${property.id}&type=extension`)}
+                          className="py-2.5 flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100 border-r border-slate-100 transition cursor-pointer"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+                          Extend
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProperty(property.id)}
+                          className="py-2.5 flex items-center justify-center gap-1.5 text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
         )}
 
         {currentView === 'create' && (
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleSubmit} className="bg-white border border-[#f1f5f9] rounded-3xl p-6 shadow-[0_4px_30px_rgba(0,0,0,0.015)] space-y-8">
+            
             {errorMessage && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold p-4 rounded-xl">
+              <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-xs font-bold">
                 {errorMessage}
               </div>
             )}
 
-            {/* 1. CORE SPECIFICATIONS */}
-            <div className="space-y-3">
-              <h2 className="text-xs font-black tracking-wider text-[#64748b] uppercase flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-[#00aa4f]" /> 1. Core Specifications
-              </h2>
-              <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-4">
+            <div className="space-y-4">
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">1. Core Particulars</h2>
+              
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500">Listing Title / Catchphrase</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g., Cozy Studio Room near University Belt with Balcony"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Listing Title</label>
+                  <label className="text-xs font-bold text-slate-500">Property Category</label>
+                  <select 
+                    value={propertyType}
+                    onChange={(e) => setPropertyType(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  >
+                    <option>Apartment</option>
+                    <option>Condo Unit</option>
+                    <option>Dormitory Bedspace</option>
+                    <option>Single House</option>
+                    <option>Room Rental Only</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500">Monthly Rent (PHP)</label>
                   <input 
-                    type="text" required placeholder="e.g. Modern Minimalist Studio near SM" value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition placeholder:text-slate-300"
+                    type="number" 
+                    required 
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="₱ Amount per month"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Property Type</label>
-                    <select value={propertyType} onChange={(e) => setPropertyType(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] text-slate-600 transition">
-                      <option value="Apartment">Apartment</option>
-                      <option value="Condominium">Condominium</option>
-                      <option value="House">House</option>
-                      <option value="Bedspace">Bedspace</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Price (PHP / MO)</label>
-                    <input 
-                      type="number" required placeholder="18500" value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition placeholder:text-slate-300"
-                    />
-                  </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500">Floor Area (sqm)</label>
+                  <input 
+                    type="number" 
+                    required 
+                    value={area}
+                    onChange={(e) => setArea(e.target.value)}
+                    placeholder="e.g., 28"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500">Bedrooms</label>
+                  <select 
+                    value={bedrooms} 
+                    onChange={(e) => setBedrooms(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none"
+                  >
+                    <option>0 (Studio)</option>
+                    <option>1</option>
+                    <option>2</option>
+                    <option>3</option>
+                    <option>4+</option>
+                  </select>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Bedrooms</label>
-                    <input type="number" min="0" value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Bathrooms</label>
-                    <input type="number" min="0" value={bathrooms} onChange={(e) => setBathrooms(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Area (SQM)</label>
-                    <input type="number" min="1" value={area} onChange={(e) => setArea(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition" />
-                  </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500">Bathrooms</label>
+                  <select 
+                    value={bathrooms} 
+                    onChange={(e) => setBathrooms(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none"
+                  >
+                    <option>1</option>
+                    <option>2</option>
+                    <option>3+</option>
+                  </select>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Restroom Privacy</label>
-                    <select value={restroomPrivacy} onChange={(e) => setRestroomPrivacy(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] text-slate-600 transition">
-                      <option value="Private (Own Toilet)">Private (Own Toilet)</option>
-                      <option value="Shared Restroom">Shared Restroom</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Bathroom Privacy</label>
-                    <select value={bathroomPrivacy} onChange={(e) => setBathroomPrivacy(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] text-slate-600 transition">
-                      <option value="Private (Own Shower)">Private (Own Shower)</option>
-                      <option value="Shared Bathroom">Shared Bathroom</option>
-                    </select>
-                  </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500">Restroom Privacy</label>
+                  <select 
+                    value={restroomPrivacy} 
+                    onChange={(e) => setRestroomPrivacy(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none"
+                  >
+                    <option>Private (Own Toilet)</option>
+                    <option>Shared Common Restroom</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500">Shower Privacy</label>
+                  <select 
+                    value={bathroomPrivacy} 
+                    onChange={(e) => setBathroomPrivacy(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none"
+                  >
+                    <option>Private (Own Shower)</option>
+                    <option>Shared Common Shower</option>
+                  </select>
                 </div>
               </div>
             </div>
 
-            {/* 2. ADDRESS LOCATION */}
-            <div className="space-y-3">
-              <h2 className="text-xs font-black tracking-wider text-[#64748b] uppercase flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-[#00aa4f]" /> 2. Address Location
-              </h2>
-              <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">2. Location Geometry</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Manual Address</label>
+                  <label className="text-xs font-bold text-slate-500">Complete Descriptive Address</label>
                   <input 
-                    type="text" required placeholder="Ecoland, Davao City" value={manualAddress}
+                    type="text" 
+                    required 
+                    value={manualAddress}
                     onChange={(e) => setManualAddress(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition placeholder:text-slate-300"
+                    placeholder="Unit #, Building name, Street Name, Barangay, City"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Google Maps Plus Code (Optional)</label>
-                  <input 
-                    type="text" placeholder="e.g. VFF7+HQ Davao City" value={plusCode}
-                    onChange={(e) => setPlusCode(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition placeholder:text-slate-300"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* 3. CONTACT PARAMETERS */}
-            <div className="space-y-3">
-              <h2 className="text-xs font-black tracking-wider text-[#64748b] uppercase flex items-center gap-1.5">
-                <Phone className="w-4 h-4 text-[#00aa4f]" /> 3. Contact Parameters
-              </h2>
-              <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Contact Number</label>
-                  <input 
-                    type="tel" required placeholder="0917XXXXXXX" value={contactNumber}
-                    onChange={(e) => setContactNumber(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition placeholder:text-slate-300"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Email Address</label>
-                  <input 
-                    type="email" required placeholder="landlord@email.com" value={emailAddress}
-                    onChange={(e) => setEmailAddress(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition placeholder:text-slate-300"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* 4. DETAILED DESCRIPTION & RULES */}
-            <div className="space-y-3">
-              <h2 className="text-xs font-black tracking-wider text-[#64748b] uppercase flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-[#00aa4f]" /> 4. Detailed Description & Rules
-              </h2>
-              <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Property Description & Rules</label>
-                  <textarea 
-                    rows={5} placeholder="Provide details about payment terms, utilities, and roommate rules..." value={descriptionRules}
-                    onChange={(e) => setDescriptionRules(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#00aa4f] transition resize-none placeholder:text-slate-300 leading-relaxed"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* 5. HIGH-RES PRESENTATION MEDIA */}
-            <div className="space-y-3">
-              <h2 className="text-xs font-black tracking-wider text-[#64748b] uppercase flex items-center gap-1.5">
-                <ImageIcon className="w-4 h-4 text-[#00aa4f]" /> 5. High-Res Presentation Media
-              </h2>
-              <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-4">
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Upload Property Presentation Photos (Max 10)</label>
-                    <span className="text-[11px] text-slate-400 font-medium">{selectedFiles.length}/10 uploaded</span>
-                  </div>
-                  
-                  <label className="border-2 border-dashed border-slate-200 hover:border-[#00aa4f] rounded-xl p-8 flex flex-col items-center justify-center gap-2 cursor-pointer transition bg-slate-50/30">
-                    <Upload className="w-6 h-6 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-600">Click to select files from your device</span>
-                    <span className="text-[10px] text-slate-400">Supports PNG, JPG, JPEG up to 10 photos total</span>
-                    <input 
-                      type="file" multiple accept="image/*" onChange={handleFileChange}
-                      disabled={selectedFiles.length >= 10} className="hidden" 
-                    />
-                  </label>
-                </div>
-
-                {selectedFiles.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
-                    {selectedFiles.map((item, idx) => (
-                      <div key={idx} className="relative aspect-square border rounded-xl overflow-hidden group bg-slate-50">
-                        <img src={item.previewUrl} alt="local preview" className="w-full h-full object-cover" />
-                        <button 
-                          type="button" onClick={() => handleRemoveImage(idx)} 
-                          className="absolute top-1 right-1 bg-slate-900/80 hover:bg-rose-600 text-white rounded-full p-1 transition"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 6. LISTING PACKAGE & VISIBILITY RANK */}
-            <div className="space-y-3">
-              <h2 className="text-xs font-black tracking-wider text-[#64748b] uppercase flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-[#00aa4f]" /> 6. Listing Package & Visibility Rank
-              </h2>
-              <div className="bg-white border border-[#f1f5f9] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-5">
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center relative">
-                    <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase">Required Base Posting Plan</label>
-                    <div 
-                      className="relative"
-                      onMouseEnter={() => setShowTooltip(true)}
-                      onMouseLeave={() => setShowTooltip(false)}
-                    >
-                      <span className="text-[11px] text-[#00aa4f] font-bold flex items-center gap-0.5 cursor-help">
-                        What is boosting? <HelpCircle className="w-3 h-3" />
-                      </span>
+                  <div className="flex items-center gap-1">
+                    <label className="text-xs font-bold text-slate-500">Google Maps Plus Code</label>
+                    <div className="relative">
+                      <HelpCircle 
+                        className="w-3.5 h-3.5 text-slate-300 hover:text-slate-400 cursor-pointer transition"
+                        onMouseEnter={() => setShowTooltip(true)}
+                        onMouseLeave={() => setShowTooltip(false)}
+                      />
                       {showTooltip && (
-                        <div className="absolute right-0 bottom-6 w-64 bg-slate-900 text-white text-[11px] font-medium p-3 rounded-xl shadow-xl z-50 leading-relaxed pointer-events-none">
-                          Boosting increases your listing's priority score, moving it directly to the top of prospective renters' feeds for maximum exposure and faster inquiries.
+                        <div className="absolute z-30 bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-slate-800 text-white text-[10px] p-2 rounded-lg leading-relaxed shadow-md">
+                          Open Google Maps, click your building location pin, look for the code containing a plus symbol (e.g., "4VQQ+2X Manila"). This replaces database map placement pins perfectly.
                         </div>
                       )}
                     </div>
                   </div>
-                  <div className="w-full bg-white border-2 border-[#00aa4f] rounded-xl px-4 py-3 text-xs text-slate-700 font-bold">
-                    Standard Listing — ₱20 (Active for 30 Days)
-                  </div>
+                  <input 
+                    type="text" 
+                    value={plusCode}
+                    onChange={(e) => setPlusCode(e.target.value)}
+                    placeholder="e.g., H2X3+JF Quezon City"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  />
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black tracking-wider text-[#64748b] uppercase block">Optional Visibility Boosting Rank Upgrades</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === 'none' ? 'border-slate-900 bg-slate-50/50' : 'border-slate-200'}`}>
-                      <div className="flex items-center gap-2.5">
-                        <input type="radio" name="boosting" value="none" checked={boostingOption === 'none'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-slate-900" />
-                        <span className="text-xs font-bold text-slate-700">No Boost Upgrade</span>
-                      </div>
-                    </label>
-
-                    <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '5days' ? 'border-[#00aa4f] bg-emerald-50/10' : 'border-slate-200'}`}>
-                      <div className="flex items-center gap-2.5">
-                        <input type="radio" name="boosting" value="5days" checked={boostingOption === '5days'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-[#00aa4f]" />
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-slate-700">5 Days Rank Boost Up</span>
-                          <span className="text-[10px] text-slate-400 font-medium">Prioritized above basic visibility tier</span>
-                        </div>
-                      </div>
-                      <span className="text-xs font-black text-[#00aa4f]">+ ₱49</span>
-                    </label>
-
-                    <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '2weeks' ? 'border-[#00aa4f] bg-emerald-50/10' : 'border-slate-200'}`}>
-                      <div className="flex items-center gap-2.5">
-                        <input type="radio" name="boosting" value="2weeks" checked={boostingOption === '2weeks'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-[#00aa4f]" />
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-slate-700">2 Weeks Supreme Feed Lock</span>
-                          <span className="text-[10px] text-slate-400 font-medium">Aggressive premium feed exposure</span>
-                        </div>
-                      </div>
-                      <span className="text-xs font-black text-[#00aa4f]">+{'\u00A0'}₱99</span>
-                    </label>
-
-                    <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '1month' ? 'border-[#00aa4f] bg-emerald-50/10' : 'border-slate-200'}`}>
-                      <div className="flex items-center gap-2.5">
-                        <input type="radio" name="boosting" value="1month" checked={boostingOption === '1month'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-[#00aa4f]" />
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-slate-700">30 Days Ultimate Dominance Boost Tier</span>
-                          <span className="text-[10px] text-slate-400 font-medium">Stays locked at peak search performance.</span>
-                        </div>
-                      </div>
-                      <span className="text-xs font-black text-[#00aa4f]">+ ₱199</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* TOTAL PAYABLE FORM SUBMISSION BLOCK */}
-                <div className="bg-white border border-[#f1f5f9] rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col gap-4">
-                  <div>
-                    <span className="text-[10px] font-black tracking-wider text-[#64748b] uppercase block">Total Statement Balance</span>
-                    <span className="text-xl font-black text-slate-800">₱{totalAmount.toLocaleString()} PHP</span>
-                  </div>
-                  
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full bg-[#00aa4f] hover:bg-[#008f41] text-white font-bold py-3 px-4 rounded-xl transition disabled:opacity-50 text-sm"
-                  >
-                    {isSubmitting ? "Processing..." : "Submit Payment"}
-                  </button>
-                </div>
-
               </div>
             </div>
+
+            <div className="space-y-4">
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">3. Landlord Connectivity</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500">Mobile Contact Number</label>
+                  <input 
+                    type="tel" 
+                    required 
+                    value={contactNumber}
+                    onChange={(e) => setContactNumber(e.target.value)}
+                    placeholder="e.g., 0917XXXXXXX"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500">Authenticated Email Reference</label>
+                  <input 
+                    type="email" 
+                    disabled 
+                    value={emailAddress}
+                    className="w-full bg-slate-100 border border-slate-200 text-slate-400 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none cursor-not-allowed"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">4. Unit Descriptions & Guidelines</h2>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500">Amenities, Terms, House Rules</label>
+                <textarea 
+                  rows={4}
+                  required
+                  value={descriptionRules}
+                  onChange={(e) => setDescriptionRules(e.target.value)}
+                  placeholder="List down details regarding structural inclusions, utility split policies, maximum occupants allowed, downpayment/deposit schedules, curfew structures, or pet rules."
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition resize-none leading-relaxed"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">5. Visual Verification Material</h2>
+              <div className="space-y-3">
+                <label className="text-xs font-bold text-slate-500 block">Unit Layout Photos (Max 10 items)</label>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                  {selectedFiles.map((item, index) => (
+                    <div key={index} className="relative aspect-square border border-slate-100 rounded-2xl overflow-hidden group bg-slate-50">
+                      <img src={item.previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute top-1.5 right-1.5 bg-slate-900/70 hover:bg-slate-900 text-white p-1 rounded-lg transition"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {selectedFiles.length < 10 && (
+                    <label className="aspect-square border-2 border-dashed border-slate-200 hover:border-[#00aa4f] rounded-2xl flex flex-col items-center justify-center cursor-pointer bg-slate-50/50 hover:bg-slate-50 text-slate-400 hover:text-[#00aa4f] transition space-y-1.5 p-2">
+                      <Upload className="w-5 h-5 stroke-[2.5]" />
+                      <span className="text-[10px] font-black tracking-wide uppercase text-center leading-tight">Upload Images</span>
+                      <input 
+                        type="file" 
+                        multiple 
+                        accept="image/*" 
+                        onChange={handleFileChange} 
+                        className="hidden" 
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">6. Engine Visibility Boosting</h2>
+              <div className="space-y-3">
+                <div 
+                  onClick={() => setBoostingOption('none')}
+                  className={`border p-4 rounded-2xl flex items-center justify-between cursor-pointer transition ${
+                    boostingOption === 'none' ? 'border-[#00aa4f] bg-emerald-50/20 shadow-sm' : 'border-slate-100 bg-white hover:border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input 
+                      type="radio" 
+                      readOnly
+                      checked={boostingOption === 'none'} 
+                      className="mt-0.5 accent-[#00aa4f]"
+                    />
+                    <div>
+                      <h4 className="text-xs font-black text-slate-800">Standard Placement Listing</h4>
+                      <p className="text-[11px] text-slate-400 leading-normal">Basic insertion inside general geographical query filters. Valid context duration for 30 clear days.</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-black text-slate-700">Free base</span>
+                </div>
+
+                <div 
+                  onClick={() => setBoostingOption('5days')}
+                  className={`border p-4 rounded-2xl flex items-center justify-between cursor-pointer transition ${
+                    boostingOption === '5days' ? 'border-[#00aa4f] bg-emerald-50/20 shadow-sm' : 'border-slate-100 bg-white hover:border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input 
+                      type="radio" 
+                      readOnly
+                      checked={boostingOption === '5days'} 
+                      className="mt-0.5 accent-[#00aa4f]"
+                    />
+                    <div>
+                      <h4 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                        Tier 1 Blitz Campaign
+                        <span className="bg-amber-100 text-amber-800 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">POPULAR</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-400 leading-normal">Elevates card nodes to regional landing headers. Generates dedicated system traffic priority vectors for 5 days.</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-black text-[#00aa4f]">₱49 addition</span>
+                </div>
+
+                <div 
+                  onClick={() => setBoostingOption('2weeks')}
+                  className={`border p-4 rounded-2xl flex items-center justify-between cursor-pointer transition ${
+                    boostingOption === '2weeks' ? 'border-[#00aa4f] bg-emerald-50/20 shadow-sm' : 'border-slate-100 bg-white hover:border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input 
+                      type="radio" 
+                      readOnly
+                      checked={boostingOption === '2weeks'} 
+                      className="mt-0.5 accent-[#00aa4f]"
+                    />
+                    <div>
+                      <h4 className="text-xs font-black text-slate-800">Tier 2 Extended Horizon</h4>
+                      <p className="text-[11px] text-slate-400 leading-normal">Maintains node elevation above baseline components for 14 continuous operational cycles.</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-black text-[#00aa4f]">₱99 addition</span>
+                </div>
+
+                <div 
+                  onClick={() => setBoostingOption('1month')}
+                  className={`border p-4 rounded-2xl flex items-center justify-between cursor-pointer transition ${
+                    boostingOption === '1month' ? 'border-[#00aa4f] bg-emerald-50/20 shadow-sm' : 'border-slate-100 bg-white hover:border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input 
+                      type="radio" 
+                      readOnly
+                      checked={boostingOption === '1month'} 
+                      className="mt-0.5 accent-[#00aa4f]"
+                    />
+                    <div>
+                      <h4 className="text-xs font-black text-slate-800">Tier 3 Permanent Authority</h4>
+                      <p className="text-[11px] text-slate-400 leading-normal">Pinned global exposure targeting premium tenant inquiries. Full 30-day structural visibility expansion.</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-black text-[#00aa4f]">₱199 addition</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <h4 className="text-xs font-black text-slate-700">Calculated Accounting Statement</h4>
+                <p className="text-[11px] text-slate-400 leading-normal">Base listing filing fee (₱20) plus optional architectural placement acceleration.</p>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] uppercase font-black tracking-wider text-slate-400 block">Total Due Amount</span>
+                <span className="text-lg font-black text-[#00aa4f]">₱{totalAmount.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full sm:w-auto bg-[#00aa4f] hover:bg-[#009444] disabled:bg-slate-200 disabled:cursor-not-allowed text-white text-xs font-black px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-sm transition cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Writing Listing Node...
+                  </>
+                ) : (
+                  <>
+                    Proceed to Settlement Matrix <ArrowRight className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </button>
+            </div>
+
           </form>
         )}
+
       </main>
     </div>
   )
