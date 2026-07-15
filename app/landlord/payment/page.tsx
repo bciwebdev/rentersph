@@ -56,6 +56,9 @@ function PaymentContent() {
       const latestId = activeListings[0].id
       const landlordEmail = activeListings[0].email
 
+      // Convert the 'total' parameter to a number for the database numeric/integer constraint
+      const paymentAmount = parseFloat(total) || 119
+
       // 2. Upload the file to the 'receipts' bucket
       const fileExt = receiptFile.name.split('.').pop()
       const fileName = `${latestId}-${Date.now()}.${fileExt}`
@@ -74,13 +77,14 @@ function PaymentContent() {
         .from('receipts')
         .getPublicUrl(fileName)
 
-      // 4. INSERT the log into payment_transactions (including the required landlord_email)
+      // 4. INSERT the log into payment_transactions
       const { error: txError } = await supabase
         .from('payment_transactions')
         .insert([
           {
             property_id: latestId,
-            landlord_email: landlordEmail || 'unspecified@rentersph.com', // Fallback if email is null
+            landlord_email: landlordEmail || 'unspecified@rentersph.com',
+            amount: paymentAmount, // Added to resolve the amount NOT NULL constraint
             reference_number: referenceNumber.trim(),
             checkout_session_id: referenceNumber.trim(),
             receipt_url: publicUrl,
