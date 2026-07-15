@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import { 
-  FileText, MapPin, Phone, Image as ImageIcon, ArrowRight, LogOut, HelpCircle, Upload, X, Plus, Building2, RefreshCw, Trash2, Zap
+  FileText, MapPin, Phone, Image as ImageIcon, ArrowRight, LogOut, HelpCircle, Upload, X, Plus, Building2, RefreshCw, Trash2, Zap, Edit2
 } from 'lucide-react'
 
 type ViewState = 'dashboard' | 'create'
@@ -48,6 +48,7 @@ export default function LandlordPortalPage() {
   const [activeBoostPopoverId, setActiveBoostPopoverId] = useState<string | null>(null)
   const [activeExtendPopoverId, setActiveExtendPopoverId] = useState<string | null>(null)
   
+  // Create Form States
   const [title, setTitle] = useState('')
   const [propertyType, setPropertyType] = useState('Apartment')
   const [price, setPrice] = useState('')
@@ -65,6 +66,22 @@ export default function LandlordPortalPage() {
   
   const [descriptionRules, setDescriptionRules] = useState('')
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([])
+
+  // Edit Feature States
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingProperty, setEditingProperty] = useState<any | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editPropertyType, setEditPropertyType] = useState('Apartment')
+  const [editPrice, setEditPrice] = useState('')
+  const [editBedrooms, setEditBedrooms] = useState('1')
+  const [editBathrooms, setEditBathrooms] = useState('1')
+  const [editArea, setEditArea] = useState('30')
+  const [editRestroomPrivacy, setEditRestroomPrivacy] = useState('Private (Own Toilet)')
+  const [editBathroomPrivacy, setEditBathroomPrivacy] = useState('Private (Own Shower)')
+  const [editManualAddress, setEditManualAddress] = useState('')
+  const [editPlusCode, setEditPlusCode] = useState('')
+  const [editContactNumber, setEditContactNumber] = useState('')
+  const [editDescriptionRules, setEditDescriptionRules] = useState('')
 
   const BASE_PRICE = 20
   const [boostingOption, setBoostingOption] = useState('none') 
@@ -161,6 +178,87 @@ export default function LandlordPortalPage() {
       setMyProperties(prev => prev.filter(prop => prop.id !== propertyId))
     } catch (err: any) {
       alert(err.message || "Failed to delete the listing.")
+    }
+  }
+
+  // Edit Feature Form Setups
+  const openEditModal = (property: any) => {
+    setEditingProperty(property)
+    setEditTitle(property.title || '')
+    setEditPropertyType(property.property_type || 'Apartment')
+    setEditPrice(property.price?.toString() || '')
+    setEditBedrooms(property.bedrooms?.toString() || '1')
+    setEditBathrooms(property.bathrooms?.toString() || '1')
+    setEditArea(property.area_sqm?.toString() || '30')
+    setEditRestroomPrivacy(property.restroom_privacy || 'Private (Own Toilet)')
+    setEditBathroomPrivacy(property.bathroom_privacy || 'Private (Own Shower)')
+    setEditManualAddress(property.manual_address || '')
+    setEditPlusCode(property.plus_code || '')
+    setEditContactNumber(property.contact_number || '')
+    setEditDescriptionRules(property.description_rules || '')
+    setIsEditModalOpen(true)
+  }
+
+  const handleUpdateProperty = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingProperty) return
+    setIsSubmitting(true)
+
+    const parsedPrice = parseInt(editPrice, 10) || 0
+    const parsedArea = parseFloat(editArea) || 0
+
+    try {
+      const { error } = await supabase
+        .from('properties')
+        .update({
+          title: editTitle.trim(),
+          property_type: editPropertyType,
+          price: parsedPrice,
+          bedrooms: parseInt(editBedrooms, 10) || 0,
+          bathrooms: parseInt(editBathrooms, 10) || 0,
+          area_sqm: parsedArea,
+          restroom_privacy: editRestroomPrivacy,
+          bathroom_privacy: editBathroomPrivacy,
+          manual_address: editManualAddress.trim(),
+          address: editManualAddress.trim(),
+          plus_code: editPlusCode.trim() || null,
+          contact_number: editContactNumber.trim(),
+          description_rules: editDescriptionRules.trim(),
+        })
+        .eq('id', editingProperty.id)
+
+      if (error) throw error
+
+      // Update local state smoothly
+      setMyProperties(prev => 
+        prev.map(p => p.id === editingProperty.id 
+          ? { 
+              ...p, 
+              title: editTitle.trim(),
+              property_type: editPropertyType,
+              price: parsedPrice,
+              bedrooms: parseInt(editBedrooms, 10) || 0,
+              bathrooms: parseInt(editBathrooms, 10) || 0,
+              area_sqm: parsedArea,
+              restroom_privacy: editRestroomPrivacy,
+              bathroom_privacy: editBathroomPrivacy,
+              manual_address: editManualAddress.trim(),
+              address: editManualAddress.trim(),
+              plus_code: editPlusCode.trim() || null,
+              contact_number: editContactNumber.trim(),
+              description_rules: editDescriptionRules.trim()
+            } 
+          : p
+        )
+      )
+
+      setIsEditModalOpen(false)
+      setEditingProperty(null)
+      alert('Listing updated successfully!')
+    } catch (err: any) {
+      alert(err.message || 'Failed to update listing details.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -316,7 +414,6 @@ export default function LandlordPortalPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {myProperties.map((property) => (
-                  /* CRITICAL: Added relative position on this outer main card so popovers position relative to it */
                   <div key={property.id} className="bg-white border border-[#f1f5f9] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col justify-between relative">
                     <div>
                       {property.images && property.images.length > 0 ? (
@@ -362,34 +459,44 @@ export default function LandlordPortalPage() {
                       </div>
                       
                       {/* ACTION CONTROLS WRAPPER CELL */}
-                      <div className="grid grid-cols-3 text-[11px] font-bold relative">
+                      <div className="grid grid-cols-4 text-[10px] font-bold relative">
                         
+                        {/* EDIT BUTTON */}
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(property)}
+                          className="py-3 flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 border-r border-slate-100 transition cursor-pointer rounded-bl-2xl"
+                        >
+                          <Edit2 className="w-3 h-3 text-slate-400" />
+                          Edit
+                        </button>
+
                         {/* EXTEND BUTTON TRIGGER */}
                         <div 
-                          className="flex"
+                          className="flex border-r border-slate-100"
                           onMouseEnter={() => setActiveExtendPopoverId(property.id)}
                           onMouseLeave={() => setActiveExtendPopoverId(null)}
                         >
                           <button
                             type="button"
-                            className="w-full py-3 flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 border-r border-slate-100 transition cursor-pointer rounded-bl-2xl"
+                            className="w-full py-3 flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 transition cursor-pointer"
                           >
-                            <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+                            <RefreshCw className="w-3 h-3 text-slate-400" />
                             Extend
                           </button>
                         </div>
                         
                         {/* BOOST BUTTON TRIGGER */}
                         <div 
-                          className="flex"
+                          className="flex border-r border-slate-100"
                           onMouseEnter={() => setActiveBoostPopoverId(property.id)}
                           onMouseLeave={() => setActiveBoostPopoverId(null)}
                         >
                           <button
                             type="button"
-                            className="w-full py-3 flex items-center justify-center gap-1 text-[#00aa4f] hover:bg-emerald-50 border-r border-slate-100 transition cursor-pointer"
+                            className="w-full py-3 flex items-center justify-center gap-1 text-[#00aa4f] hover:bg-emerald-50 transition cursor-pointer"
                           >
-                            <Zap className="w-3.5 h-3.5 text-[#00aa4f]" />
+                            <Zap className="w-3 h-3 text-[#00aa4f]" />
                             Boost
                           </button>
                         </div>
@@ -400,16 +507,12 @@ export default function LandlordPortalPage() {
                           onClick={() => handleDeleteProperty(property.id)}
                           className="py-3 flex items-center justify-center gap-1 text-rose-600 hover:bg-rose-50 transition cursor-pointer rounded-br-2xl"
                         >
-                          <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                          <Trash2 className="w-3 h-3 text-rose-400" />
                           Delete
                         </button>
                       </div>
                     </div>
 
-                    {/* ======================================================== */}
-                    {/* GLOBALIZED PORTAL HOVER CONTAINERS (ANCORED TO ENTIRE CARD) */}
-                    {/* ======================================================== */}
-                    
                     {/* EXTEND POPOVER - SAFE INSIDE CARD BOUNDARIES */}
                     {activeExtendPopoverId === property.id && (
                       <div 
@@ -662,31 +765,17 @@ export default function LandlordPortalPage() {
                     required 
                     value={manualAddress}
                     onChange={(e) => setManualAddress(e.target.value)}
-                    placeholder="Unit #, Building name, Street Name, Barangay, City"
+                    placeholder="e.g., Room 302, 123 Claveria St, Davao City"
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <div className="flex items-center gap-1">
-                    <label className="text-xs font-bold text-slate-500">Google Maps Plus Code</label>
-                    <div className="relative">
-                      <HelpCircle 
-                        className="w-3.5 h-3.5 text-slate-300 hover:text-slate-400 cursor-pointer transition"
-                        onMouseEnter={() => setShowTooltip(true)}
-                        onMouseLeave={() => setShowTooltip(false)}
-                      />
-                      {showTooltip && (
-                        <div className="absolute z-30 bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-slate-800 text-white text-[10px] p-2 rounded-lg leading-relaxed shadow-md">
-                          Open Google Maps, click your building location pin, look for the code containing a plus symbol (e.g., "4VQQ+2X Manila"). This replaces database map placement pins perfectly.
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <label className="text-xs font-bold text-slate-500">Google Maps Plus Code (Optional)</label>
                   <input 
                     type="text" 
                     value={plusCode}
                     onChange={(e) => setPlusCode(e.target.value)}
-                    placeholder="e.g., H2X3+JF Quezon City"
+                    placeholder="e.g., VF56+HX Davao City"
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   />
                 </div>
@@ -694,208 +783,389 @@ export default function LandlordPortalPage() {
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">3. Landlord Connectivity</h2>
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">3. Direct Contact Channels</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Mobile Contact Number</label>
+                  <label className="text-xs font-bold text-slate-500">Mobile Number (SMS/Viber)</label>
                   <input 
                     type="tel" 
                     required 
                     value={contactNumber}
                     onChange={(e) => setContactNumber(e.target.value)}
-                    placeholder="e.g., 0917XXXXXXX"
+                    placeholder="e.g., 09171234567"
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Authenticated Email Reference</label>
+                  <label className="text-xs font-bold text-slate-500">Registered Landlord Email</label>
                   <input 
                     type="email" 
+                    readOnly 
                     disabled 
                     value={emailAddress}
-                    className="w-full bg-slate-100 border border-slate-200 text-slate-400 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none cursor-not-allowed"
+                    className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-400 outline-none"
                   />
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">4. Unit Descriptions & Guidelines</h2>
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">4. Context details & Rules</h2>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500">Amenities, Terms, House Rules</label>
+                <label className="text-xs font-bold text-slate-500">House Rules, Description, and Lease Inclusions</label>
                 <textarea 
-                  rows={4}
-                  required
+                  required 
                   value={descriptionRules}
                   onChange={(e) => setDescriptionRules(e.target.value)}
-                  placeholder="List down details regarding structural inclusions, utility split policies, maximum occupants allowed, downpayment/deposit schedules, curfew structures, or pet rules."
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition resize-none leading-relaxed"
+                  rows={4}
+                  placeholder="Describe your property. E.g., No pets allowed, 1-month deposit + 1-month advance, includes free Wi-Fi and water."
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition resize-none"
                 />
               </div>
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">5. Visual Verification Material</h2>
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">5. Media Upload</h2>
               <div className="space-y-3">
-                <label className="text-xs font-bold text-slate-500 block">Unit Layout Photos (Max 10 items)</label>
+                <label className="text-xs font-bold text-slate-500">Upload Property Images (Maximum of 10 photos)</label>
                 
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                  {selectedFiles.map((item, index) => (
-                    <div key={index} className="relative aspect-square border border-slate-100 rounded-2xl overflow-hidden group bg-slate-50">
-                      <img src={item.previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(index)}
-                        className="absolute top-1.5 right-1.5 bg-slate-900/70 hover:bg-slate-900 text-white p-1 rounded-lg transition"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-
-                  {selectedFiles.length < 10 && (
-                    <label className="aspect-square border-2 border-dashed border-slate-200 hover:border-[#00aa4f] rounded-2xl flex flex-col items-center justify-center cursor-pointer bg-slate-50/50 hover:bg-slate-50 text-slate-400 hover:text-[#00aa4f] transition space-y-1.5 p-2">
-                      <Upload className="w-5 h-5 stroke-[2.5]" />
-                      <span className="text-[10px] font-black tracking-wide uppercase text-center leading-tight">Upload Images</span>
-                      <input 
-                        type="file" 
-                        multiple 
-                        accept="image/*" 
-                        onChange={handleFileChange} 
-                        className="hidden" 
-                      />
-                    </label>
-                  )}
+                <div className="border-2 border-dashed border-slate-200 hover:border-[#00aa4f] rounded-2xl p-8 text-center transition bg-slate-50/50 relative cursor-pointer group">
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload className="w-8 h-8 text-slate-400 group-hover:text-[#00aa4f] transition" />
+                    <p className="text-xs font-black text-slate-600">Drag & drop files or click to locate photos</p>
+                    <p className="text-[10px] text-slate-400 font-medium">Supports JPG, PNG, WEBP formats up to 10MB total</p>
+                  </div>
                 </div>
+
+                {selectedFiles.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4">
+                    {selectedFiles.map((file, idx) => (
+                      <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-slate-100 group shadow-sm bg-slate-50">
+                        <img src={file.previewUrl} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(idx)}
+                          className="absolute top-1 right-1 bg-black/50 hover:bg-black/80 text-white rounded-full p-1 transition shadow cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">6. Engine Visibility Boosting</h2>
-              <div className="space-y-3">
-                <div 
-                  onClick={() => setBoostingOption('none')}
-                  className={`border p-4 rounded-2xl flex items-center justify-between cursor-pointer transition ${
-                    boostingOption === 'none' ? 'border-[#00aa4f] bg-emerald-50/20 shadow-sm' : 'border-slate-100 bg-white hover:border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <input 
-                      type="radio" 
-                      readOnly
-                      checked={boostingOption === 'none'} 
-                      className="mt-0.5 accent-[#00aa4f]"
-                    />
-                    <div>
-                      <h4 className="text-xs font-black text-slate-800">Standard Placement Listing</h4>
-                      <p className="text-[11px] text-slate-400 leading-normal">Basic insertion inside general geographical query filters. Valid context duration for 30 clear days.</p>
-                    </div>
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">6. System Plan Upgrade</h2>
+              <div className="p-5 border border-slate-100 rounded-3xl bg-slate-50/50 space-y-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-xs font-black text-slate-800">Basic Listing Directory Fee</h3>
+                    <p className="text-[10px] text-slate-400 font-medium">Standard 30-day listing directory presence</p>
                   </div>
-                  <span className="text-xs font-black text-slate-700">Free base</span>
+                  <span className="text-xs font-black text-slate-700">₱{BASE_PRICE}</span>
                 </div>
 
-                <div 
-                  onClick={() => setBoostingOption('5days')}
-                  className={`border p-4 rounded-2xl flex items-center justify-between cursor-pointer transition ${
-                    boostingOption === '5days' ? 'border-[#00aa4f] bg-emerald-50/20 shadow-sm' : 'border-slate-100 bg-white hover:border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <input 
-                      type="radio" 
-                      readOnly
-                      checked={boostingOption === '5days'} 
-                      className="mt-0.5 accent-[#00aa4f]"
-                    />
-                    <div>
-                      <h4 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                        Tier 1 Blitz Campaign
-                        <span className="bg-amber-100 text-amber-800 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">POPULAR</span>
-                      </h4>
-                      <p className="text-[11px] text-slate-400 leading-normal">Elevates card nodes to regional landing headers. Generates dedicated system traffic priority vectors for 5 days.</p>
-                    </div>
+                <div className="border-t border-slate-200/60 pt-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                      Optional Visibility Boost Plan
+                      <button 
+                        type="button"
+                        onMouseEnter={() => setShowTooltip(true)}
+                        onMouseLeave={() => setShowTooltip(false)}
+                        className="text-slate-400 hover:text-slate-600 relative cursor-pointer"
+                      >
+                        <HelpCircle className="w-3.5 h-3.5" />
+                        {showTooltip && (
+                          <span className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[9px] leading-relaxed p-2.5 rounded-lg w-48 font-semibold text-center z-50 shadow-xl">
+                            Upgrading your visibility places your rental listing higher in renter search query indices and pins it on the homepage.
+                          </span>
+                        )}
+                      </button>
+                    </h3>
                   </div>
-                  <span className="text-xs font-black text-[#00aa4f]">₱49 addition</span>
-                </div>
 
-                <div 
-                  onClick={() => setBoostingOption('2weeks')}
-                  className={`border p-4 rounded-2xl flex items-center justify-between cursor-pointer transition ${
-                    boostingOption === '2weeks' ? 'border-[#00aa4f] bg-emerald-50/20 shadow-sm' : 'border-slate-100 bg-white hover:border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <input 
-                      type="radio" 
-                      readOnly
-                      checked={boostingOption === '2weeks'} 
-                      className="mt-0.5 accent-[#00aa4f]"
-                    />
-                    <div>
-                      <h4 className="text-xs font-black text-slate-800">Tier 2 Extended Horizon</h4>
-                      <p className="text-[11px] text-slate-400 leading-normal">Maintains node elevation above baseline components for 14 continuous operational cycles.</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-black text-[#00aa4f]">₱99 addition</span>
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <label className={`border p-3.5 rounded-2xl flex flex-col justify-between h-24 transition cursor-pointer ${
+                      boostingOption === 'none' ? 'border-[#00aa4f] bg-emerald-50/20' : 'border-slate-100 hover:border-slate-300 bg-white'
+                    }`}>
+                      <input 
+                        type="radio" 
+                        name="boost" 
+                        value="none" 
+                        checked={boostingOption === 'none'}
+                        onChange={(e) => setBoostingOption(e.target.value)}
+                        className="sr-only" 
+                      />
+                      <span className="text-[10px] font-black text-slate-700">No Boost</span>
+                      <span className="text-xs font-black text-slate-400">₱0</span>
+                    </label>
 
-                <div 
-                  onClick={() => setBoostingOption('1month')}
-                  className={`border p-4 rounded-2xl flex items-center justify-between cursor-pointer transition ${
-                    boostingOption === '1month' ? 'border-[#00aa4f] bg-emerald-50/20 shadow-sm' : 'border-slate-100 bg-white hover:border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <input 
-                      type="radio" 
-                      readOnly
-                      checked={boostingOption === '1month'} 
-                      className="mt-0.5 accent-[#00aa4f]"
-                    />
-                    <div>
-                      <h4 className="text-xs font-black text-slate-800">Tier 3 Permanent Authority</h4>
-                      <p className="text-[11px] text-slate-400 leading-normal">Pinned global exposure targeting premium tenant inquiries. Full 30-day structural visibility expansion.</p>
-                    </div>
+                    <label className={`border p-3.5 rounded-2xl flex flex-col justify-between h-24 transition cursor-pointer ${
+                      boostingOption === '5days' ? 'border-[#00aa4f] bg-emerald-50/20' : 'border-slate-100 hover:border-slate-300 bg-white'
+                    }`}>
+                      <input 
+                        type="radio" 
+                        name="boost" 
+                        value="5days" 
+                        checked={boostingOption === '5days'}
+                        onChange={(e) => setBoostingOption(e.target.value)}
+                        className="sr-only" 
+                      />
+                      <span className="text-[10px] font-black text-slate-700">5-Day Hot Boost</span>
+                      <span className="text-xs font-black text-[#00aa4f]">₱49</span>
+                    </label>
+
+                    <label className={`border p-3.5 rounded-2xl flex flex-col justify-between h-24 transition cursor-pointer ${
+                      boostingOption === '2weeks' ? 'border-[#00aa4f] bg-emerald-50/20' : 'border-slate-100 hover:border-slate-300 bg-white'
+                    }`}>
+                      <input 
+                        type="radio" 
+                        name="boost" 
+                        value="2weeks" 
+                        checked={boostingOption === '2weeks'}
+                        onChange={(e) => setBoostingOption(e.target.value)}
+                        className="sr-only" 
+                      />
+                      <span className="text-[10px] font-black text-slate-700">2-Week Visibility Surge</span>
+                      <span className="text-xs font-black text-[#00aa4f]">₱99</span>
+                    </label>
+
+                    <label className={`border p-3.5 rounded-2xl flex flex-col justify-between h-24 transition cursor-pointer ${
+                      boostingOption === '1month' ? 'border-[#00aa4f] bg-emerald-50/20' : 'border-slate-100 hover:border-slate-300 bg-white'
+                    }`}>
+                      <input 
+                        type="radio" 
+                        name="boost" 
+                        value="1month" 
+                        checked={boostingOption === '1month'}
+                        onChange={(e) => setBoostingOption(e.target.value)}
+                        className="sr-only" 
+                      />
+                      <span className="text-[10px] font-black text-slate-700">1-Month Domination</span>
+                      <span className="text-xs font-black text-[#00aa4f]">₱199</span>
+                    </label>
                   </div>
-                  <span className="text-xs font-black text-[#00aa4f]">₱199 addition</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex justify-between items-center pt-6 border-t border-slate-100">
               <div>
-                <h4 className="text-xs font-black text-slate-700">Calculated Accounting Statement</h4>
-                <p className="text-[11px] text-slate-400 leading-normal">Base listing filing fee (₱20) plus optional architectural placement acceleration.</p>
+                <p className="text-xs font-bold text-slate-400">Total Payable Amount:</p>
+                <p className="text-xl font-black text-[#00aa4f]">₱{totalAmount.toLocaleString()}</p>
               </div>
-              <div className="text-right">
-                <span className="text-[10px] uppercase font-black tracking-wider text-slate-400 block">Total Due Amount</span>
-                <span className="text-lg font-black text-[#00aa4f]">₱{totalAmount.toLocaleString()}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full sm:w-auto bg-[#00aa4f] hover:bg-[#009444] disabled:bg-slate-200 disabled:cursor-not-allowed text-white text-xs font-black px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-sm transition cursor-pointer"
+                className="bg-[#00aa4f] hover:bg-[#009444] text-white font-black text-xs px-6 py-4 rounded-2xl flex items-center gap-2 transition disabled:opacity-50 cursor-pointer"
               >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Writing Listing Node...
-                  </>
-                ) : (
-                  <>
-                    Proceed to Settlement Matrix <ArrowRight className="w-3.5 h-3.5" />
-                  </>
-                )}
+                {isSubmitting ? 'Configuring System...' : 'Proceed to Gcash Payment'}
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
 
           </form>
         )}
-
       </main>
+
+      {/* ========================================== */}
+      {/* MINIMALIST EDIT PROPERTY MODAL             */}
+      {/* ========================================== */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-lg rounded-[32px] p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-black text-slate-800">Edit Rental Listing Details</h2>
+              <button 
+                type="button"
+                onClick={() => { setIsEditModalOpen(false); setEditingProperty(null); }}
+                className="text-slate-400 hover:text-slate-600 text-sm cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateProperty} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Property Title</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Price (₱ / mo)</label>
+                  <input 
+                    type="number" 
+                    required 
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Floor Area (sqm)</label>
+                  <input 
+                    type="number" 
+                    required 
+                    value={editArea}
+                    onChange={(e) => setEditArea(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Property Category</label>
+                  <select 
+                    value={editPropertyType}
+                    onChange={(e) => setEditPropertyType(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
+                  >
+                    <option>Apartment</option>
+                    <option>Condo Unit</option>
+                    <option>Dormitory Bedspace</option>
+                    <option>Single House</option>
+                    <option>Room Rental Only</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Contact Number</label>
+                  <input 
+                    type="tel" 
+                    required 
+                    value={editContactNumber}
+                    onChange={(e) => setEditContactNumber(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Bedrooms</label>
+                  <select 
+                    value={editBedrooms}
+                    onChange={(e) => setEditBedrooms(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
+                  >
+                    <option>0 (Studio)</option>
+                    <option>1</option>
+                    <option>2</option>
+                    <option>3</option>
+                    <option>4+</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Bathrooms</label>
+                  <select 
+                    value={editBathrooms}
+                    onChange={(e) => setEditBathrooms(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
+                  >
+                    <option>1</option>
+                    <option>2</option>
+                    <option>3+</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Restroom Privacy</label>
+                  <select 
+                    value={editRestroomPrivacy}
+                    onChange={(e) => setEditRestroomPrivacy(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
+                  >
+                    <option>Private (Own Toilet)</option>
+                    <option>Shared Common Restroom</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Shower Privacy</label>
+                  <select 
+                    value={editBathroomPrivacy}
+                    onChange={(e) => setEditBathroomPrivacy(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
+                  >
+                    <option>Private (Own Shower)</option>
+                    <option>Shared Common Shower</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Descriptive Address</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={editManualAddress}
+                  onChange={(e) => setEditManualAddress(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Google Maps Plus Code (Optional)</label>
+                  <input 
+                    type="text" 
+                    value={editPlusCode}
+                    onChange={(e) => setEditPlusCode(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Context details & House Rules</label>
+                <textarea 
+                  required 
+                  rows={3}
+                  value={editDescriptionRules}
+                  onChange={(e) => setEditDescriptionRules(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl text-xs font-semibold text-slate-800 focus:outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-slate-50">
+                <button 
+                  type="button" 
+                  onClick={() => { setIsEditModalOpen(false); setEditingProperty(null); }}
+                  className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="w-full py-3 bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs rounded-xl transition disabled:opacity-50 cursor-pointer"
+                >
+                  {isSubmitting ? 'Saving Changes...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
