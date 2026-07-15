@@ -1,12 +1,12 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { createBrowserClient } from '@supabase/ssr'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, MapPin, Home, Building2, Bed, 
-  Sparkles, Zap, Star, CheckCircle, Menu, X
+  Sparkles, Zap, Star, CheckCircle, Menu, X, ChevronDown
 } from 'lucide-react'
 
 // FIX: Use createBrowserClient from @supabase/ssr to eliminate cookie runtime compilation errors
@@ -34,9 +34,31 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   
-  // Filter states (Cleaned up: removed bedrooms, minPrice, and maxPrice)
+  // Filter states
   const [search, setSearch] = useState('')
   const [propertyType, setPropertyType] = useState('All Types')
+  const [propertyDropdownOpen, setPropertyDropdownOpen] = useState(false)
+  
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const propertyTypes = [
+    'All Types',
+    'Apartment',
+    'Condominium',
+    'House',
+    'Boarding House'
+  ]
+
+  // Close custom property dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setPropertyDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   useEffect(() => {
     async function fetchProperties() {
@@ -44,7 +66,6 @@ export default function HomePage() {
       const { data, error } = await supabase
         .from('properties')
         .select('*')
-        // FIX: Broaden lookup to capture your approved "LIVE ON SITE" status as well as "active" and "approved" variations
         .in('status', ['LIVE ON SITE', 'active', 'Active', 'approved', 'Approved'])
         .order('created_at', { ascending: false })
       
@@ -177,7 +198,7 @@ export default function HomePage() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[350px] bg-gradient-to-tr from-emerald-200/20 to-teal-200/20 blur-3xl rounded-full -z-10" />
       </section>
 
-      {/* Integrated Search & Filter Panel (UPDATED TO SINGLE LINE: LOCATION, PROPERTY TYPE, SEARCH BUTTON) */}
+      {/* Integrated Search & Filter Panel */}
       <section className="max-w-5xl mx-auto px-4 -mt-10 mb-16 relative z-20">
         <motion.form 
           onSubmit={handleApplyFilters} 
@@ -201,23 +222,62 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* 2. Property Type Field */}
-          <div className="flex-1 flex items-center gap-3 px-4 py-2 border-b md:border-b-0 md:border-r border-slate-100">
-            <Building2 className="w-5 h-5 text-slate-400 shrink-0" />
-            <div className="flex-1">
-              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Property Type</label>
-              <select 
-                value={propertyType} 
-                onChange={(e) => setPropertyType(e.target.value)} 
-                className="w-full bg-transparent text-xs font-bold text-slate-800 outline-none mt-0.5 cursor-pointer appearance-none"
-              >
-                <option value="All Types">All Types</option>
-                <option value="Apartment">Apartment</option>
-                <option value="Condominium">Condominium</option>
-                <option value="House">House</option>
-                <option value="Boarding House">Boarding House</option>
-              </select>
+          {/* 2. Property Type Field (MODERNIZED DROP-DOWN HOVER DESIGN) */}
+          <div className="flex-1 relative" ref={dropdownRef}>
+            <div 
+              onClick={() => setPropertyDropdownOpen(!propertyDropdownOpen)}
+              className="flex items-center justify-between gap-3 px-4 py-2 border-b md:border-b-0 md:border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-xl md:rounded-none transition duration-150 select-none"
+            >
+              <div className="flex items-center gap-3 overflow-hidden">
+                <Building2 className="w-5 h-5 text-slate-400 shrink-0" />
+                <div className="flex-1 text-left">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Property Type</label>
+                  <span className="block text-xs font-bold text-slate-800 mt-0.5 truncate">
+                    {propertyType}
+                  </span>
+                </div>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${propertyDropdownOpen ? 'rotate-180' : ''}`} />
             </div>
+
+            {/* Custom Modern Dropdown list */}
+            <AnimatePresence>
+              {propertyDropdownOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute left-0 right-0 md:left-4 mt-2 min-w-[210px] bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 p-1.5 overflow-hidden"
+                >
+                  {propertyTypes.map((type) => {
+                    const isSelected = propertyType === type;
+                    return (
+                      <button
+                        type="button"
+                        key={type}
+                        onClick={() => {
+                          setPropertyType(type);
+                          setPropertyDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-xs font-bold rounded-xl transition-all duration-150 flex items-center justify-between ${
+                          isSelected 
+                            ? 'bg-emerald-50 text-emerald-700 font-black' 
+                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        }`}
+                      >
+                        <span>{type}</span>
+                        {isSelected && (
+                          <div className="w-4 h-4 rounded-full bg-emerald-600 flex items-center justify-center">
+                            <CheckCircle className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* 3. Streamlined Search Action Button */}
@@ -234,7 +294,7 @@ export default function HomePage() {
       {/* Quick Filter Category Chips */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
         <div className="flex items-center gap-3 overflow-x-auto pb-3 scrollbar-none mask-image-inline">
-          {['All Types', 'Apartment', 'Condominium', 'House', 'Boarding House'].map((type) => (
+          {propertyTypes.map((type) => (
             <button
               key={type}
               onClick={() => setPropertyType(type)}
