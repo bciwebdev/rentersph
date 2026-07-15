@@ -14,7 +14,7 @@ function PaymentContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   
-  const total = searchParams.get('total') || '20'
+  const total = searchParams.get('total') || '119'
   const [referenceNumber, setReferenceNumber] = useState('')
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [isVerifying, setIsVerifying] = useState(false)
@@ -73,7 +73,7 @@ function PaymentContent() {
         .from('receipts')
         .getPublicUrl(fileName)
 
-      // 4. INSERT the log into payment_transactions using your verified columns
+      // 4. INSERT the log into payment_transactions
       const { error: txError } = await supabase
         .from('payment_transactions')
         .insert([
