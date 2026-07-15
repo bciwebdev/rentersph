@@ -6,7 +6,7 @@ import { createBrowserClient } from '@supabase/ssr'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, MapPin, Home, Building2, Bed, 
-  Sparkles, Zap, Star, CheckCircle, Menu, X, ChevronDown
+  Sparkles, Zap, Star, CheckCircle, Menu, X, ChevronDown, ChevronLeft
 } from 'lucide-react'
 
 // FIX: Use createBrowserClient from @supabase/ssr to eliminate cookie runtime compilation errors
@@ -14,6 +14,45 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
+
+// Hierarchical Geographic Data for PH Rental Hotspots
+const PHILIPPINES_LOCATIONS: Record<string, Record<string, Record<string, string[]>>> = {
+  'Luzon': {
+    'Metro Manila': {
+      'Taguig': ['BGC', 'Fort Bonifacio', 'Western Bicutan', 'Pinagsama'],
+      'Manila': ['Malate', 'Ermita', 'Sampaloc', 'Binondo'],
+      'Quezon City': ['Diliman', 'Katipunan', 'Cubao', 'Commonwealth'],
+      'Makati': ['Bel-Air', 'Poblacion', 'San Lorenzo', 'Guadalupe Nuevo']
+    },
+    'Benguet': {
+      'Baguio City': ['Camp 7', 'Bakakeng Central', 'Magsaysay', 'Session Road']
+    },
+    'Pampanga': {
+      'Angeles City': ['Balibago', 'Malabanias', 'Cutcut']
+    }
+  },
+  'Visayas': {
+    'Cebu': {
+      'Cebu City': ['Lahug', 'Mabolo', 'Banilad', 'Capitol Site'],
+      'Lapu-Lapu City': ['Mactan', 'Maribago', 'Basak'],
+      'Mandaue City': ['Subangdaku', 'Tipolo', 'Bakilid']
+    },
+    'Iloilo': {
+      'Iloilo City': ['Mandurriao', 'Jaro', 'Molo', 'Arevalo']
+    }
+  },
+  'Mindanao': {
+    'Davao del Sur': {
+      'Davao City': ['Buhangin', 'Talomo', 'Poblacion', 'Agdao', 'Matina']
+    },
+    'Misamis Oriental': {
+      'Cagayan de Oro': ['Nazareth', 'Carmen', 'Kauswagan', 'Patag']
+    },
+    'Zamboanga del Sur': {
+      'Zamboanga City': ['Pasonanca', 'Tetuan', 'Canelar']
+    }
+  }
+}
 
 // Structural mock data for non-dynamic landing sections
 const CITIES = [
@@ -39,7 +78,15 @@ export default function HomePage() {
   const [propertyType, setPropertyType] = useState('All Types')
   const [propertyDropdownOpen, setPropertyDropdownOpen] = useState(false)
   
+  // Location Dropdown Hierarchical states
+  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false)
+  const [locStep, setLocStep] = useState<'island' | 'province' | 'city' | 'barangay'>('island')
+  const [selectedIsland, setSelectedIsland] = useState<string | null>(null)
+  const [selectedProvince, setSelectedProvince] = useState<string | null>(null)
+  const [selectedCity, setSelectedCity] = useState<string | null>(null)
+
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const locDropdownRef = useRef<HTMLDivElement>(null)
 
   const propertyTypes = [
     'All Types',
@@ -49,11 +96,14 @@ export default function HomePage() {
     'Boarding House'
   ]
 
-  // Close custom property dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setPropertyDropdownOpen(false)
+      }
+      if (locDropdownRef.current && !locDropdownRef.current.contains(event.target as Node)) {
+        setLocationDropdownOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -127,6 +177,49 @@ export default function HomePage() {
       return property.cover_image
     }
     return null
+  }
+
+  // Handle Location selection hierarchy steps
+  const handleSelectIsland = (island: string) => {
+    setSelectedIsland(island)
+    setLocStep('province')
+  }
+
+  const handleSelectProvince = (province: string) => {
+    setSelectedProvince(province)
+    setLocStep('city')
+  }
+
+  const handleSelectCity = (city: string) => {
+    setSelectedCity(city)
+    setLocStep('barangay')
+  }
+
+  const handleSelectBarangay = (barangay: string) => {
+    const fullString = `${barangay}, ${selectedCity}, ${selectedProvince}`
+    setSearch(fullString)
+    setLocationDropdownOpen(false)
+    resetLocFlow()
+  }
+
+  const resetLocFlow = () => {
+    setLocStep('island')
+    setSelectedIsland(null)
+    setSelectedProvince(null)
+    setSelectedCity(null)
+  }
+
+  const goBackLocStep = () => {
+    if (locStep === 'province') {
+      setLocStep('island')
+      setSelectedIsland(null)
+    } else if (locStep === 'city') {
+      setLocStep('province')
+      setSelectedProvince(null)
+    } else if (locStep === 'barangay') {
+      setLocStep('city')
+      setSelectedCity(null)
+    }
   }
 
   const boostedListings = filteredProperties.filter(p => p.boost_tier && p.boost_tier !== 'none' && p.boost_expires_at ? new Date(p.boost_expires_at) > new Date() : false)
@@ -207,22 +300,159 @@ export default function HomePage() {
           transition={{ delay: 0.1, duration: 0.5 }} 
           className="bg-white p-3 sm:p-4 rounded-2xl md:rounded-full border border-slate-200 shadow-xl flex flex-col md:flex-row items-stretch md:items-center gap-3"
         >
-          {/* 1. Where (Location) Field */}
-          <div className="flex-1 flex items-center gap-3 px-4 py-2 border-b md:border-b-0 md:border-r border-slate-100">
-            <MapPin className="w-5 h-5 text-slate-400 shrink-0" />
-            <div className="flex-1">
-              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Where</label>
-              <input 
-                value={search} 
-                onChange={(e) => setSearch(e.target.value)} 
-                type="text" 
-                placeholder="e.g. Davao City, Condominium..." 
-                className="w-full bg-transparent text-xs font-bold text-slate-800 placeholder-slate-400 outline-none mt-0.5" 
-              />
+          {/* 1. Where (Location) Field - MODERN HIERARCHICAL DRILLDOWN PICKER */}
+          <div className="flex-1 relative" ref={locDropdownRef}>
+            <div 
+              onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
+              className="flex items-center gap-3 px-4 py-2 border-b md:border-b-0 md:border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-xl md:rounded-none transition duration-150 select-none"
+            >
+              <MapPin className="w-5 h-5 text-slate-400 shrink-0" />
+              <div className="flex-1 text-left min-w-0">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Where</label>
+                <input 
+                  value={search} 
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    if (!locationDropdownOpen) setLocationDropdownOpen(true);
+                  }} 
+                  type="text" 
+                  placeholder="e.g. Davao City, Condominium..." 
+                  className="w-full bg-transparent text-xs font-bold text-slate-800 placeholder-slate-400 outline-none mt-0.5 truncate" 
+                />
+              </div>
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${locationDropdownOpen ? 'rotate-180' : ''}`} />
             </div>
+
+            {/* Hierarchical Location Dropdown Container */}
+            <AnimatePresence>
+              {locationDropdownOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute left-0 right-0 mt-2 min-w-[280px] md:min-w-[340px] bg-white rounded-2xl shadow-2xl border border-slate-200/80 z-50 p-4"
+                >
+                  {/* Dropdown Header & Breadcrumb Trail */}
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-3">
+                    {locStep !== 'island' && (
+                      <button 
+                        type="button" 
+                        onClick={goBackLocStep} 
+                        className="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition shrink-0"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                    )}
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate flex items-center gap-1">
+                      <span className={locStep === 'island' ? 'text-emerald-600 font-extrabold' : ''}>PH</span>
+                      {selectedIsland && (
+                        <>
+                          <span>/</span>
+                          <span className={locStep === 'province' ? 'text-emerald-600 font-extrabold' : ''}>{selectedIsland}</span>
+                        </>
+                      )}
+                      {selectedProvince && (
+                        <>
+                          <span>/</span>
+                          <span className={locStep === 'city' ? 'text-emerald-600 font-extrabold' : ''}>{selectedProvince}</span>
+                        </>
+                      )}
+                      {selectedCity && (
+                        <>
+                          <span>/</span>
+                          <span className={locStep === 'barangay' ? 'text-emerald-600 font-extrabold font-black' : ''}>{selectedCity}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* List Content based on Steps */}
+                  <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
+                    
+                    {/* STEP 1: Islands */}
+                    {locStep === 'island' && (
+                      <>
+                        <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Region Group:</div>
+                        {Object.keys(PHILIPPINES_LOCATIONS).map((island) => (
+                          <button
+                            type="button"
+                            key={island}
+                            onClick={() => handleSelectIsland(island)}
+                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
+                          >
+                            <span>{island}</span>
+                            <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
+                              {Object.keys(PHILIPPINES_LOCATIONS[island]).length} Provinces
+                            </span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+
+                    {/* STEP 2: Provinces */}
+                    {locStep === 'province' && selectedIsland && (
+                      <>
+                        <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Province:</div>
+                        {Object.keys(PHILIPPINES_LOCATIONS[selectedIsland]).map((province) => (
+                          <button
+                            type="button"
+                            key={province}
+                            onClick={() => handleSelectProvince(province)}
+                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
+                          >
+                            <span>{province}</span>
+                            <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
+                              {Object.keys(PHILIPPINES_LOCATIONS[selectedIsland][province]).length} Cities
+                            </span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+
+                    {/* STEP 3: Cities */}
+                    {locStep === 'city' && selectedIsland && selectedProvince && (
+                      <>
+                        <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select City / Municipality:</div>
+                        {Object.keys(PHILIPPINES_LOCATIONS[selectedIsland][selectedProvince]).map((city) => (
+                          <button
+                            type="button"
+                            key={city}
+                            onClick={() => handleSelectCity(city)}
+                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
+                          >
+                            <span>{city}</span>
+                            <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
+                              {PHILIPPINES_LOCATIONS[selectedIsland][selectedProvince][city].length} Barangays
+                            </span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+
+                    {/* STEP 4: Barangays */}
+                    {locStep === 'barangay' && selectedIsland && selectedProvince && selectedCity && (
+                      <>
+                        <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Barangay:</div>
+                        {PHILIPPINES_LOCATIONS[selectedIsland][selectedProvince][selectedCity].map((brgy) => (
+                          <button
+                            type="button"
+                            key={brgy}
+                            onClick={() => handleSelectBarangay(brgy)}
+                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-white hover:bg-emerald-600 rounded-xl transition duration-150"
+                          >
+                            {brgy}
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* 2. Property Type Field (MODERNIZED DROP-DOWN HOVER DESIGN) */}
+          {/* 2. Property Type Field */}
           <div className="flex-1 relative" ref={dropdownRef}>
             <div 
               onClick={() => setPropertyDropdownOpen(!propertyDropdownOpen)}
