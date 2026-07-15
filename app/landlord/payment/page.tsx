@@ -55,8 +55,6 @@ function PaymentContent() {
 
       const latestId = activeListings[0].id
       const landlordEmail = activeListings[0].email
-
-      // Convert the 'total' parameter to a number for the database numeric/integer constraint
       const paymentAmount = parseFloat(total) || 119
 
       // 2. Upload the file to the 'receipts' bucket
@@ -84,7 +82,8 @@ function PaymentContent() {
           {
             property_id: latestId,
             landlord_email: landlordEmail || 'unspecified@rentersph.com',
-            amount: paymentAmount, // Added to resolve the amount NOT NULL constraint
+            amount: paymentAmount,
+            boost_tier: 'standard', // Added to satisfy the boost_tier NOT NULL constraint
             reference_number: referenceNumber.trim(),
             checkout_session_id: referenceNumber.trim(),
             receipt_url: publicUrl,
