@@ -79,8 +79,9 @@ function PaymentContent() {
         .insert([
           {
             property_id: latestId,
-            checkout_session_id: referenceNumber.trim(), // Storing reference code here
-            receipt_url: publicUrl,                       // Storing receipt link here
+            reference_number: referenceNumber.trim(),
+            checkout_session_id: referenceNumber.trim(),
+            receipt_url: publicUrl,
             payment_status: 'pending'
           }
         ])
