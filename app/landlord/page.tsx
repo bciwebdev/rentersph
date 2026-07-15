@@ -44,6 +44,9 @@ export default function LandlordPortalPage() {
   const [myProperties, setMyProperties] = useState<any[]>([])
   const [currentView, setCurrentView] = useState<ViewState>('dashboard')
   
+  // Track which property card currently has the Boost option menu hovering/open
+  const [activeBoostPopoverId, setActiveBoostPopoverId] = useState<string | null>(null)
+  
   const [title, setTitle] = useState('')
   const [propertyType, setPropertyType] = useState('Apartment')
   const [price, setPrice] = useState('')
@@ -354,8 +357,8 @@ export default function LandlordPortalPage() {
                         <span>{property.bedrooms} BR · {property.bathrooms} BA</span>
                       </div>
                       
-                      {/* UPDATED BUTTON CONFIGURATION TO A 3-COLUMN SYSTEM */}
-                      <div className="grid grid-cols-3 text-[11px] font-bold">
+                      {/* ACTION CONTROLS WRAPPER CELL */}
+                      <div className="grid grid-cols-3 text-[11px] font-bold relative">
                         <button
                           type="button"
                           onClick={() => router.push(`/landlord/payment?total=20&propertyId=${property.id}&type=extension`)}
@@ -365,14 +368,65 @@ export default function LandlordPortalPage() {
                           Extend
                         </button>
                         
-                        <button
-                          type="button"
-                          onClick={() => router.push(`/landlord/payment?propertyId=${property.id}&type=boost`)}
-                          className="py-2.5 flex items-center justify-center gap-1 text-[#00aa4f] hover:bg-emerald-50 border-r border-slate-100 transition cursor-pointer"
+                        {/* THE HOVER TRIGGER CONTAINER FOR VISIBILITY UPGRADE OVERLAYS */}
+                        <div 
+                          className="relative flex"
+                          onMouseEnter={() => setActiveBoostPopoverId(property.id)}
+                          onMouseLeave={() => setActiveBoostPopoverId(null)}
                         >
-                          <Zap className="w-3.5 h-3.5 text-[#00aa4f]" />
-                          Boost
-                        </button>
+                          <button
+                            type="button"
+                            className="w-full py-2.5 flex items-center justify-center gap-1 text-[#00aa4f] hover:bg-emerald-50 border-r border-slate-100 transition cursor-pointer"
+                          >
+                            <Zap className="w-3.5 h-3.5 text-[#00aa4f]" />
+                            Boost
+                          </button>
+
+                          {/* DYNAMIC HOVERING POPOVER MODAL DISPLAYED EXACTLY ABOVE THE TRIGGER GRID ELEMENT */}
+                          {activeBoostPopoverId === property.id && (
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl p-3 z-40 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                              <p className="text-[10px] uppercase font-black tracking-wider text-slate-400 border-b border-slate-50 pb-1.5 px-1">
+                                Optional Visibility Rank Upgrades
+                              </p>
+                              
+                              <button
+                                type="button"
+                                onClick={() => router.push(`/landlord/payment?total=49&propertyId=${property.id}&type=boost&tier=5days`)}
+                                className="w-full text-left p-2 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                              >
+                                <div>
+                                  <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">5-Day Hot Boost</p>
+                                  <p className="text-[9px] text-slate-400 font-medium">Elevate to landing headers</p>
+                                </div>
+                                <span className="text-[#00aa4f] font-black text-[11px]">+₱49</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => router.push(`/landlord/payment?total=99&propertyId=${property.id}&type=boost&tier=2weeks`)}
+                                className="w-full text-left p-2 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                              >
+                                <div>
+                                  <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">2-Week Visibility Surge</p>
+                                  <p className="text-[9px] text-slate-400 font-medium">Maintain higher tier queue placement</p>
+                                </div>
+                                <span className="text-[#00aa4f] font-black text-[11px]">+₱99</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => router.push(`/landlord/payment?total=199&propertyId=${property.id}&type=boost&tier=1month`)}
+                                className="w-full text-left p-2 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                              >
+                                <div>
+                                  <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">1-Month Market Domination</p>
+                                  <p className="text-[9px] text-slate-400 font-medium">Premium pinned placement exposure</p>
+                                </div>
+                                <span className="text-[#00aa4f] font-black text-[11px]">+₱199</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
                         
                         <button
                           type="button"
