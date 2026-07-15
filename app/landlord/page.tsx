@@ -322,71 +322,77 @@ export default function LandlordPortalPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {myProperties.map((property) => (
-                  <div key={property.id} className="bg-white border border-[#f1f5f9] rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col justify-between">
-                    <div>
-                      {property.images && property.images.length > 0 ? (
-                        <img src={property.images[0]} alt="Property image" className="w-full h-40 object-cover" />
-                      ) : (
-                        <div className="w-full h-40 bg-slate-50 flex items-center justify-center text-slate-300">
-                          <ImageIcon className="w-8 h-8" />
-                        </div>
-                      )}
-                      <div className="p-5 space-y-2">
-                        <div className="flex justify-between items-start gap-2">
-                          <h4 className="text-sm font-black text-slate-800 line-clamp-1">{property.title}</h4>
-                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                            property.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
-                          }`}>
-                            {property.status === 'approved' ? 'LIVE ON SITE' : (property.status || 'pending')}
-                          </span>
-                        </div>
-                        <p className="text-xs font-black text-[#00aa4f]">₱{property.price.toLocaleString()} / mo</p>
-                        <div className="flex items-center gap-1.5 text-slate-400 text-xs">
-                          <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                          <span className="truncate">{property.manual_address}</span>
-                        </div>
-
-                        {property.status === 'approved' && (
-                          <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex items-center justify-between text-xs font-semibold text-slate-600">
-                            <span className="text-slate-400 text-[11px]">Listing Expiry Status:</span>
-                            <span className={`font-black flex items-center gap-1 ${
-                              calculateDaysLeft(property.expires_at) <= 5 ? 'text-rose-600 animate-pulse' : 'text-slate-700'
-                            }`}>
-                              Remaining Days: {calculateDaysLeft(property.expires_at)}
-                            </span>
+                {myProperties.map((property) => {
+                  const daysRemaining = calculateDaysLeft(property.expires_at);
+                  
+                  return (
+                    <div key={property.id} className="bg-white border border-[#f1f5f9] rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col justify-between">
+                      <div>
+                        {property.images && property.images.length > 0 ? (
+                          <img src={property.images[0]} alt="Property image" className="w-full h-40 object-cover" />
+                        ) : (
+                          <div className="w-full h-40 bg-slate-50 flex items-center justify-center text-slate-300">
+                            <ImageIcon className="w-8 h-8" />
                           </div>
                         )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col border-t border-slate-50 bg-slate-50/50">
-                      <div className="px-5 py-2.5 flex items-center justify-between text-[11px] font-semibold text-slate-400 border-b border-slate-100">
-                        <span>{property.property_type}</span>
-                        <span>{property.bedrooms} BR · {property.bathrooms} BA</span>
-                      </div>
-                      <div className="grid grid-cols-2 text-[11px] font-bold">
-                        <button
-                          type="button"
-                          onClick={() => router.push(`/landlord/payment?total=20&propertyId=${property.id}&type=extension`)}
-                          className="py-2.5 flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100 border-r border-slate-100 transition cursor-pointer"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
-                          Extend
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteProperty(property.id)}
-                          className="py-2.5 flex items-center justify-center gap-1.5 text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                          Delete
-                        </button>
-                      </div>
-                    </div>
+                        <div className="p-5 space-y-2">
+                          <div className="flex justify-between items-start gap-2">
+                            <h4 className="text-sm font-black text-slate-800 line-clamp-1">{property.title}</h4>
+                            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                              property.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
+                            }`}>
+                              {property.status === 'approved' 
+                                ? `LIVE ON SITE (${daysRemaining} Days Left)` 
+                                : (property.status || 'pending')}
+                            </span>
+                          </div>
+                          <p className="text-xs font-black text-[#00aa4f]">₱{property.price.toLocaleString()} / mo</p>
+                          <div className="flex items-center gap-1.5 text-slate-400 text-xs">
+                            <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                            <span className="truncate">{property.manual_address}</span>
+                          </div>
 
-                  </div>
-                ))}
+                          {property.status === 'approved' && (
+                            <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex items-center justify-between text-xs font-semibold text-slate-600">
+                              <span className="text-slate-400 text-[11px]">Listing Expiry Status:</span>
+                              <span className={`font-black flex items-center gap-1 ${
+                                daysRemaining <= 5 ? 'text-rose-600 animate-pulse' : 'text-slate-700'
+                              }`}>
+                                Remaining Days: {daysRemaining}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col border-t border-slate-50 bg-slate-50/50">
+                        <div className="px-5 py-2.5 flex items-center justify-between text-[11px] font-semibold text-slate-400 border-b border-slate-100">
+                          <span>{property.property_type}</span>
+                          <span>{property.bedrooms} BR · {property.bathrooms} BA</span>
+                        </div>
+                        <div className="grid grid-cols-2 text-[11px] font-bold">
+                          <button
+                            type="button"
+                            onClick={() => router.push(`/landlord/payment?total=20&propertyId=${property.id}&type=extension`)}
+                            className="py-2.5 flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100 border-r border-slate-100 transition cursor-pointer"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+                            Extend
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteProperty(property.id)}
+                            className="py-2.5 flex items-center justify-center gap-1.5 text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -620,22 +626,26 @@ export default function LandlordPortalPage() {
                     <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '5days' ? 'border-[#00aa4f] bg-emerald-50/20' : 'border-slate-200'}`}>
                       <div className="flex items-center gap-2.5">
                         <input type="radio" name="boosting" value="5days" checked={boostingOption === '5days'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-[#00aa4f]" />
-                        <span className="text-xs font-bold text-slate-700">5-Day Hot Boost</span>
+                        <span className="text-xs font-bold text-slate-700">Priority Boost (5 Days)</span>
                       </div>
-                      <span className="text-xs font-bold text-[#00aa4f]">+ ₱49</span>
+                      <span className="text-xs font-bold text-[#00aa4f]">₱49</span>
                     </label>
                   </div>
                 </div>
 
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                  className="w-full bg-[#00aa4f] hover:bg-[#009444] disabled:bg-slate-200 text-white text-xs font-black uppercase tracking-wider py-4 rounded-xl flex items-center justify-center gap-2 transition shadow-sm cursor-pointer"
-                >
-                  {isSubmitting ? 'Registering Assets...' : 'Save & Proceed to Secure Payment Gateway'}
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-
+                <div className="border-t border-slate-100 pt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <span className="text-[10px] font-black tracking-wider text-[#64748b] uppercase block">Checkout Amount</span>
+                    <span className="text-xl font-black text-slate-900">₱{totalAmount}</span>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold text-xs px-6 py-3.5 rounded-xl transition flex items-center justify-center gap-1.5 tracking-wide uppercase cursor-pointer"
+                  >
+                    {isSubmitting ? 'Processing Records...' : 'Proceed to Payment Portal'} <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           </form>
