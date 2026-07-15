@@ -298,13 +298,13 @@ export default function HomePage() {
           initial={{ opacity: 0, y: 30 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ delay: 0.1, duration: 0.5 }} 
-          className="bg-white p-3 sm:p-4 rounded-2xl md:rounded-full border border-slate-200 shadow-xl flex flex-col md:flex-row items-stretch md:items-center gap-3"
+          className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-xl flex flex-col md:flex-row items-stretch md:items-center gap-3"
         >
           {/* 1. Where (Location) Field - MODERN HIERARCHICAL DRILLDOWN PICKER */}
           <div className="flex-1 relative" ref={locDropdownRef}>
             <div 
               onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
-              className="flex items-center gap-3 px-4 py-2 border-b md:border-b-0 md:border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-xl md:rounded-none transition duration-150 select-none"
+              className="flex items-center gap-3 px-4 py-2 border-b md:border-b-0 md:border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-lg transition duration-150 select-none"
             >
               <MapPin className="w-5 h-5 text-slate-400 shrink-0" />
               <div className="flex-1 text-left min-w-0">
@@ -331,7 +331,7 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute left-0 right-0 mt-2 min-w-[280px] md:min-w-[340px] bg-white rounded-2xl shadow-2xl border border-slate-200/80 z-50 p-4"
+                  className="absolute left-0 right-0 mt-2 min-w-[280px] md:min-w-[340px] bg-white rounded-xl shadow-2xl border border-slate-200/80 z-50 p-4"
                 >
                   {/* Dropdown Header & Breadcrumb Trail */}
                   <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-3">
@@ -379,7 +379,7 @@ export default function HomePage() {
                             type="button"
                             key={island}
                             onClick={() => handleSelectIsland(island)}
-                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
+                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition duration-150 flex items-center justify-between"
                           >
                             <span>{island}</span>
                             <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
@@ -399,7 +399,7 @@ export default function HomePage() {
                             type="button"
                             key={province}
                             onClick={() => handleSelectProvince(province)}
-                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
+                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition duration-150 flex items-center justify-between"
                           >
                             <span>{province}</span>
                             <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
@@ -419,7 +419,7 @@ export default function HomePage() {
                             type="button"
                             key={city}
                             onClick={() => handleSelectCity(city)}
-                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
+                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition duration-150 flex items-center justify-between"
                           >
                             <span>{city}</span>
                             <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
@@ -439,7 +439,7 @@ export default function HomePage() {
                             type="button"
                             key={brgy}
                             onClick={() => handleSelectBarangay(brgy)}
-                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-white hover:bg-emerald-600 rounded-xl transition duration-150"
+                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-white hover:bg-emerald-600 rounded-lg transition duration-150"
                           >
                             {brgy}
                           </button>
@@ -456,7 +456,7 @@ export default function HomePage() {
           <div className="flex-1 relative" ref={dropdownRef}>
             <div 
               onClick={() => setPropertyDropdownOpen(!propertyDropdownOpen)}
-              className="flex items-center justify-between gap-3 px-4 py-2 border-b md:border-b-0 md:border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-xl md:rounded-none transition duration-150 select-none"
+              className="flex items-center justify-between gap-3 px-4 py-2 border-b md:border-b-0 md:border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-lg transition duration-150 select-none"
             >
               <div className="flex items-center gap-3 overflow-hidden">
                 <Building2 className="w-5 h-5 text-slate-400 shrink-0" />
@@ -478,7 +478,7 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute left-0 right-0 md:left-4 mt-2 min-w-[210px] bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 p-1.5 overflow-hidden"
+                  className="absolute left-0 right-0 md:left-4 mt-2 min-w-[210px] bg-white rounded-xl shadow-2xl border border-slate-100 z-50 p-1.5 overflow-hidden"
                 >
                   {propertyTypes.map((type) => {
                     const isSelected = propertyType === type;
@@ -490,7 +490,7 @@ export default function HomePage() {
                           setPropertyType(type);
                           setPropertyDropdownOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-2.5 text-xs font-bold rounded-xl transition-all duration-150 flex items-center justify-between ${
+                        className={`w-full text-left px-4 py-2.5 text-xs font-bold rounded-lg transition-all duration-150 flex items-center justify-between ${
                           isSelected 
                             ? 'bg-emerald-50 text-emerald-700 font-black' 
                             : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -513,7 +513,7 @@ export default function HomePage() {
           {/* 3. Streamlined Search Action Button */}
           <button 
             type="submit" 
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-8 py-4 md:py-3.5 rounded-xl md:rounded-full flex items-center justify-center gap-2 transition duration-200 cursor-pointer shadow-sm hover:shadow-md shrink-0 md:mr-1"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-8 py-4 md:py-3.5 rounded-lg flex items-center justify-center gap-2 transition duration-200 cursor-pointer shadow-sm hover:shadow-md shrink-0 md:mr-1"
           >
             <Search className="w-4 h-4" />
             <span>Apply Filters</span>
@@ -632,9 +632,9 @@ export default function HomePage() {
                             <div className="text-xs text-slate-400 flex items-center gap-1 mt-1"><MapPin className="w-3 h-3 text-slate-400 shrink-0" /> {p.address}</div>
                           </div>
                           <div className="grid grid-cols-3 gap-1.5 pt-3 border-t border-slate-100 text-center text-[11px] font-bold text-slate-600">
-                            <div className="bg-slate-100 text-slate-700 py-2 rounded-xl flex items-center justify-center gap-1">🛏️ {p.bedrooms || 0} BR</div>
-                            <div className="bg-slate-100 text-slate-700 py-2 rounded-xl flex items-center justify-center gap-1">🚿 {p.bathrooms || 0} BA</div>
-                            <div className="bg-slate-100 text-slate-700 py-2 rounded-xl flex items-center justify-center gap-1">📐 {p.area || 0}m²</div>
+                            <div className="bg-emerald-500/5 text-emerald-700 py-2 rounded-xl flex items-center justify-center gap-1">🛏️ {p.bedrooms || 0} BR</div>
+                            <div className="bg-emerald-500/5 text-emerald-700 py-2 rounded-xl flex items-center justify-center gap-1">🚿 {p.bathrooms || 0} BA</div>
+                            <div className="bg-emerald-500/5 text-emerald-700 py-2 rounded-xl flex items-center justify-center gap-1">📐 {p.area || 0}m²</div>
                           </div>
                         </div>
                       </Link>
@@ -642,136 +642,14 @@ export default function HomePage() {
                   })}
                 </div>
               ) : (
-                <div className="w-full text-center text-sm text-slate-400 py-16 bg-white rounded-3xl border border-slate-200/60 shadow-inner">
-                  No rental options match your current filter preferences. Try broadening your location search string.
+                <div className="w-full text-center py-20 border border-dashed border-slate-200 rounded-3xl bg-white text-slate-400 text-sm font-medium">
+                  No matching properties found based on active search parameters.
                 </div>
               )}
             </div>
           </>
         )}
-
-        <hr className="border-slate-200" />
-
-        {/* Hot Locations */}
-        <section>
-          <div className="text-center max-w-xl mx-auto mb-10">
-            <h2 className="text-3xl font-black tracking-tight text-slate-900">Browse by Hot Locations</h2>
-            <p className="text-slate-500 text-sm mt-1">Explore thousands of verified listings scattered across prime centers.</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {CITIES.map((city, idx) => (
-              <div key={idx} onClick={() => { setSearch(city.name); setPropertyType('All Types'); }} className="group relative h-40 rounded-2xl overflow-hidden cursor-pointer shadow-sm hover:shadow-lg transition">
-                <img src={city.img} alt={city.name} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4 flex flex-col justify-end">
-                  <span className="text-white font-black text-lg">{city.name}</span>
-                  <span className="text-emerald-400 text-xs font-semibold">{city.count}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Statistical Metrics Block */}
-        <section className="bg-slate-900 text-white rounded-3xl p-8 sm:p-12 relative overflow-hidden shadow-xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center relative z-10">
-            <div>
-              <div className="text-3xl sm:text-4xl font-black text-emerald-400">45k+</div>
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-1">Active Tenants</div>
-            </div>
-            <div>
-              <div className="text-3xl sm:text-4xl font-black text-emerald-400">12k+</div>
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-1">Verified Houses</div>
-            </div>
-            <div>
-              <div className="text-3xl sm:text-4xl font-black text-emerald-400">99.4%</div>
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-1">Matching Rate</div>
-            </div>
-            <div>
-              <div className="text-3xl sm:text-4xl font-black text-emerald-400">₱0</div>
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-1">Hidden Broker Fees</div>
-            </div>
-          </div>
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/10 blur-3xl rounded-full" />
-        </section>
-
-        {/* Work Flows */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black">1</div>
-            <h3 className="text-base font-bold">Configure Search Filters</h3>
-            <p className="text-slate-500 text-xs leading-relaxed">Narrow down specific bedroom sizes, custom localized areas, and comfortable monthly dynamic budget lines instantly.</p>
-          </div>
-          <div className="space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black">2</div>
-            <h3 className="text-base font-bold">Connect via Landlord Chat</h3>
-            <p className="text-slate-500 text-xs leading-relaxed">Message rental owners directly using our integrated dashboard infrastructure safely without exposing secondary accounts.</p>
-          </div>
-          <div className="space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black">3</div>
-            <h3 className="text-base font-bold">Finalize Your Lease</h3>
-            <p className="text-slate-500 text-xs leading-relaxed">Review fully verified options up front and secure processing directly through certified platform pipelines.</p>
-          </div>
-        </section>
-
-        {/* Core Selling Propositions */}
-        <section className="bg-emerald-600 text-white rounded-3xl p-8 sm:p-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-          <div className="space-y-4">
-            <h2 className="text-3xl font-black tracking-tight">Why Property Seekers Trust RentersPH</h2>
-            <p className="text-emerald-100 text-sm leading-relaxed">We bypass unstructured traditional listing interfaces by providing structured, scam-protected, algorithmically boosted matching services engineered explicitly for real estate seekers nationwide.</p>
-            <div className="space-y-2 pt-2">
-              <div className="flex items-center gap-2 text-sm font-semibold"><CheckCircle className="w-4 h-4 text-emerald-200 shrink-0" /> Zero Ghost Listings Policy</div>
-              <div className="flex items-center gap-2 text-sm font-semibold"><CheckCircle className="w-4 h-4 text-emerald-200 shrink-0" /> Direct Landlord Dashboard Infrastructure</div>
-              <div className="flex items-center gap-2 text-sm font-semibold"><CheckCircle className="w-4 h-4 text-emerald-200 shrink-0" /> Adaptive Client Filtering Tools</div>
-            </div>
-          </div>
-          <div className="bg-white/10 p-6 rounded-2xl backdrop-blur-sm space-y-4 border border-white/10">
-            <div className="flex items-center gap-1 text-amber-300"><Star className="fill-current w-4 h-4" /><Star className="fill-current w-4 h-4" /><Star className="fill-current w-4 h-4" /><Star className="fill-current w-4 h-4" /><Star className="fill-current w-4 h-4" /></div>
-            <p className="text-xs italic text-emerald-50">"The UI upgrade makes looking for student lodging near universities incredibly smooth. Highly practical search layouts!"</p>
-            <div className="text-xs font-bold text-white">— Vince C., Student Tenant</div>
-          </div>
-        </section>
-
-        {/* Review Feed */}
-        <section>
-          <div className="text-center max-w-md mx-auto mb-10">
-            <h2 className="text-3xl font-black tracking-tight">Endorsed by the Community</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {TESTIMONIALS.map((t, idx) => (
-              <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-bold text-sm text-slate-800">{t.name}</h4>
-                    <span className="text-[11px] text-slate-400 font-medium">{t.role}</span>
-                  </div>
-                  <div className="flex text-amber-400"><Star className="fill-current w-3.5 h-3.5" /><Star className="fill-current w-3.5 h-3.5" /><Star className="fill-current w-3.5 h-3.5" /><Star className="fill-current w-3.5 h-3.5" /><Star className="fill-current w-3.5 h-3.5" /></div>
-                </div>
-                <p className="text-slate-600 text-xs leading-relaxed">"{t.text}"</p>
-              </div>
-            ))}
-          </div>
-        </section>
       </main>
-
-      {/* Premium Professional Footer Section */}
-      <footer className="bg-white border-t border-slate-200 text-slate-500 text-xs py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="bg-emerald-600 p-1.5 rounded-lg text-white"><Home className="w-3.5 h-3.5" /></div>
-              <span className="text-base font-black text-slate-900 tracking-tight">renters<span className="text-emerald-600">PH</span></span>
-            </div>
-            <p className="leading-relaxed">Simplifying urban residential search frameworks across the Philippine Islands securely.</p>
-          </div>
-          <div>
-            <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[10px] mb-3">Explore Properties</h4>
-            <ul className="space-y-2 font-medium list-none p-0">
-              <li><span onClick={() => setPropertyType('Apartment')} className="hover:text-emerald-600 cursor-pointer">Apartments for Rent</span></li>
-              <li><span onClick={() => setPropertyType('Condominium')} className="hover:text-emerald-600 cursor-pointer">Condominiums for Rent</span></li>
-            </ul>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }
