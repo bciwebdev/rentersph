@@ -150,7 +150,7 @@ export default function LandlordLoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="bciwebdev25@gmail.com"
+              placeholder="name@example.com"
               className="w-full px-5 py-4 bg-[#edf4fe] rounded-2xl text-sm font-medium text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00aa4f]/20 transition-all border border-transparent"
             />
           </div>
