@@ -49,13 +49,29 @@ export default function AdminVerificationDashboard() {
       setUserEmail(user.email)
       setIsAuthenticated(true)
       
+      // Perform a join query to grab transaction data from payment_transactions table
       const { data, error } = await supabase
         .from('properties')
-        .select('*')
+        .select(`
+          *,
+          payment_transactions (
+            checkout_session_id,
+            receipt_url
+          )
+        `)
         .order('created_at', { ascending: false })
 
       if (!error && data) {
-        setProperties(data)
+        // Map the joined data so your existing UI handles the values flawlessly
+        const mappedData: Property[] = data.map((prop: any) => {
+          const transaction = prop.payment_transactions?.[0] || null;
+          return {
+            ...prop,
+            payment_reference: transaction ? transaction.checkout_session_id : null,
+            payment_screenshot: transaction ? transaction.receipt_url : null
+          }
+        })
+        setProperties(mappedData)
       }
     } else {
       setIsAuthenticated(false)

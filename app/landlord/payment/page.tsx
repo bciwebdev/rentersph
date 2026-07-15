@@ -73,13 +73,25 @@ function PaymentContent() {
         .from('receipts')
         .getPublicUrl(fileName)
 
-      // 4. Update the properties table record
+      // 4. INSERT the log into payment_transactions using your verified columns
+      const { error: txError } = await supabase
+        .from('payment_transactions')
+        .insert([
+          {
+            property_id: latestId,
+            checkout_session_id: referenceNumber.trim(), // Storing reference code here
+            receipt_url: publicUrl,                       // Storing receipt link here
+            payment_status: 'pending'
+          }
+        ])
+
+      if (txError) throw new Error(`Transaction save failed: ${txError.message}`)
+
+      // 5. Update the properties status to 'pending' so it hits the admin portal
       const { error: updateError } = await supabase
         .from('properties')
         .update({ 
-          payment_reference: referenceNumber.trim(),
-          payment_screenshot: publicUrl,
-          status: 'pending_verification' 
+          status: 'pending' 
         })
         .eq('id', latestId)
 
