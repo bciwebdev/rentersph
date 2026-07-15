@@ -298,7 +298,7 @@ export default function HomePage() {
           initial={{ opacity: 0, y: 30 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ delay: 0.1, duration: 0.5 }} 
-          className="bg-white p-3 sm:p-4 rounded-2xl md:rounded-full border border-slate-200 shadow-xl flex flex-col md:flex-row items-stretch md:items-center gap-3"
+          className="bg-white px-5 py-2.5 rounded-2xl border border-slate-200 shadow-xl flex flex-col md:flex-row items-stretch md:items-center gap-4"
         >
           {/* 1. Where (Location) Field - MODERN HIERARCHICAL DRILLDOWN PICKER */}
           <div className="flex-1 relative" ref={locDropdownRef}>
