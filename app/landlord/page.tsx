@@ -14,6 +14,18 @@ interface SelectedFile {
   previewUrl: string
 }
 
+function calculateDaysLeft(expiresAtString: string | null): number {
+  if (!expiresAtString) return 30
+  
+  const expiryDate = new Date(expiresAtString)
+  const today = new Date()
+  
+  const diffTime = expiryDate.getTime() - today.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  return diffDays > 0 ? diffDays : 0
+}
+
 export default function LandlordPortalPage() {
   const router = useRouter()
   
@@ -26,14 +38,12 @@ export default function LandlordPortalPage() {
     return createBrowserClient(url || '', key || '')
   })
   
-  // Route Protection & Dynamic Data States
   const [sessionLoading, setSessionLoading] = useState(true)
   const [propertiesLoading, setPropertiesLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [myProperties, setMyProperties] = useState<any[]>([])
   const [currentView, setCurrentView] = useState<ViewState>('dashboard')
   
-  // Base Form States
   const [title, setTitle] = useState('')
   const [propertyType, setPropertyType] = useState('Apartment')
   const [price, setPrice] = useState('')
@@ -50,11 +60,8 @@ export default function LandlordPortalPage() {
   const [emailAddress, setEmailAddress] = useState('')
   
   const [descriptionRules, setDescriptionRules] = useState('')
-  
-  // File Upload State
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([])
 
-  // Pricing, Boosting, & Tooltip States
   const BASE_PRICE = 20
   const [boostingOption, setBoostingOption] = useState('none') 
   const [showTooltip, setShowTooltip] = useState(false)
@@ -68,7 +75,6 @@ export default function LandlordPortalPage() {
     }
   }, [selectedFiles])
 
-  // Verify Auth Session and Load Personal Listings
   useEffect(() => {
     const initializePortal = async () => {
       try {
@@ -82,7 +88,6 @@ export default function LandlordPortalPage() {
         setEmailAddress(user.email || '')
         setCurrentView('dashboard')
         
-        // Comprehensive fallback filter: search by user_id OR matching email address
         const { data: properties, error: dbError } = await supabase
           .from('properties')
           .select('*')
@@ -155,27 +160,6 @@ export default function LandlordPortalPage() {
     }
   }
 
-  const handleExtendProperty = async (propertyId: string) => {
-    try {
-      const updatedTimestamp = new Date().toISOString()
-      
-      const { error } = await supabase
-        .from('properties')
-        .update({ created_at: updatedTimestamp })
-        .eq('id', propertyId)
-
-      if (error) throw error
-
-      setMyProperties(prev => prev.map(prop => 
-        prop.id === propertyId ? { ...prop, created_at: updatedTimestamp } : prop
-      ))
-      
-      alert("Listing active lifecycle successfully extended!")
-    } catch (err: any) {
-      alert(err.message || "Failed to extend the listing lifecycle.")
-    }
-  }
-
   const resetForm = () => {
     setTitle('')
     setPropertyType('Apartment')
@@ -221,6 +205,9 @@ export default function LandlordPortalPage() {
         uploadedImageUrls.push(publicUrl)
       }
 
+      const calculatedExpiry = new Date()
+      calculatedExpiry.setDate(calculatedExpiry.getDate() + 30)
+
       const { error: dbError } = await supabase
         .from('properties')
         .insert([
@@ -243,6 +230,7 @@ export default function LandlordPortalPage() {
             images: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
             boosting_tier: boostingOption,
             total_payable: totalAmount,
+            expires_at: calculatedExpiry.toISOString(),
             status: 'pending'
           }
         ])
@@ -350,7 +338,7 @@ export default function LandlordPortalPage() {
                           <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
                             property.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
                           }`}>
-                            {property.status || 'pending'}
+                            {property.status === 'approved' ? 'LIVE ON SITE' : (property.status || 'pending')}
                           </span>
                         </div>
                         <p className="text-xs font-black text-[#00aa4f]">₱{property.price.toLocaleString()} / mo</p>
@@ -358,6 +346,17 @@ export default function LandlordPortalPage() {
                           <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
                           <span className="truncate">{property.manual_address}</span>
                         </div>
+
+                        {property.status === 'approved' && (
+                          <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex items-center justify-between text-xs font-semibold text-slate-600">
+                            <span className="text-slate-400 text-[11px]">Listing Expiry Status:</span>
+                            <span className={`font-black flex items-center gap-1 ${
+                              calculateDaysLeft(property.expires_at) <= 5 ? 'text-rose-600 animate-pulse' : 'text-slate-700'
+                            }`}>
+                              Remaining Days: {calculateDaysLeft(property.expires_at)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     
@@ -369,7 +368,7 @@ export default function LandlordPortalPage() {
                       <div className="grid grid-cols-2 text-[11px] font-bold">
                         <button
                           type="button"
-                          onClick={() => handleExtendProperty(property.id)}
+                          onClick={() => router.push(`/landlord/payment?total=20&propertyId=${property.id}&type=extension`)}
                           className="py-2.5 flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100 border-r border-slate-100 transition cursor-pointer"
                         >
                           <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
@@ -625,46 +624,22 @@ export default function LandlordPortalPage() {
                       </div>
                       <span className="text-xs font-bold text-[#00aa4f]">+ ₱49</span>
                     </label>
-
-                    <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '2weeks' ? 'border-[#00aa4f] bg-emerald-50/20' : 'border-slate-200'}`}>
-                      <div className="flex items-center gap-2.5">
-                        <input type="radio" name="boosting" value="2weeks" checked={boostingOption === '2weeks'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-[#00aa4f]" />
-                        <span className="text-xs font-bold text-slate-700">2-Week Visibility Surge</span>
-                      </div>
-                      <span className="text-xs font-bold text-[#00aa4f]">+ ₱99</span>
-                    </label>
-
-                    <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '1month' ? 'border-[#00aa4f] bg-emerald-50/20' : 'border-slate-200'}`}>
-                      <div className="flex items-center gap-2.5">
-                        <input type="radio" name="boosting" value="1month" checked={boostingOption === '1month'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-[#00aa4f]" />
-                        <span className="text-xs font-bold text-slate-700">1-Month Market Domination</span>
-                      </div>
-                      <span className="text-xs font-bold text-[#00aa4f]">+ ₱199</span>
-                    </label>
                   </div>
-                  <p className="text-[10px] text-slate-400 font-medium mt-2">* Standard tier active timeline begins immediately upon payment verification completion.</p>
                 </div>
 
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 flex justify-between items-center text-slate-700">
-                  <span className="text-xs font-bold">Total Estimated Statement Amount:</span>
-                  <span className="text-sm font-black text-[#00aa4f]">₱{totalAmount}.00</span>
-                </div>
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="w-full bg-[#00aa4f] hover:bg-[#009444] disabled:bg-slate-200 text-white text-xs font-black uppercase tracking-wider py-4 rounded-xl flex items-center justify-center gap-2 transition shadow-sm cursor-pointer"
+                >
+                  {isSubmitting ? 'Registering Assets...' : 'Save & Proceed to Secure Payment Gateway'}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
               </div>
-            </div>
-
-            <div className="pt-4">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs py-4 rounded-xl tracking-wide flex items-center justify-center gap-1.5 transition disabled:opacity-50 cursor-pointer shadow-sm"
-              >
-                {isSubmitting ? 'Uploading photos & details...' : 'Proceed to Payment Allocation'}
-                {!isSubmitting && <ArrowRight className="w-4 h-4" />}
-              </button>
             </div>
           </form>
         )}
-
       </main>
     </div>
   )
