@@ -620,32 +620,59 @@ export default function LandlordPortalPage() {
                         <input type="radio" name="boosting" value="none" checked={boostingOption === 'none'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-slate-900" />
                         <span className="text-xs font-bold text-slate-700">No Boost Upgrade</span>
                       </div>
-                      <span className="text-xs font-medium text-slate-400">₱0</span>
                     </label>
 
-                    <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '5days' ? 'border-[#00aa4f] bg-emerald-50/20' : 'border-slate-200'}`}>
+                    <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '5days' ? 'border-[#00aa4f] bg-emerald-50/10' : 'border-slate-200'}`}>
                       <div className="flex items-center gap-2.5">
                         <input type="radio" name="boosting" value="5days" checked={boostingOption === '5days'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-[#00aa4f]" />
-                        <span className="text-xs font-bold text-slate-700">Priority Boost (5 Days)</span>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-slate-700">5 Days Rank Boost Up</span>
+                          <span className="text-[10px] text-slate-400 font-medium">Prioritized above basic visibility tier</span>
+                        </div>
                       </div>
-                      <span className="text-xs font-bold text-[#00aa4f]">₱49</span>
+                      <span className="text-xs font-black text-[#00aa4f]">+ ₱49</span>
+                    </label>
+
+                    <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '2weeks' ? 'border-[#00aa4f] bg-emerald-50/10' : 'border-slate-200'}`}>
+                      <div className="flex items-center gap-2.5">
+                        <input type="radio" name="boosting" value="2weeks" checked={boostingOption === '2weeks'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-[#00aa4f]" />
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-slate-700">2 Weeks Supreme Feed Lock</span>
+                          <span className="text-[10px] text-slate-400 font-medium">Aggressive premium feed exposure</span>
+                        </div>
+                      </div>
+                      <span className="text-xs font-black text-[#00aa4f]">+{'\u00A0'}₱99</span>
+                    </label>
+
+                    <label className={`border rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition ${boostingOption === '1month' ? 'border-[#00aa4f] bg-emerald-50/10' : 'border-slate-200'}`}>
+                      <div className="flex items-center gap-2.5">
+                        <input type="radio" name="boosting" value="1month" checked={boostingOption === '1month'} onChange={(e) => setBoostingOption(e.target.value)} className="accent-[#00aa4f]" />
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-slate-700">30 Days Ultimate Dominance Boost Tier</span>
+                          <span className="text-[10px] text-slate-400 font-medium">Stays locked at peak search performance.</span>
+                        </div>
+                      </div>
+                      <span className="text-xs font-black text-[#00aa4f]">+ ₱199</span>
                     </label>
                   </div>
                 </div>
 
-                <div className="border-t border-slate-100 pt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                {/* TOTAL PAYABLE FORM SUBMISSION BLOCK */}
+                <div className="bg-white border border-[#f1f5f9] rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col gap-4">
                   <div>
-                    <span className="text-[10px] font-black tracking-wider text-[#64748b] uppercase block">Checkout Amount</span>
-                    <span className="text-xl font-black text-slate-900">₱{totalAmount}</span>
+                    <span className="text-[10px] font-black tracking-wider text-[#64748b] uppercase block">Total Statement Balance</span>
+                    <span className="text-xl font-black text-slate-800">₱{totalAmount.toLocaleString()} PHP</span>
                   </div>
+                  
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold text-xs px-6 py-3.5 rounded-xl transition flex items-center justify-center gap-1.5 tracking-wide uppercase cursor-pointer"
+                    className="w-full bg-[#00aa4f] hover:bg-[#008f41] text-white font-bold py-3 px-4 rounded-xl transition disabled:opacity-50 text-sm"
                   >
-                    {isSubmitting ? 'Processing Records...' : 'Proceed to Payment Portal'} <ArrowRight className="w-3.5 h-3.5" />
+                    {isSubmitting ? "Processing..." : "Submit Payment"}
                   </button>
                 </div>
+
               </div>
             </div>
           </form>
