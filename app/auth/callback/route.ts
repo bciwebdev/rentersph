@@ -1,11 +1,11 @@
 import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 
-export async function GET(request: NextRequest) {
-  const requestUrl = new URL(request.url)
-  const code = requestUrl.searchParams.get('code')
-  const next = requestUrl.searchParams.get('next') || '/landlord'
+export async function GET(request: Request) {
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get('code')
+  const next = searchParams.get('next') ?? '/landlord'
 
   if (code) {
     const cookieStore = await cookies()
@@ -23,8 +23,7 @@ export async function GET(request: NextRequest) {
                 cookieStore.set(name, value, options)
               )
             } catch {
-              // The `setAll` method can be called from a Server Component
-              // which can sometimes throw if middleware has already run.
+              // Can be ignored if middleware is handling redirects
             }
           },
         },
@@ -32,11 +31,27 @@ export async function GET(request: NextRequest) {
     )
 
     const { error } = await supabase.auth.exchangeCodeForSession(code)
+    
     if (!error) {
-      return NextResponse.redirect(`${requestUrl.origin}${next}`)
+      // Return a temporary script that forces the browser to commit cookies before redirecting
+      return new NextResponse(
+        `<html>
+          <body>
+            <p>Verifying session, please wait...</p>
+            <script>
+              setTimeout(() => {
+                window.location.href = "${origin}${next}";
+              }, 100);
+            </script>
+          </body>
+        </html>`,
+        {
+          headers: { 'Content-Type': 'text/html' },
+        }
+      )
     }
   }
 
-  // Return the user to an error context or the login page if the code exchange failed
-  return NextResponse.redirect(`${requestUrl.origin}/login?error=auth_callback_failed`)
+  // Fallback to login page on failure
+  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
 }
