@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import { 
-  FileText, MapPin, Phone, Image as ImageIcon, ArrowRight, LogOut, HelpCircle, Upload, X, Plus, Building2, RefreshCw, Trash2
+  FileText, MapPin, Phone, Image as ImageIcon, ArrowRight, LogOut, HelpCircle, Upload, X, Plus, Building2, RefreshCw, Trash2, Zap
 } from 'lucide-react'
 
 type ViewState = 'dashboard' | 'create'
@@ -14,7 +14,6 @@ interface SelectedFile {
   previewUrl: string
 }
 
-// 1. ADDED ACCURATE REMAINING DAYS CALCULATION LOGIC HERE
 function calculateDaysLeft(expiresAtString: string | null): number {
   if (!expiresAtString) return 30
   
@@ -337,7 +336,6 @@ export default function LandlordPortalPage() {
                           <span className="truncate">{property.manual_address}</span>
                         </div>
 
-                        {/* 2. INJECTED VISIBLE REMAINING DAYS COMPONENT INSIDE THE LANDLORD LISTING CARD */}
                         <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex items-center justify-between text-xs font-semibold text-slate-600">
                           <span className="text-slate-400 text-[11px]">Time Remaining:</span>
                           <span className={`font-black flex items-center gap-1 ${
@@ -355,19 +353,31 @@ export default function LandlordPortalPage() {
                         <span>{property.property_type}</span>
                         <span>{property.bedrooms} BR · {property.bathrooms} BA</span>
                       </div>
-                      <div className="grid grid-cols-2 text-[11px] font-bold">
+                      
+                      {/* UPDATED BUTTON CONFIGURATION TO A 3-COLUMN SYSTEM */}
+                      <div className="grid grid-cols-3 text-[11px] font-bold">
                         <button
                           type="button"
                           onClick={() => router.push(`/landlord/payment?total=20&propertyId=${property.id}&type=extension`)}
-                          className="py-2.5 flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100 border-r border-slate-100 transition cursor-pointer"
+                          className="py-2.5 flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 border-r border-slate-100 transition cursor-pointer"
                         >
                           <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
                           Extend
                         </button>
+                        
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/landlord/payment?propertyId=${property.id}&type=boost`)}
+                          className="py-2.5 flex items-center justify-center gap-1 text-[#00aa4f] hover:bg-emerald-50 border-r border-slate-100 transition cursor-pointer"
+                        >
+                          <Zap className="w-3.5 h-3.5 text-[#00aa4f]" />
+                          Boost
+                        </button>
+                        
                         <button
                           type="button"
                           onClick={() => handleDeleteProperty(property.id)}
-                          className="py-2.5 flex items-center justify-center gap-1.5 text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                          className="py-2.5 flex items-center justify-center gap-1 text-rose-600 hover:bg-rose-50 transition cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5 text-rose-400" />
                           Delete
