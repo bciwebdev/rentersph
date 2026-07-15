@@ -42,10 +42,10 @@ function PaymentContent() {
     setStatusMessage(null)
 
     try {
-      // 1. Fetch the latest property ID AND landlord_email
+      // 1. Fetch the latest property ID AND the email column
       const { data: activeListings, error: fetchError } = await supabase
         .from('properties')
-        .select('id, landlord_email')
+        .select('id, email')
         .order('created_at', { ascending: false })
         .limit(1)
 
@@ -54,7 +54,7 @@ function PaymentContent() {
       }
 
       const latestId = activeListings[0].id
-      const landlordEmail = activeListings[0].landlord_email
+      const landlordEmail = activeListings[0].email
 
       // 2. Upload the file to the 'receipts' bucket
       const fileExt = receiptFile.name.split('.').pop()
@@ -80,7 +80,7 @@ function PaymentContent() {
         .insert([
           {
             property_id: latestId,
-            landlord_email: landlordEmail || 'unspecified@rentersph.com', // Fallback if email is null in properties
+            landlord_email: landlordEmail || 'unspecified@rentersph.com', // Fallback if email is null
             reference_number: referenceNumber.trim(),
             checkout_session_id: referenceNumber.trim(),
             receipt_url: publicUrl,
