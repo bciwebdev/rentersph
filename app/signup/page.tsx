@@ -1,14 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { Mail, CheckCircle, ArrowRight } from "lucide-react";
+import { signupAction } from "./actions";
+import { Mail, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export default function SignupPage() {
-  const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,32 +14,24 @@ export default function SignupPage() {
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-    try {
-      setLoading(true);
-      setError(null);
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("password", password);
 
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          // Explicitly redirect back to your callback route on verification link click
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
+    const result = await signupAction(formData);
 
-      if (error) throw error;
-
-      // Show the email verification screen instead of immediately redirecting to login
+    if (result?.error) {
+      setError(result.error);
+      setLoading(false);
+    } else {
       setIsSignedUp(true);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
       setLoading(false);
     }
   }
 
-  // Beautiful Success State to replace the form after signing up
   if (isSignedUp) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
