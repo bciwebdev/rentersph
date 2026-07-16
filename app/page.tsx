@@ -88,12 +88,13 @@ export default function HomePage() {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const locDropdownRef = useRef<HTMLDivElement>(null)
 
+  // FIX: Maps the UI labels to the actual DB enum categories
   const propertyTypes = [
-    'All Types',
-    'Apartment',
-    'Condominium',
-    'House',
-    'Boarding House'
+    { label: 'All Types', value: 'All Types' },
+    { label: 'Apartment', value: 'Apartment' },
+    { label: 'Condominium', value: 'Condo Unit' },
+    { label: 'House', value: 'Single House' },
+    { label: 'Boarding House', value: 'Dormitory Bedspace' }
   ]
 
   // Close dropdowns when clicking outside
@@ -150,8 +151,12 @@ export default function HomePage() {
       )
     }
 
+    // FIX: Filter based on corresponding DB enum values instead of user-facing labels
     if (propertyType !== 'All Types') {
-      temp = temp.filter(p => p.property_type === propertyType)
+      const targetType = propertyTypes.find(t => t.label === propertyType);
+      if (targetType) {
+        temp = temp.filter(p => p.property_type === targetType.value)
+      }
     }
 
     setFilteredProperties(temp)
@@ -481,13 +486,13 @@ export default function HomePage() {
                   className="absolute left-0 right-0 md:left-4 mt-2 min-w-[210px] bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 p-1.5 overflow-hidden"
                 >
                   {propertyTypes.map((type) => {
-                    const isSelected = propertyType === type;
+                    const isSelected = propertyType === type.label;
                     return (
                       <button
                         type="button"
-                        key={type}
+                        key={type.label}
                         onClick={() => {
-                          setPropertyType(type);
+                          setPropertyType(type.label);
                           setPropertyDropdownOpen(false);
                         }}
                         className={`w-full text-left px-4 py-2.5 text-xs font-bold rounded-xl transition-all duration-150 flex items-center justify-between ${
@@ -496,7 +501,7 @@ export default function HomePage() {
                             : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                         }`}
                       >
-                        <span>{type}</span>
+                        <span>{type.label}</span>
                         {isSelected && (
                           <div className="w-4 h-4 rounded-full bg-emerald-600 flex items-center justify-center">
                             <CheckCircle className="w-3 h-3 text-white" />
@@ -526,15 +531,15 @@ export default function HomePage() {
         <div className="flex items-center gap-3 overflow-x-auto pb-3 scrollbar-none mask-image-inline">
           {propertyTypes.map((type) => (
             <button
-              key={type}
-              onClick={() => setPropertyType(type)}
+              key={type.label}
+              onClick={() => setPropertyType(type.label)}
               className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all duration-200 whitespace-nowrap shadow-sm border ${
-                propertyType === type
+                propertyType === type.label
                   ? 'bg-emerald-600 border-emerald-600 text-white shadow-emerald-100'
                   : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
-              {type}
+              {type.label}
             </button>
           ))}
         </div>
@@ -650,96 +655,19 @@ export default function HomePage() {
                   })}
                 </div>
               ) : (
-                <div className="w-full text-center py-24 bg-white rounded-3xl border border-slate-100 shadow-sm">
-                  <div className="max-w-md mx-auto space-y-3">
-                    <div className="mx-auto w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400">
-                      <Search className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-base font-bold text-slate-800">No matching rentals found</h3>
-                    <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                      We couldn't find any listings matching your current selection. Try broadening your location filters or changing the property type.
-                    </p>
-                    <button 
-                      onClick={() => { setSearch(''); setPropertyType('All Types'); }} 
-                      className="inline-flex items-center gap-1.5 text-xs font-extrabold text-emerald-600 hover:text-emerald-700 transition"
-                    >
-                      Reset Filter Parameters
-                    </button>
+                <div className="w-full border border-slate-100 bg-white rounded-3xl p-16 text-center space-y-4 shadow-sm flex flex-col items-center justify-center">
+                  <div className="bg-slate-50 p-4 rounded-full text-slate-400">
+                    <Search className="w-8 h-8" />
                   </div>
+                  <h3 className="text-xl font-black text-slate-950">No matching rentals found</h3>
+                  <p className="text-sm text-slate-400 max-w-sm">We couldn't find any listings matching your current selection. Try broadening your location filters or changing the property type.</p>
+                  <button onClick={() => { setSearch(''); setPropertyType('All Types'); }} className="text-emerald-600 font-extrabold text-xs tracking-wider uppercase hover:text-emerald-700 transition">Reset Filter Parameters</button>
                 </div>
               )}
             </div>
           </>
         )}
       </main>
-
-      {/* RESTORED: Browse by Cities Hotspots */}
-      <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-slate-100">
-        <div className="mb-10">
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Explore Philippines Hotspots</h2>
-          <p className="text-xs font-medium text-slate-500">Find rooms easily inside key major cities.</p>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {CITIES.map((city) => (
-            <div 
-              key={city.name} 
-              onClick={() => { setSearch(city.name); handleApplyFilters(); }}
-              className="group relative h-48 rounded-2xl overflow-hidden cursor-pointer shadow-sm hover:shadow-lg transition-all duration-300"
-            >
-              <img src={city.img} alt={city.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/30 to-transparent" />
-              <div className="absolute bottom-4 left-4 text-white">
-                <h4 className="font-bold text-sm">{city.name}</h4>
-                <p className="text-[10px] text-slate-200">{city.count}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* RESTORED: Client Testimonial Section */}
-      <section className="bg-slate-900 text-white py-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-12">
-          <div className="space-y-3">
-            <span className="text-xs font-extrabold text-emerald-400 uppercase tracking-widest">Community Feedback</span>
-            <h2 className="text-3xl font-black tracking-tight">What Renters & Landlords Say</h2>
-          </div>
-          <div className="grid md:grid-cols-2 gap-8 text-left">
-            {TESTIMONIALS.map((t, idx) => (
-              <div key={idx} className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700/40 space-y-4">
-                <div className="flex gap-1">
-                  {[...Array(t.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed italic">"{t.text}"</p>
-                <div>
-                  <h4 className="font-bold text-xs text-emerald-400">{t.name}</h4>
-                  <p className="text-[10px] text-slate-400">{t.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* RESTORED: Footer */}
-      <footer className="bg-white border-t border-slate-100 py-12">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2.5">
-            <div className="bg-emerald-600 p-1.5 rounded-lg text-white">
-              <Home className="w-4 h-4" />
-            </div>
-            <span className="text-lg font-black text-slate-900 tracking-tight">
-              renters<span className="text-emerald-600">PH</span>
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-400">
-            &copy; 2026 RentersPH. All rights reserved. Promoting verified listing standards nationwide.
-          </p>
-        </div>
-      </footer>
-
     </div>
   )
 }
