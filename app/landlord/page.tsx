@@ -83,8 +83,7 @@ export default function LandlordPortalPage() {
   const [editContactNumber, setEditContactNumber] = useState('')
   const [editDescriptionRules, setEditDescriptionRules] = useState('')
 
-  // BASE_PRICE is now 0 to support the 1-month free listing structure
-  const BASE_PRICE = 0
+  const BASE_PRICE = 20
   const [boostingOption, setBoostingOption] = useState('none') 
   const [showTooltip, setShowTooltip] = useState(false)
 
@@ -96,21 +95,6 @@ export default function LandlordPortalPage() {
       selectedFiles.forEach(item => URL.revokeObjectURL(item.previewUrl))
     }
   }, [selectedFiles])
-
-  // Helper to fetch and sync properties
-  const fetchProperties = async (uid: string, email: string) => {
-    setPropertiesLoading(true)
-    const { data: properties, error: dbError } = await supabase
-      .from('properties')
-      .select('*')
-      .or(`user_id.eq.${uid},email_address.eq.${email}`)
-      .order('created_at', { ascending: false })
-
-    if (!dbError && properties) {
-      setMyProperties(properties)
-    }
-    setPropertiesLoading(false)
-  }
 
   useEffect(() => {
     const initializePortal = async () => {
@@ -125,10 +109,19 @@ export default function LandlordPortalPage() {
         setEmailAddress(user.email || '')
         setCurrentView('dashboard')
         
-        await fetchProperties(user.id, user.email || '')
+        const { data: properties, error: dbError } = await supabase
+          .from('properties')
+          .select('*')
+          .or(`user_id.eq.${user.id},email_address.eq.${user.email}`)
+          .order('created_at', { ascending: false })
+
+        if (!dbError && properties) {
+          setMyProperties(properties)
+        }
       } catch (err) {
         router.push('/login')
       } finally {
+        setPropertiesLoading(false)
         setSessionLoading(false)
       }
     }
@@ -317,9 +310,6 @@ export default function LandlordPortalPage() {
       const calculatedExpiry = new Date()
       calculatedExpiry.setDate(calculatedExpiry.getDate() + 30)
 
-      // Determine listing workflow depending on payability
-      const isFreeListing = totalAmount === 0
-
       const { error: dbError } = await supabase
         .from('properties')
         .insert([
@@ -343,25 +333,14 @@ export default function LandlordPortalPage() {
             boosting_tier: boostingOption,
             total_payable: totalAmount,
             expires_at: calculatedExpiry.toISOString(),
-            // Auto approve if listing is standard and free
-            status: isFreeListing ? 'approved' : 'pending'
+            status: 'pending'
           }
         ])
 
       if (dbError) throw new Error(dbError.message)
       
       router.refresh()
-
-      if (isFreeListing) {
-        // Safe bypass: instantly sync lists and transition back to dashboard
-        await fetchProperties(userId || '', emailAddress || '')
-        resetForm()
-        setCurrentView('dashboard')
-        alert('Your standard 1-month free listing is now live!')
-      } else {
-        // Redirect to Stripe or Payment gateway if boosting is selected
-        router.push(`/landlord/payment?total=${totalAmount}`)
-      }
+      router.push(`/landlord/payment?total=${totalAmount}`)
 
     } catch (err: any) {
       setErrorMessage(err.message || 'An error occurred.')
@@ -545,31 +524,17 @@ export default function LandlordPortalPage() {
                           Extension Options
                         </p>
                         
-                        {/* Standard Extension is free now as well */}
+                        {/* Standard Extension */}
                         <button
                           type="button"
-                          onClick={async () => {
-                            const newExpiry = new Date();
-                            newExpiry.setDate(newExpiry.getDate() + 30);
-                            const { error } = await supabase
-                              .from('properties')
-                              .update({ expires_at: newExpiry.toISOString() })
-                              .eq('id', property.id);
-                            
-                            if (error) {
-                              alert(error.message);
-                            } else {
-                              await fetchProperties(userId || '', emailAddress || '');
-                              alert('Listing successfully extended for another 30 days for free!');
-                            }
-                          }}
+                          onClick={() => router.push(`/landlord/payment?total=20&propertyId=${property.id}&type=extension`)}
                           className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
                         >
                           <div>
                             <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">Standard 30-Day Extension</p>
                             <p className="text-[9px] text-slate-400 font-medium">Extend listing presence</p>
                           </div>
-                          <span className="text-slate-700 font-black text-[11px]">Free</span>
+                          <span className="text-slate-700 font-black text-[11px]">₱20</span>
                         </button>
 
                         <p className="text-[9px] uppercase font-black tracking-wider text-[#00aa4f] pt-1 px-1">
@@ -578,38 +543,38 @@ export default function LandlordPortalPage() {
 
                         <button
                           type="button"
-                          onClick={() => router.push(`/landlord/payment?total=49&propertyId=${property.id}&type=extension&tier=5days`)}
+                          onClick={() => router.push(`/landlord/payment?total=69&propertyId=${property.id}&type=extension&tier=5days`)}
                           className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
                         >
                           <div>
                             <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 5-Day Hot Boost</p>
                             <p className="text-[9px] text-slate-400 font-medium">Extend + Blitz Promotion</p>
                           </div>
-                          <span className="text-[#00aa4f] font-black text-[11px]">₱49</span>
+                          <span className="text-[#00aa4f] font-black text-[11px]">₱69</span>
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => router.push(`/landlord/payment?total=99&propertyId=${property.id}&type=extension&tier=2weeks`)}
+                          onClick={() => router.push(`/landlord/payment?total=119&propertyId=${property.id}&type=extension&tier=2weeks`)}
                           className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
                         >
                           <div>
                             <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 2-Week Visibility Surge</p>
                             <p className="text-[9px] text-slate-400 font-medium">Extend + Horizon Lift</p>
                           </div>
-                          <span className="text-[#00aa4f] font-black text-[11px]">₱99</span>
+                          <span className="text-[#00aa4f] font-black text-[11px]">₱119</span>
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => router.push(`/landlord/payment?total=199&propertyId=${property.id}&type=extension&tier=1month`)}
+                          onClick={() => router.push(`/landlord/payment?total=219&propertyId=${property.id}&type=extension&tier=1month`)}
                           className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
                         >
                           <div>
                             <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 1-Month Domination</p>
                             <p className="text-[9px] text-slate-400 font-medium">Extend + Premium Pinning</p>
                           </div>
-                          <span className="text-[#00aa4f] font-black text-[11px]">₱199</span>
+                          <span className="text-[#00aa4f] font-black text-[11px]">₱219</span>
                         </button>
                       </div>
                     )}
@@ -717,7 +682,7 @@ export default function LandlordPortalPage() {
                     required 
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    placeholder="e.g., 5000"
+                    placeholder="₱ Amount per month"
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   />
                 </div>
@@ -729,19 +694,19 @@ export default function LandlordPortalPage() {
                     required 
                     value={area}
                     onChange={(e) => setArea(e.target.value)}
-                    placeholder="e.g., 30"
+                    placeholder="e.g., 28"
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Bedrooms Count</label>
+                  <label className="text-xs font-bold text-slate-500">Bedrooms</label>
                   <select 
-                    value={bedrooms}
+                    value={bedrooms} 
                     onChange={(e) => setBedrooms(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none"
                   >
                     <option>0 (Studio)</option>
                     <option>1</option>
@@ -752,68 +717,65 @@ export default function LandlordPortalPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Bathrooms Count</label>
+                  <label className="text-xs font-bold text-slate-500">Bathrooms</label>
                   <select 
-                    value={bathrooms}
+                    value={bathrooms} 
                     onChange={(e) => setBathrooms(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none"
                   >
                     <option>1</option>
                     <option>2</option>
                     <option>3+</option>
                   </select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-500">Restroom Privacy</label>
                   <select 
-                    value={restroomPrivacy}
+                    value={restroomPrivacy} 
                     onChange={(e) => setRestroomPrivacy(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none"
                   >
                     <option>Private (Own Toilet)</option>
-                    <option>Shared Toilet</option>
+                    <option>Shared Common Restroom</option>
                   </select>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Bathroom Privacy</label>
+                  <label className="text-xs font-bold text-slate-500">Shower Privacy</label>
                   <select 
-                    value={bathroomPrivacy}
+                    value={bathroomPrivacy} 
                     onChange={(e) => setBathroomPrivacy(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none"
                   >
                     <option>Private (Own Shower)</option>
-                    <option>Shared Shower</option>
+                    <option>Shared Common Shower</option>
                   </select>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">2. Geolocation Details</h2>
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">2. Location Geometry</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Detailed Address</label>
+                  <label className="text-xs font-bold text-slate-500">Complete Descriptive Address</label>
                   <input 
                     type="text" 
                     required 
                     value={manualAddress}
                     onChange={(e) => setManualAddress(e.target.value)}
-                    placeholder="e.g., Door 3, J&M Bldg, Claveria St, Davao City"
+                    placeholder="e.g., Room 302, 123 Claveria St, Davao City"
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   />
                 </div>
-
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Google Plus Code (Optional)</label>
+                  <label className="text-xs font-bold text-slate-500">Google Maps Plus Code (Optional)</label>
                   <input 
                     type="text" 
                     value={plusCode}
                     onChange={(e) => setPlusCode(e.target.value)}
-                    placeholder="e.g., HV4V+8J Davao City"
+                    placeholder="e.g., VF56+HX Davao City"
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   />
                 </div>
@@ -821,60 +783,78 @@ export default function LandlordPortalPage() {
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">3. Media & Rules</h2>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500">Contact Number</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={contactNumber}
-                  onChange={(e) => setContactNumber(e.target.value)}
-                  placeholder="e.g., 09123456789"
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                />
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">3. Direct Contact Channels</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500">Mobile Number (SMS/Viber)</label>
+                  <input 
+                    type="tel" 
+                    required 
+                    value={contactNumber}
+                    onChange={(e) => setContactNumber(e.target.value)}
+                    placeholder="e.g., 09171234567"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500">Registered Landlord Email</label>
+                  <input 
+                    type="email" 
+                    readOnly 
+                    disabled 
+                    value={emailAddress}
+                    className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-400 outline-none"
+                  />
+                </div>
               </div>
+            </div>
 
+            <div className="space-y-4">
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">4. Context details & Rules</h2>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500">Description & Rules</label>
+                <label className="text-xs font-bold text-slate-500">House Rules, Description, and Lease Inclusions</label>
                 <textarea 
                   required 
                   value={descriptionRules}
                   onChange={(e) => setDescriptionRules(e.target.value)}
-                  placeholder="Include landlord criteria, house rules (e.g., no curfew, no pets allowed), utility arrangements, etc."
                   rows={4}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  placeholder="Describe your property. E.g., No pets allowed, 1-month deposit + 1-month advance, includes free Wi-Fi and water."
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition resize-none"
                 />
               </div>
+            </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500">Upload Property Photos (Max 10)</label>
-                <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-200 border-dashed rounded-2xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-8 h-8 text-slate-400 mb-2" />
-                      <p className="text-xs text-slate-500 font-bold">Click to upload files</p>
-                      <p className="text-[10px] text-slate-400">PNG, JPG or JPEG up to 10 photos</p>
-                    </div>
-                    <input 
-                      type="file" 
-                      multiple 
-                      accept="image/*" 
-                      onChange={handleFileChange} 
-                      className="hidden" 
-                    />
-                  </label>
+            <div className="space-y-4">
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">5. Media Upload</h2>
+              <div className="space-y-3">
+                <label className="text-xs font-bold text-slate-500">Upload Property Images (Maximum of 10 photos)</label>
+                
+                <div className="border-2 border-dashed border-slate-200 hover:border-[#00aa4f] rounded-2xl p-8 text-center transition bg-slate-50/50 relative cursor-pointer group">
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload className="w-8 h-8 text-slate-400 group-hover:text-[#00aa4f] transition" />
+                    <p className="text-xs font-black text-slate-600">Drag & drop files or click to locate photos</p>
+                    <p className="text-[10px] text-slate-400 font-medium">Supports JPG, PNG, WEBP formats up to 10MB total</p>
+                  </div>
                 </div>
+
                 {selectedFiles.length > 0 && (
-                  <div className="grid grid-cols-5 gap-2 mt-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4">
                     {selectedFiles.map((file, idx) => (
-                      <div key={idx} className="relative w-full h-16 rounded-xl overflow-hidden border border-slate-100">
-                        <img src={file.previewUrl} alt="preview" className="w-full h-full object-cover" />
-                        <button 
-                          type="button" 
+                      <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-slate-100 group shadow-sm bg-slate-50">
+                        <img src={file.previewUrl} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
                           onClick={() => handleRemoveImage(idx)}
-                          className="absolute top-1 right-1 bg-black/55 text-white rounded-full p-0.5 hover:bg-black/75 transition cursor-pointer"
+                          className="absolute top-1 right-1 bg-black/50 hover:bg-black/80 text-white rounded-full p-1 transition shadow cursor-pointer"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <X className="w-3 h-3" />
                         </button>
                       </div>
                     ))}
@@ -884,147 +864,179 @@ export default function LandlordPortalPage() {
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-sm font-black uppercase tracking-wider text-[#00aa4f] border-b border-slate-50 pb-2">4. Visibility Rank Boosting (Optional)</h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                
-                {/* Free Listing Option */}
-                <label className={`border rounded-2xl p-4 flex flex-col justify-between cursor-pointer transition ${
-                  boostingOption === 'none' ? 'border-[#00aa4f] bg-emerald-50/10' : 'border-slate-100 hover:border-slate-200 bg-white'
-                }`}>
-                  <input 
-                    type="radio" 
-                    name="boosting" 
-                    value="none" 
-                    checked={boostingOption === 'none'}
-                    onChange={() => setBoostingOption('none')}
-                    className="sr-only"
-                  />
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">6. System Plan Upgrade</h2>
+              <div className="p-5 border border-slate-100 rounded-3xl bg-slate-50/50 space-y-4">
+                <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="text-xs font-black text-slate-800">1-Month Standard</h3>
-                    <p className="text-[10px] text-slate-400 font-medium mt-1">Normal search placement, 30-day publication validity.</p>
+                    <h3 className="text-xs font-black text-slate-800">Basic Listing Directory Fee</h3>
+                    <p className="text-[10px] text-slate-400 font-medium">Standard 30-day listing directory presence</p>
                   </div>
-                  <span className="text-[#00aa4f] font-black text-xs mt-4">Free</span>
-                </label>
+                  <span className="text-xs font-black text-slate-700">₱{BASE_PRICE}</span>
+                </div>
 
-                {/* Hot Boost */}
-                <label className={`border rounded-2xl p-4 flex flex-col justify-between cursor-pointer transition ${
-                  boostingOption === '5days' ? 'border-[#00aa4f] bg-emerald-50/10' : 'border-slate-100 hover:border-slate-200 bg-white'
-                }`}>
-                  <input 
-                    type="radio" 
-                    name="boosting" 
-                    value="5days" 
-                    checked={boostingOption === '5days'}
-                    onChange={() => setBoostingOption('5days')}
-                    className="sr-only"
-                  />
-                  <div>
-                    <h3 className="text-xs font-black text-slate-800">5-Day Hot Boost</h3>
-                    <p className="text-[10px] text-slate-400 font-medium mt-1">Promoted listings appear high on relevant searches for 5 days.</p>
+                <div className="border-t border-slate-200/60 pt-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                      Optional Visibility Boost Plan
+                      <button 
+                        type="button"
+                        onMouseEnter={() => setShowTooltip(true)}
+                        onMouseLeave={() => setShowTooltip(false)}
+                        className="text-slate-400 hover:text-slate-600 relative cursor-pointer"
+                      >
+                        <HelpCircle className="w-3.5 h-3.5" />
+                        {showTooltip && (
+                          <span className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[9px] leading-relaxed p-2.5 rounded-lg w-48 font-semibold text-center z-50 shadow-xl">
+                            Upgrading your visibility places your rental listing higher in renter search query indices and pins it on the homepage.
+                          </span>
+                        )}
+                      </button>
+                    </h3>
                   </div>
-                  <span className="text-[#00aa4f] font-black text-xs mt-4">₱49</span>
-                </label>
 
-                {/* Visibility Surge */}
-                <label className={`border rounded-2xl p-4 flex flex-col justify-between cursor-pointer transition ${
-                  boostingOption === '2weeks' ? 'border-[#00aa4f] bg-emerald-50/10' : 'border-slate-100 hover:border-slate-200 bg-white'
-                }`}>
-                  <input 
-                    type="radio" 
-                    name="boosting" 
-                    value="2weeks" 
-                    checked={boostingOption === '2weeks'}
-                    onChange={() => setBoostingOption('2weeks')}
-                    className="sr-only"
-                  />
-                  <div>
-                    <h3 className="text-xs font-black text-slate-800">2-Week Surge</h3>
-                    <p className="text-[10px] text-slate-400 font-medium mt-1">Sustained premium placement high above standard listings.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <label className={`border p-3.5 rounded-2xl flex flex-col justify-between h-24 transition cursor-pointer ${
+                      boostingOption === 'none' ? 'border-[#00aa4f] bg-emerald-50/20' : 'border-slate-100 hover:border-slate-300 bg-white'
+                    }`}>
+                      <input 
+                        type="radio" 
+                        name="boost" 
+                        value="none" 
+                        checked={boostingOption === 'none'}
+                        onChange={(e) => setBoostingOption(e.target.value)}
+                        className="sr-only" 
+                      />
+                      <span className="text-[10px] font-black text-slate-700">No Boost</span>
+                      <span className="text-xs font-black text-slate-400">₱0</span>
+                    </label>
+
+                    <label className={`border p-3.5 rounded-2xl flex flex-col justify-between h-24 transition cursor-pointer ${
+                      boostingOption === '5days' ? 'border-[#00aa4f] bg-emerald-50/20' : 'border-slate-100 hover:border-slate-300 bg-white'
+                    }`}>
+                      <input 
+                        type="radio" 
+                        name="boost" 
+                        value="5days" 
+                        checked={boostingOption === '5days'}
+                        onChange={(e) => setBoostingOption(e.target.value)}
+                        className="sr-only" 
+                      />
+                      <span className="text-[10px] font-black text-slate-700">5-Day Hot Boost</span>
+                      <span className="text-xs font-black text-[#00aa4f]">₱49</span>
+                    </label>
+
+                    <label className={`border p-3.5 rounded-2xl flex flex-col justify-between h-24 transition cursor-pointer ${
+                      boostingOption === '2weeks' ? 'border-[#00aa4f] bg-emerald-50/20' : 'border-slate-100 hover:border-slate-300 bg-white'
+                    }`}>
+                      <input 
+                        type="radio" 
+                        name="boost" 
+                        value="2weeks" 
+                        checked={boostingOption === '2weeks'}
+                        onChange={(e) => setBoostingOption(e.target.value)}
+                        className="sr-only" 
+                      />
+                      <span className="text-[10px] font-black text-slate-700">2-Week Visibility Surge</span>
+                      <span className="text-xs font-black text-[#00aa4f]">₱99</span>
+                    </label>
+
+                    <label className={`border p-3.5 rounded-2xl flex flex-col justify-between h-24 transition cursor-pointer ${
+                      boostingOption === '1month' ? 'border-[#00aa4f] bg-emerald-50/20' : 'border-slate-100 hover:border-slate-300 bg-white'
+                    }`}>
+                      <input 
+                        type="radio" 
+                        name="boost" 
+                        value="1month" 
+                        checked={boostingOption === '1month'}
+                        onChange={(e) => setBoostingOption(e.target.value)}
+                        className="sr-only" 
+                      />
+                      <span className="text-[10px] font-black text-slate-700">1-Month Domination</span>
+                      <span className="text-xs font-black text-[#00aa4f]">₱199</span>
+                    </label>
                   </div>
-                  <span className="text-[#00aa4f] font-black text-xs mt-4">₱99</span>
-                </label>
-
-                {/* Market Domination */}
-                <label className={`border rounded-2xl p-4 flex flex-col justify-between cursor-pointer transition ${
-                  boostingOption === '1month' ? 'border-[#00aa4f] bg-emerald-50/10' : 'border-slate-100 hover:border-slate-200 bg-white'
-                }`}>
-                  <input 
-                    type="radio" 
-                    name="boosting" 
-                    value="1month" 
-                    checked={boostingOption === '1month'}
-                    onChange={() => setBoostingOption('1month')}
-                    className="sr-only"
-                  />
-                  <div>
-                    <h3 className="text-xs font-black text-slate-800">1-Month Dominate</h3>
-                    <p className="text-[10px] text-slate-400 font-medium mt-1">Highest ranking prioritization placement for absolute maximum reach.</p>
-                  </div>
-                  <span className="text-[#00aa4f] font-black text-xs mt-4">₱199</span>
-                </label>
-
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-              <div className="flex items-baseline gap-1">
-                <span className="text-xs font-bold text-slate-400">Total Price:</span>
-                <span className="text-xl font-black text-[#00aa4f]">
-                  {totalAmount === 0 ? '₱0 (Free)' : `₱${totalAmount.toLocaleString()}`}
-                </span>
+            <div className="flex justify-between items-center pt-6 border-t border-slate-100">
+              <div>
+                <p className="text-xs font-bold text-slate-400">Total Payable Amount:</p>
+                <p className="text-xl font-black text-[#00aa4f]">₱{totalAmount.toLocaleString()}</p>
               </div>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={isSubmitting}
-                className="bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs px-6 py-3.5 rounded-xl flex items-center gap-2 transition shadow-sm disabled:opacity-50 cursor-pointer"
+                className="bg-[#00aa4f] hover:bg-[#009444] text-white font-black text-xs px-6 py-4 rounded-2xl flex items-center gap-2 transition disabled:opacity-50 cursor-pointer"
               >
-                {isSubmitting ? 'Processing Upload...' : 'Publish Listing'}
+                {isSubmitting ? 'Configuring System...' : 'Proceed to Gcash Payment'}
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
 
           </form>
         )}
-
       </main>
 
-      {/* EDIT MODAL */}
-      {isEditModalOpen && editingProperty && (
+      {/* ========================================== */}
+      {/* MINIMALIST EDIT PROPERTY MODAL             */}
+      {/* ========================================== */}
+      {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl w-full max-w-xl max-h-[85vh] overflow-y-auto p-6 shadow-2xl space-y-6">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-              <div>
-                <h3 className="font-black text-slate-800 text-sm">Update Listing Specifications</h3>
-                <p className="text-[10px] text-slate-400 mt-0.5">Edit structural core data below.</p>
-              </div>
+          <div className="bg-white w-full max-w-lg rounded-[32px] p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-black text-slate-800">Edit Rental Listing Details</h2>
               <button 
-                type="button" 
+                type="button"
                 onClick={() => { setIsEditModalOpen(false); setEditingProperty(null); }}
-                className="bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full p-1 transition cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 text-sm cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                ✕
               </button>
             </div>
 
             <form onSubmit={handleUpdateProperty} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500">Listing Title / Catchphrase</label>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Property Title</label>
                 <input 
                   type="text" 
                   required 
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Property Category</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Price (₱ / mo)</label>
+                  <input 
+                    type="number" 
+                    required 
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Floor Area (sqm)</label>
+                  <input 
+                    type="number" 
+                    required 
+                    value={editArea}
+                    onChange={(e) => setEditArea(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Property Category</label>
                   <select 
                     value={editPropertyType}
                     onChange={(e) => setEditPropertyType(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
                   >
                     <option>Apartment</option>
                     <option>Condo Unit</option>
@@ -1033,37 +1045,25 @@ export default function LandlordPortalPage() {
                     <option>Room Rental Only</option>
                   </select>
                 </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Monthly Rent (PHP)</label>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Contact Number</label>
                   <input 
-                    type="number" 
+                    type="tel" 
                     required 
-                    value={editPrice}
-                    onChange={(e) => setEditPrice(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Floor Area (sqm)</label>
-                  <input 
-                    type="number" 
-                    required 
-                    value={editArea}
-                    onChange={(e) => setEditArea(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                    value={editContactNumber}
+                    onChange={(e) => setEditContactNumber(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Bedrooms Count</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Bedrooms</label>
                   <select 
                     value={editBedrooms}
                     onChange={(e) => setEditBedrooms(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
                   >
                     <option>0 (Studio)</option>
                     <option>1</option>
@@ -1072,13 +1072,12 @@ export default function LandlordPortalPage() {
                     <option>4+</option>
                   </select>
                 </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Bathrooms Count</label>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Bathrooms</label>
                   <select 
                     value={editBathrooms}
                     onChange={(e) => setEditBathrooms(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
                   >
                     <option>1</option>
                     <option>2</option>
@@ -1087,91 +1086,79 @@ export default function LandlordPortalPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Restroom Privacy</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Restroom Privacy</label>
                   <select 
                     value={editRestroomPrivacy}
                     onChange={(e) => setEditRestroomPrivacy(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
                   >
                     <option>Private (Own Toilet)</option>
-                    <option>Shared Toilet</option>
+                    <option>Shared Common Restroom</option>
                   </select>
                 </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Bathroom Privacy</label>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Shower Privacy</label>
                   <select 
                     value={editBathroomPrivacy}
                     onChange={(e) => setEditBathroomPrivacy(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
                   >
                     <option>Private (Own Shower)</option>
-                    <option>Shared Shower</option>
+                    <option>Shared Common Shower</option>
                   </select>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500">Detailed Address</label>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Descriptive Address</label>
                 <input 
                   type="text" 
                   required 
                   value={editManualAddress}
                   onChange={(e) => setEditManualAddress(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Google Plus Code (Optional)</label>
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Google Maps Plus Code (Optional)</label>
                   <input 
                     type="text" 
                     value={editPlusCode}
                     onChange={(e) => setEditPlusCode(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Contact Number</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={editContactNumber}
-                    onChange={(e) => setEditContactNumber(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl text-xs font-semibold text-slate-800 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500">Description & Rules</label>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Context details & House Rules</label>
                 <textarea 
                   required 
+                  rows={3}
                   value={editDescriptionRules}
                   onChange={(e) => setEditDescriptionRules(e.target.value)}
-                  rows={3}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl text-xs font-semibold text-slate-800 focus:outline-none resize-none"
                 />
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-slate-100 justify-end">
-                <button
-                  type="button"
+              <div className="flex gap-3 pt-4 border-t border-slate-50">
+                <button 
+                  type="button" 
                   onClick={() => { setIsEditModalOpen(false); setEditingProperty(null); }}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-5 py-3 rounded-xl transition cursor-pointer"
+                  className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition cursor-pointer"
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
+                <button 
+                  type="submit" 
                   disabled={isSubmitting}
-                  className="bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs px-5 py-3 rounded-xl transition disabled:opacity-50 cursor-pointer"
+                  className="w-full py-3 bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs rounded-xl transition disabled:opacity-50 cursor-pointer"
                 >
-                  {isSubmitting ? 'Saving...' : 'Save Changes'}
+                  {isSubmitting ? 'Saving Changes...' : 'Save Changes'}
                 </button>
               </div>
             </form>
