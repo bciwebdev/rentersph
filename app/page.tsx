@@ -230,7 +230,7 @@ export default function HomePage() {
       
       {/* Premium Sticky Navigation Bar */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm transition-all duration-300 pointer-events-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 no-underline group relative z-50 pointer-events-auto">
             <div className="bg-emerald-600 p-2 rounded-xl text-white shadow-emerald-200 shadow-md group-hover:bg-emerald-700 transition-colors">
               <Home className="w-5 h-5" />
@@ -522,7 +522,7 @@ export default function HomePage() {
       </section>
 
       {/* Quick Filter Category Chips */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
+      <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mb-12">
         <div className="flex items-center gap-3 overflow-x-auto pb-3 scrollbar-none mask-image-inline">
           {propertyTypes.map((type) => (
             <button
@@ -541,7 +541,7 @@ export default function HomePage() {
       </section>
 
       {/* Dynamic Properties Layout */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16 mb-24">
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 space-y-16 mb-24">
         
         {isLoading ? (
           <div className="w-full text-center py-24 text-slate-500 font-bold text-lg flex flex-col items-center justify-center gap-3">
@@ -563,36 +563,35 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
                   {boostedListings.map((p) => {
                     const img = getDisplayImage(p)
                     return (
-                      <div key={p.id} className="group bg-white rounded-3xl border border-amber-300 ring-2 ring-amber-400/10 overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 flex flex-col h-full hover:-translate-y-1">
-                        <div className="aspect-[16/11] bg-slate-100 relative overflow-hidden">
-                          <span className="absolute top-3 left-3 z-20 text-[10px] font-black uppercase tracking-wider text-slate-700 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-md shadow-sm">
+                      <div key={p.id} className="group bg-white rounded-2xl border border-amber-300 ring-2 ring-amber-400/10 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full hover:-translate-y-1">
+                        <div className="aspect-square bg-slate-100 relative overflow-hidden">
+                          <span className="absolute top-2.5 left-2.5 z-20 text-[9px] font-extrabold uppercase tracking-wider text-slate-700 bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded shadow-sm">
                             {p.property_type || 'Unit'}
                           </span>
-                          <span className="absolute top-3 right-3 z-20 text-[10px] font-black uppercase tracking-wider text-white bg-gradient-to-r from-amber-500 to-orange-500 px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1">
-                            🚀 Boosted
+                          <span className="absolute top-2.5 right-2.5 z-20 text-[9px] font-extrabold uppercase tracking-wider text-white bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 rounded shadow-sm flex items-center gap-0.5">
+                            🚀 Boost
                           </span>
                           {img ? (
                             <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">No Imagery Provided</div>
+                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">No Image</div>
                           )}
                         </div>
-                        <div className="p-5 flex flex-col justify-between flex-grow space-y-3">
+                        <div className="p-4 flex flex-col justify-between flex-grow space-y-2.5">
                           <div>
-                            <div className="text-2xl font-black text-slate-950">₱{p.price?.toLocaleString()}<span className="text-xs font-semibold text-slate-400">/mo</span></div>
-                            <h3 className="text-sm font-bold text-slate-800 line-clamp-1 mt-0.5 group-hover:text-emerald-600 transition-colors">{p.title}</h3>
-                            <div className="text-xs text-slate-400 flex items-center gap-1 mt-1"><MapPin className="w-3 h-3 text-slate-400 shrink-0" /> {p.address}</div>
+                            <div className="text-lg font-black text-slate-950">₱{p.price?.toLocaleString()}<span className="text-[10px] font-semibold text-slate-400">/mo</span></div>
+                            <h3 className="text-xs font-bold text-slate-800 line-clamp-1 mt-0.5 group-hover:text-emerald-600 transition-colors">{p.title}</h3>
+                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3 text-slate-400 shrink-0" /> <span className="truncate">{p.address}</span></div>
                           </div>
                           
-                          {/* Replaced specification row with structured "CLICK TO INQUIRE" button */}
-                          <div className="pt-3 border-t border-slate-100">
+                          <div className="pt-2.5 border-t border-slate-100">
                             <Link 
                               href={`/property/${p.id}`} 
-                              className="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs py-3 px-4 rounded-xl transition-all duration-200"
+                              className="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] py-2.5 px-3 rounded-lg transition-all duration-200"
                             >
                               CLICK TO INQUIRE
                             </Link>
@@ -615,33 +614,32 @@ export default function HomePage() {
               </div>
 
               {regularListings.length > 0 || boostedListings.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
                   {regularListings.map((p) => {
                     const img = getDisplayImage(p)
                     return (
-                      <div key={p.id} className="group bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full hover:-translate-y-1">
-                        <div className="aspect-[16/11] bg-slate-100 relative overflow-hidden">
-                          <span className="absolute top-3 left-3 z-20 text-[10px] font-black uppercase tracking-wider text-slate-700 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-md shadow-sm">
+                      <div key={p.id} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full hover:-translate-y-1">
+                        <div className="aspect-square bg-slate-100 relative overflow-hidden">
+                          <span className="absolute top-2.5 left-2.5 z-20 text-[9px] font-extrabold uppercase tracking-wider text-slate-700 bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded shadow-sm">
                             {p.property_type || 'Unit'}
                           </span>
                           {img ? (
                             <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">No Imagery Provided</div>
+                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">No Image</div>
                           )}
                         </div>
-                        <div className="p-5 flex flex-col justify-between flex-grow space-y-3">
+                        <div className="p-4 flex flex-col justify-between flex-grow space-y-2.5">
                           <div>
-                            <div className="text-2xl font-black text-slate-950">₱{p.price?.toLocaleString()}<span className="text-xs font-semibold text-slate-400">/mo</span></div>
-                            <h3 className="text-sm font-bold text-slate-800 line-clamp-1 mt-0.5 group-hover:text-emerald-600 transition-colors">{p.title}</h3>
-                            <div className="text-xs text-slate-400 flex items-center gap-1 mt-1"><MapPin className="w-3 h-3 text-slate-400 shrink-0" /> {p.address}</div>
+                            <div className="text-lg font-black text-slate-950">₱{p.price?.toLocaleString()}<span className="text-[10px] font-semibold text-slate-400">/mo</span></div>
+                            <h3 className="text-xs font-bold text-slate-800 line-clamp-1 mt-0.5 group-hover:text-emerald-600 transition-colors">{p.title}</h3>
+                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3 text-slate-400 shrink-0" /> <span className="truncate">{p.address}</span></div>
                           </div>
                           
-                          {/* Replaced specification row with structured "CLICK TO INQUIRE" button */}
-                          <div className="pt-3 border-t border-slate-100">
+                          <div className="pt-2.5 border-t border-slate-100">
                             <Link 
                               href={`/property/${p.id}`} 
-                              className="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs py-3 px-4 rounded-xl transition-all duration-200"
+                              className="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] py-2.5 px-3 rounded-lg transition-all duration-200"
                             >
                               CLICK TO INQUIRE
                             </Link>
@@ -652,9 +650,22 @@ export default function HomePage() {
                   })}
                 </div>
               ) : (
-                <div className="w-full text-center py-24 bg-white rounded-3xl border border-slate-150 shadow-sm">
-                  <p className="text-slate-400 font-bold text-lg">No active properties match your filters.</p>
-                  <button onClick={() => { setSearch(''); setPropertyType('All Types'); }} className="mt-4 text-emerald-600 font-bold hover:underline">Reset Filters</button>
+                <div className="w-full text-center py-24 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                  <div className="max-w-md mx-auto space-y-3">
+                    <div className="mx-auto w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400">
+                      <Search className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-800">No matching rentals found</h3>
+                    <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                      We couldn't find any listings matching your current selection. Try broadening your location filters or changing the property type.
+                    </p>
+                    <button 
+                      onClick={() => { setSearch(''); setPropertyType('All Types'); }} 
+                      className="inline-flex items-center gap-1.5 text-xs font-extrabold text-emerald-600 hover:text-emerald-700 transition"
+                    >
+                      Reset Filter Parameters
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
