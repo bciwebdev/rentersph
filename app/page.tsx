@@ -278,7 +278,7 @@ export default function HomePage() {
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-bold text-emerald-800 uppercase tracking-wider mb-4 shadow-sm">
               <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse" /> Verified Property Ecosystem
             </span>
-            <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">
               Find your <span className="text-emerald-600">Renting Place</span> here
             </h1>
             <p className="text-slate-500 font-medium text-base sm:text-xl max-w-xl mx-auto mt-4">
