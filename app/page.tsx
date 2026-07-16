@@ -672,6 +672,74 @@ export default function HomePage() {
           </>
         )}
       </main>
+
+      {/* RESTORED: Browse by Cities Hotspots */}
+      <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-slate-100">
+        <div className="mb-10">
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Explore Philippines Hotspots</h2>
+          <p className="text-xs font-medium text-slate-500">Find rooms easily inside key major cities.</p>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {CITIES.map((city) => (
+            <div 
+              key={city.name} 
+              onClick={() => { setSearch(city.name); handleApplyFilters(); }}
+              className="group relative h-48 rounded-2xl overflow-hidden cursor-pointer shadow-sm hover:shadow-lg transition-all duration-300"
+            >
+              <img src={city.img} alt={city.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/30 to-transparent" />
+              <div className="absolute bottom-4 left-4 text-white">
+                <h4 className="font-bold text-sm">{city.name}</h4>
+                <p className="text-[10px] text-slate-200">{city.count}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* RESTORED: Client Testimonial Section */}
+      <section className="bg-slate-900 text-white py-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-12">
+          <div className="space-y-3">
+            <span className="text-xs font-extrabold text-emerald-400 uppercase tracking-widest">Community Feedback</span>
+            <h2 className="text-3xl font-black tracking-tight">What Renters & Landlords Say</h2>
+          </div>
+          <div className="grid md:grid-cols-2 gap-8 text-left">
+            {TESTIMONIALS.map((t, idx) => (
+              <div key={idx} className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700/40 space-y-4">
+                <div className="flex gap-1">
+                  {[...Array(t.rating)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed italic">"{t.text}"</p>
+                <div>
+                  <h4 className="font-bold text-xs text-emerald-400">{t.name}</h4>
+                  <p className="text-[10px] text-slate-400">{t.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* RESTORED: Footer */}
+      <footer className="bg-white border-t border-slate-100 py-12">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-2.5">
+            <div className="bg-emerald-600 p-1.5 rounded-lg text-white">
+              <Home className="w-4 h-4" />
+            </div>
+            <span className="text-lg font-black text-slate-900 tracking-tight">
+              renters<span className="text-emerald-600">PH</span>
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            &copy; 2026 RentersPH. All rights reserved. Promoting verified listing standards nationwide.
+          </p>
+        </div>
+      </footer>
+
     </div>
   )
 }
