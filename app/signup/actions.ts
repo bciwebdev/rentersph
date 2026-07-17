@@ -13,17 +13,10 @@ export async function signupAction(formData: FormData) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
+        getAll() { return cookieStore.getAll() },
         setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // Can be ignored if middleware handles redirects
-          }
+          try { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) } 
+          catch {}
         },
       },
     }
@@ -37,13 +30,12 @@ export async function signupAction(formData: FormData) {
     },
   })
 
-  // 1. If there is a real error (like invalid email format), return it
-  if (error && !error.message.includes("confirmation")) {
+  // If there is a legitimate error, return it
+  if (error) {
     return { error: error.message }
   }
 
-  // 2. If Supabase says "confirmation required", DO NOT return it as an error.
-  // Instead, return success so your page.tsx shows your custom message.
+  // If we reach here, Supabase considers it a success (even if email confirmation is pending)
   return { 
     success: true, 
     message: "Account created! Please check your email inbox to verify your account." 
