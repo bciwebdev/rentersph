@@ -11,11 +11,13 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSignedUp, setIsSignedUp] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccessMessage(null);
 
     const formData = new FormData();
     formData.append("email", email);
@@ -28,6 +30,7 @@ export default function SignupPage() {
       setLoading(false);
     } else {
       setIsSignedUp(true);
+      setSuccessMessage(result.message || "We have sent a verification link to your email. Please check your inbox (and spam folder) to activate your account.");
       setLoading(false);
     }
   }
@@ -43,8 +46,7 @@ export default function SignupPage() {
           <div className="space-y-2">
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">Verify your email</h1>
             <p className="text-sm text-slate-500 font-medium leading-relaxed">
-              We have sent a verification link to <span className="font-bold text-slate-800">{email}</span>. 
-              Please check your inbox (and spam folder) to activate your account.
+              {successMessage}
             </p>
           </div>
 
