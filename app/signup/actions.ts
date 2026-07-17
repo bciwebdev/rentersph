@@ -38,17 +38,14 @@ export async function signupAction(formData: FormData) {
     },
   })
 
-  if (error) {
+  // Treat "email confirmation required" as a success rather than an error
+  if (error && !error.message.toLowerCase().includes("confirmation")) {
     return { error: error.message }
   }
 
-  // If a user record is generated but confirmation is required, return a clean success message
-  if (data?.user) {
-    return { 
-      success: true, 
-      message: "Account created! Please check your email inbox to verify your account before logging in." 
-    }
+  // Return a success message to the frontend when registration is triggered
+  return { 
+    success: true, 
+    message: "Account created! Please check your email inbox to verify your account before logging in." 
   }
-
-  return { success: true }
 }
