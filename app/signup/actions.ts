@@ -30,18 +30,16 @@ export async function signupAction(formData: FormData) {
     },
   })
 
-  // If there is an actual technical error (e.g., invalid email), return it
+  // THE STRICT FILTER
+  // If the error contains the specific text about manual validation, we treat it as a SUCCESS
   if (error) {
-    return { error: error.message }
-  }
-
-  // If data.user exists, the account was created successfully.
-  // If data.session is null, it confirms the user must verify their email.
-  if (data?.user && !data.session) {
-    return { 
-      success: true, 
-      message: "Account created! Please check your email inbox to verify your account before logging in." 
+    if (error.message.includes("requires manual email validation") || error.message.includes("confirmation")) {
+      return { 
+        success: true, 
+        message: "Account created! Please check your email inbox to verify your account before logging in." 
+      }
     }
+    return { error: error.message }
   }
 
   return { success: true }
