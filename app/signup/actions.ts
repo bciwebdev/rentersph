@@ -33,19 +33,19 @@ export async function signupAction(formData: FormData) {
     email,
     password,
     options: {
-      // Force PKCE to redirect to your exact callback endpoint
       emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://rentersph-app.vercel.app'}/auth/callback`,
     },
   })
 
-  // Treat "email confirmation required" as a success rather than an error
-  if (error && !error.message.toLowerCase().includes("confirmation")) {
+  // 1. If there is a real error (like invalid email format), return it
+  if (error && !error.message.includes("confirmation")) {
     return { error: error.message }
   }
 
-  // Return a success message to the frontend when registration is triggered
+  // 2. If Supabase says "confirmation required", DO NOT return it as an error.
+  // Instead, return success so your page.tsx shows your custom message.
   return { 
     success: true, 
-    message: "Account created! Please check your email inbox to verify your account before logging in." 
+    message: "Account created! Please check your email inbox to verify your account." 
   }
 }
