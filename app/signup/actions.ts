@@ -30,14 +30,19 @@ export async function signupAction(formData: FormData) {
     },
   })
 
-  // If there is a legitimate error, return it
+  // If there is an actual technical error (e.g., invalid email), return it
   if (error) {
     return { error: error.message }
   }
 
-  // If we reach here, Supabase considers it a success (even if email confirmation is pending)
-  return { 
-    success: true, 
-    message: "Account created! Please check your email inbox to verify your account." 
+  // If data.user exists, the account was created successfully.
+  // If data.session is null, it confirms the user must verify their email.
+  if (data?.user && !data.session) {
+    return { 
+      success: true, 
+      message: "Account created! Please check your email inbox to verify your account before logging in." 
+    }
   }
+
+  return { success: true }
 }
