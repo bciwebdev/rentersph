@@ -29,7 +29,7 @@ export async function signupAction(formData: FormData) {
     }
   )
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -40,6 +40,14 @@ export async function signupAction(formData: FormData) {
 
   if (error) {
     return { error: error.message }
+  }
+
+  // If a user record is generated but confirmation is required, return a clean success message
+  if (data?.user) {
+    return { 
+      success: true, 
+      message: "Account created! Please check your email inbox to verify your account before logging in." 
+    }
   }
 
   return { success: true }
