@@ -24,6 +24,7 @@ interface Property {
   payment_screenshot: string | null
   status: string
   created_at: string
+  actual_payment_amount: number
 }
 
 export default function AdminVerificationDashboard() {
@@ -40,10 +41,10 @@ export default function AdminVerificationDashboard() {
   const [loginError, setLoginError] = useState<string | null>(null)
   const [loginLoading, setLoginLoading] = useState(false)
 
-  // Calculate total transactions from approved/paid properties
+  // AUTOMATIC CALCULATION: Sums whatever actual amounts are stored in the database for paid/live listings
   const transactionTotal = properties
     .filter(item => item.is_paid || item.status === 'LIVE ON SITE')
-    .reduce((sum, item) => sum + (item.price || 0), 0)
+    .reduce((sum, item) => sum + (item.actual_payment_amount || 0), 0)
 
   // Format currency value safely using Philippine Peso
   const formattedTotal = new Intl.NumberFormat("en-PH", {
@@ -60,26 +61,26 @@ export default function AdminVerificationDashboard() {
       setUserEmail(user.email)
       setIsAuthenticated(true)
       
-      // Perform a join query to grab transaction data from payment_transactions table
       const { data, error } = await supabase
         .from('properties')
         .select(`
           *,
           payment_transactions (
             checkout_session_id,
-            receipt_url
+            receipt_url,
+            amount
           )
         `)
         .order('created_at', { ascending: false })
 
       if (!error && data) {
-        // Map the joined data so your existing UI handles the values flawlessly
         const mappedData: Property[] = data.map((prop: any) => {
           const transaction = prop.payment_transactions?.[0] || null;
           return {
             ...prop,
             payment_reference: transaction ? transaction.checkout_session_id : null,
-            payment_screenshot: transaction ? transaction.receipt_url : null
+            payment_screenshot: transaction ? transaction.receipt_url : null,
+            actual_payment_amount: transaction ? Number(transaction.amount || 0) : 0 
           }
         })
         setProperties(mappedData)
@@ -125,7 +126,7 @@ export default function AdminVerificationDashboard() {
     const { error } = await supabase
       .from('properties')
       .update({ 
-        status: 'LIVE ON SITE', // Matches front-end filters exactly
+        status: 'LIVE ON SITE', 
         is_paid: true
       })
       .eq('id', id)
@@ -237,29 +238,32 @@ export default function AdminVerificationDashboard() {
             <p className="text-xs text-slate-400 font-medium max-w-xl">Review submitted GCash reference details and screenshots to manually approve storefront visibility.</p>
           </div>
           
-          <div className="flex flex-wrap items-center gap-3 self-start md:self-center">
-            {/* New Financial Metric Card */}
-            <div className="flex items-center gap-2.5 rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm">
-                <Banknote className="h-4 w-4" />
+          {/* Repositioned & Cleaned Header Action Controls Container */}
+          <div className="flex items-center gap-3 self-end md:self-center">
+            {/* Real-time Dynamic Revenue Metric Card */}
+            <div className="flex items-center gap-2.5 rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-2 h-10">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm">
+                <Banknote className="h-3 w-3" />
               </div>
               <div>
                 <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-700/80 leading-none">
                   Transaction Total
                 </p>
-                <p className="text-sm font-black text-emerald-950 pt-0.5">
+                <p className="text-xs font-black text-emerald-950 pt-0.5 leading-none">
                   {formattedTotal}
                 </p>
               </div>
             </div>
 
-            <div className="text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl h-fit">
-              Admin: <span className="font-bold text-slate-900">{userEmail}</span>
+            {/* Admin Profile Badge */}
+            <div className="text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-4 rounded-xl flex items-center h-10">
+              Admin:&nbsp;<span className="font-bold text-slate-900">{userEmail}</span>
             </div>
             
+            {/* Exit Button */}
             <button 
               onClick={handleAdminSignOut}
-              className="px-3 py-2 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer h-fit"
+              className="px-4 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer h-10"
             >
               <LogOut className="w-3.5 h-3.5" /> Exit Portal
             </button>
