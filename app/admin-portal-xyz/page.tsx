@@ -140,22 +140,29 @@ export default function AdminVerificationDashboard() {
     setActionLoadingId(null)
   }
 
-  // Delete Listing Action
+  // Admin-Restricted Delete Listing Action
   const handleDeleteProperty = async (id: string, title: string) => {
+    if (userEmail !== ALLOWED_ADMIN_EMAIL) {
+      alert('Unauthorized: Only root admin can perform deletions.')
+      return
+    }
+
     const confirmed = window.confirm(`Are you sure you want to permanently delete "${title || 'this listing'}"?`)
     if (!confirmed) return
 
     setActionLoadingId(id)
-    const { error } = await supabase
+    const { error, count } = await supabase
       .from('properties')
-      .delete()
+      .delete({ count: 'exact' })
       .eq('id', id)
 
-    if (!error) {
-      setProperties(prev => prev.filter(item => item.id !== id))
-    } else {
+    if (error) {
       console.error("Delete failed:", error.message)
-      alert(`Failed to delete listing: ${error.message}`)
+      alert(`Delete rejected: ${error.message}`)
+    } else if (count === 0) {
+      alert("Delete blocked by database policy. Please run the SQL policy setup in your Supabase dashboard.")
+    } else {
+      setProperties(prev => prev.filter(item => item.id !== id))
     }
     setActionLoadingId(null)
   }
