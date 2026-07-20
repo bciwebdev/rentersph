@@ -284,7 +284,7 @@ export default function HomePage() {
               <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse" /> Verified Property Ecosystem
             </span>
             <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">
-              Find your <span className="text-emerald-600">Renting Place</span> here
+              Find your <span className="text-emerald-600">Renting Place 10x Faster</span>
             </h1>
             <p className="text-slate-500 font-medium text-base sm:text-xl max-w-xl mx-auto mt-4">
               Discover verified rental apartments, dynamic condominiums, and residential boarding rooms seamlessly.
