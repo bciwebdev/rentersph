@@ -71,6 +71,8 @@ export default function AdminVerificationDashboard() {
             amount
           )
         `)
+        // Filtered out 'unpaid' status so they do not show in Admin queue
+        .neq('status', 'unpaid')
         .order('created_at', { ascending: false })
 
       if (!error && data) {
@@ -265,9 +267,7 @@ export default function AdminVerificationDashboard() {
             <p className="text-xs text-slate-400 font-medium max-w-xl">Review submitted GCash reference details and screenshots to manually approve storefront visibility.</p>
           </div>
           
-          {/* Repositioned & Cleaned Header Action Controls Container */}
           <div className="flex items-center gap-3 self-end md:self-center">
-            {/* Real-time Dynamic Revenue Metric Card */}
             <div className="flex items-center gap-2.5 rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-2 h-10">
               <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm">
                 <Banknote className="h-3 w-3" />
@@ -282,12 +282,10 @@ export default function AdminVerificationDashboard() {
               </div>
             </div>
 
-            {/* Admin Profile Badge */}
             <div className="text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-4 rounded-xl flex items-center h-10">
               Admin:&nbsp;<span className="font-bold text-slate-900">{userEmail}</span>
             </div>
             
-            {/* Exit Button */}
             <button 
               onClick={handleAdminSignOut}
               className="px-4 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer h-10"
@@ -332,7 +330,6 @@ export default function AdminVerificationDashboard() {
                 className={`bg-white rounded-3xl border transition shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 ${isPending(item.status) ? 'border-amber-200 hover:border-amber-300' : 'border-slate-200'}`}
               >
                 
-                {/* Column 1: Core Property Parameters */}
                 <div className="p-6 lg:col-span-5 space-y-3 border-b lg:border-b-0 lg:border-r border-slate-100">
                   <h3 className="font-black text-base text-slate-950 tracking-tight leading-tight">{item.title || 'Untitled Listing'}</h3>
                   <div className="space-y-1.5 text-xs text-slate-500 font-medium">
@@ -341,7 +338,6 @@ export default function AdminVerificationDashboard() {
                   </div>
                 </div>
 
-                {/* Column 2: GCash Reference & Receipt Screenshots */}
                 <div className="p-6 lg:col-span-4 bg-slate-50/40 flex flex-col justify-center space-y-2 border-b lg:border-b-0 lg:border-r border-slate-100">
                   <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
                     <Hash className="w-3 h-3 text-blue-500" /> Declared Transaction Payload
@@ -371,7 +367,6 @@ export default function AdminVerificationDashboard() {
                   </div>
                 </div>
 
-                {/* Column 3: Processing Action Systems */}
                 <div className="p-6 lg:col-span-3 flex flex-col justify-center items-stretch gap-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold text-slate-400 uppercase">Status</span>
