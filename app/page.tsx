@@ -136,7 +136,10 @@ export default function HomePage() {
       const query = search.toLowerCase()
       temp = temp.filter(p => 
         p.title?.toLowerCase().includes(query) || 
-        p.address?.toLowerCase().includes(query)
+        p.address?.toLowerCase().includes(query) ||
+        p.city?.toLowerCase().includes(query) ||
+        p.province?.toLowerCase().includes(query) ||
+        p.barangay?.toLowerCase().includes(query)
       )
     }
 
@@ -213,7 +216,7 @@ export default function HomePage() {
     }
   }
 
-  // Bulletproof boosted checking logic
+  // Pure Boosted filtering (Only genuinely boosted items appear here)
   const activeBoosted = filteredProperties.filter(p => {
     if (!p.boost_tier) return false;
     const tier = String(p.boost_tier).toLowerCase().trim();
@@ -222,10 +225,10 @@ export default function HomePage() {
     if (p.boost_expires_at) {
       return new Date(p.boost_expires_at) > new Date();
     }
-    return true; // Fallback to true if boosted but no expiration date set yet
+    return true; 
   });
 
-  const featuredItems = activeBoosted.length > 0 ? activeBoosted : filteredProperties.slice(0, 1);
+  const featuredItems = activeBoosted;
   const featuredIds = new Set(featuredItems.map(f => f.id));
   const regularItems = filteredProperties.filter(p => !featuredIds.has(p.id));
 
@@ -531,7 +534,7 @@ export default function HomePage() {
           </div>
         ) : (
           <>
-            {/* FEATURED Rentals Section */}
+            {/* FEATURED Rentals Section (Only renders when active boosted properties match) */}
             {featuredItems.length > 0 && (
               <div>
                 <div className="mb-6">
