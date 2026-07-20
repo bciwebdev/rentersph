@@ -5,11 +5,11 @@ import Link from 'next/link'
 import { createBrowserClient } from '@supabase/ssr'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Search, MapPin, Home, Building2, Bed, 
+  Search, MapPin, Home, Building2, 
   Sparkles, Zap, Star, CheckCircle, Menu, X, ChevronDown, ChevronLeft
 } from 'lucide-react'
 
-// FIX: Use createBrowserClient from @supabase/ssr to eliminate cookie runtime compilation errors
+// Initialize Supabase Client securely
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -54,14 +54,6 @@ const PHILIPPINES_LOCATIONS: Record<string, Record<string, Record<string, string
   }
 }
 
-// Structural mock data for non-dynamic landing sections
-const CITIES = [
-  { name: 'Manila', count: '1,240+ Units', img: 'https://images.unsplash.com/photo-1542362567-b07eac790947?auto=format&fit=crop&w=300&q=80' },
-  { name: 'Davao City', count: '850+ Units', img: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=300&q=80' },
-  { name: 'Cebu City', count: '980+ Units', img: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=300&q=80' },
-  { name: 'Taguig', count: '640+ Units', img: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=300&q=80' },
-]
-
 const TESTIMONIALS = [
   { name: 'Maria Santos', role: 'Tenant (Condo Renter)', text: 'Finding a verified apartment in BGC was seamless. The boosted options allowed me to lock down a unit within 3 days!', rating: 5 },
   { name: 'Jay-R Villanueva', role: 'Landlord (Apartment Owner)', text: 'The visibility boost tier is a game-changer. My rental inquiries jumped by 150% in the first week of listing.', rating: 5 },
@@ -88,7 +80,6 @@ export default function HomePage() {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const locDropdownRef = useRef<HTMLDivElement>(null)
 
-  // FIX: Maps the UI labels to the actual DB enum categories
   const propertyTypes = [
     { label: 'All Types', value: 'All Types' },
     { label: 'Apartment', value: 'Apartment' },
@@ -151,7 +142,6 @@ export default function HomePage() {
       )
     }
 
-    // FIX: Filter based on corresponding DB enum values instead of user-facing labels
     if (propertyType !== 'All Types') {
       const targetType = propertyTypes.find(t => t.label === propertyType);
       if (targetType) {
@@ -162,7 +152,6 @@ export default function HomePage() {
     setFilteredProperties(temp)
   }
 
-  // Fallback trigger to fire filters instantly when category chips are picked
   useEffect(() => {
     handleApplyFilters()
   }, [propertyType])
@@ -184,7 +173,6 @@ export default function HomePage() {
     return null
   }
 
-  // Handle Location selection hierarchy steps
   const handleSelectIsland = (island: string) => {
     setSelectedIsland(island)
     setLocStep('province')
@@ -233,10 +221,10 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans antialiased selection:bg-emerald-500 selection:text-white relative">
       
-      {/* Premium Sticky Navigation Bar */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm transition-all duration-300 pointer-events-auto">
+      {/* Sticky Navigation Bar */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm transition-all duration-300">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 no-underline group relative z-50 pointer-events-auto">
+          <Link href="/" className="flex items-center gap-2.5 no-underline group relative z-50">
             <div className="bg-emerald-600 p-2 rounded-xl text-white shadow-emerald-200 shadow-md group-hover:bg-emerald-700 transition-colors">
               <Home className="w-5 h-5" />
             </div>
@@ -245,30 +233,30 @@ export default function HomePage() {
             </span>
           </Link>
 
-          {/* Desktop Navigation links */}
-          <nav className="hidden md:flex items-center gap-8 relative z-50 pointer-events-auto">
-            <span onClick={() => { setPropertyType('All Types'); window.scrollTo({top: 800, behavior: 'smooth'}); }} className="text-sm font-semibold text-slate-600 cursor-pointer hover:text-emerald-600 transition-colors">Find Rentals</span>
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-8 relative z-50">
+            <span onClick={() => { setPropertyType('All Types'); window.scrollTo({top: 500, behavior: 'smooth'}); }} className="text-sm font-semibold text-slate-600 cursor-pointer hover:text-emerald-600 transition-colors">Find Rentals</span>
             <span className="text-sm font-semibold text-slate-600 cursor-pointer hover:text-emerald-600 transition-colors">Favorites</span>
             
-            <Link href="/login" className="inline-flex items-center gap-2 text-sm font-bold bg-slate-900 text-white px-5 py-3 rounded-xl hover:bg-slate-800 transition shadow-sm hover:shadow-md cursor-pointer relative z-50 pointer-events-auto">
+            <Link href="/login" className="inline-flex items-center gap-2 text-sm font-bold bg-slate-900 text-white px-5 py-3 rounded-xl hover:bg-slate-800 transition shadow-sm hover:shadow-md cursor-pointer">
               <Building2 className="w-4 h-4 text-emerald-400" />
               Landlord Dashboard
             </Link>
           </nav>
 
-          {/* Mobile hamburger menu switch */}
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-lg relative z-50 pointer-events-auto">
+          {/* Mobile hamburger menu */}
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-lg relative z-50">
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
-        {/* Mobile Navigation Drawer */}
+        {/* Mobile Drawer */}
         <AnimatePresence>
           {mobileMenuOpen && (
-            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute top-20 left-0 w-full bg-white border-b border-slate-200 shadow-xl px-6 py-6 flex flex-col gap-4 md:hidden z-40 pointer-events-auto">
-              <span onClick={() => { setPropertyType('All Types'); setMobileMenuOpen(false); window.scrollTo({top: 800, behavior: 'smooth'}); }} className="text-base font-bold text-slate-700 py-2 border-b border-slate-50 cursor-pointer">Find Rentals</span>
+            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute top-20 left-0 w-full bg-white border-b border-slate-200 shadow-xl px-6 py-6 flex flex-col gap-4 md:hidden z-40">
+              <span onClick={() => { setPropertyType('All Types'); setMobileMenuOpen(false); window.scrollTo({top: 500, behavior: 'smooth'}); }} className="text-base font-bold text-slate-700 py-2 border-b border-slate-50 cursor-pointer">Find Rentals</span>
               <span className="text-base font-bold text-slate-700 py-2 border-b border-slate-50 cursor-pointer">Favorites</span>
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="w-full text-center font-bold bg-slate-900 text-white py-3 rounded-xl shadow-md cursor-pointer block relative z-50">
+              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="w-full text-center font-bold bg-slate-900 text-white py-3 rounded-xl shadow-md block">
                 Landlord Dashboard
               </Link>
             </motion.div>
@@ -276,7 +264,7 @@ export default function HomePage() {
         </AnimatePresence>
       </header>
 
-      {/* Hero Banner Section */}
+      {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50/60 via-white to-transparent pt-12 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 relative z-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
@@ -291,12 +279,10 @@ export default function HomePage() {
             </p>
           </motion.div>
         </div>
-
-        {/* Floating circle decoration backgrounds */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[350px] bg-gradient-to-tr from-emerald-200/20 to-teal-200/20 blur-3xl rounded-full -z-10" />
       </section>
 
-      {/* Integrated Search & Filter Panel */}
+      {/* Search & Filter Panel */}
       <section className="max-w-5xl mx-auto px-4 -mt-10 mb-16 relative z-20">
         <motion.form 
           onSubmit={handleApplyFilters} 
@@ -305,7 +291,7 @@ export default function HomePage() {
           transition={{ delay: 0.1, duration: 0.5 }} 
           className="bg-white px-5 py-2.5 rounded-2xl border border-slate-200 shadow-xl flex flex-col md:flex-row items-stretch md:items-center gap-4"
         >
-          {/* 1. Where (Location) Field - MODERN HIERARCHICAL DRILLDOWN PICKER */}
+          {/* Location Picker */}
           <div className="flex-1 relative" ref={locDropdownRef}>
             <div 
               onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
@@ -328,7 +314,7 @@ export default function HomePage() {
               <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${locationDropdownOpen ? 'rotate-180' : ''}`} />
             </div>
 
-            {/* Hierarchical Location Dropdown Container */}
+            {/* Hierarchical Location Dropdown */}
             <AnimatePresence>
               {locationDropdownOpen && (
                 <motion.div 
@@ -338,7 +324,6 @@ export default function HomePage() {
                   transition={{ duration: 0.15 }}
                   className="absolute left-0 right-0 mt-2 min-w-[280px] md:min-w-[340px] bg-white rounded-2xl shadow-2xl border border-slate-200/80 z-50 p-4"
                 >
-                  {/* Dropdown Header & Breadcrumb Trail */}
                   <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-3">
                     {locStep !== 'island' && (
                       <button 
@@ -372,10 +357,7 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  {/* List Content based on Steps */}
                   <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
-                    
-                    {/* STEP 1: Islands */}
                     {locStep === 'island' && (
                       <>
                         <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Region Group:</div>
@@ -384,7 +366,7 @@ export default function HomePage() {
                             type="button"
                             key={island}
                             onClick={() => handleSelectIsland(island)}
-                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
+                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition flex items-center justify-between"
                           >
                             <span>{island}</span>
                             <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
@@ -395,7 +377,6 @@ export default function HomePage() {
                       </>
                     )}
 
-                    {/* STEP 2: Provinces */}
                     {locStep === 'province' && selectedIsland && (
                       <>
                         <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Province:</div>
@@ -404,18 +385,17 @@ export default function HomePage() {
                             type="button"
                             key={province}
                             onClick={() => handleSelectProvince(province)}
-                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
+                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition flex items-center justify-between"
                           >
                             <span>{province}</span>
                             <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
-                              {Object.keys(PHILIPPINES_LOCATIONS[selectedIsland][province]).length} Cities
+                              {Object.keys(PHILIPPINES_LOCATIONS[selectedIsland!][province]).length} Cities
                             </span>
                           </button>
                         ))}
                       </>
                     )}
 
-                    {/* STEP 3: Cities */}
                     {locStep === 'city' && selectedIsland && selectedProvince && (
                       <>
                         <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select City / Municipality:</div>
@@ -424,18 +404,17 @@ export default function HomePage() {
                             type="button"
                             key={city}
                             onClick={() => handleSelectCity(city)}
-                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
+                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition flex items-center justify-between"
                           >
                             <span>{city}</span>
                             <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
-                              {PHILIPPINES_LOCATIONS[selectedIsland][selectedProvince][city].length} Barangays
+                              {PHILIPPINES_LOCATIONS[selectedIsland!][selectedProvince!][city].length} Barangays
                             </span>
                           </button>
                         ))}
                       </>
                     )}
 
-                    {/* STEP 4: Barangays */}
                     {locStep === 'barangay' && selectedIsland && selectedProvince && selectedCity && (
                       <>
                         <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Barangay:</div>
@@ -444,7 +423,7 @@ export default function HomePage() {
                             type="button"
                             key={brgy}
                             onClick={() => handleSelectBarangay(brgy)}
-                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-white hover:bg-emerald-600 rounded-xl transition duration-150"
+                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-white hover:bg-emerald-600 rounded-xl transition"
                           >
                             {brgy}
                           </button>
@@ -457,7 +436,7 @@ export default function HomePage() {
             </AnimatePresence>
           </div>
 
-          {/* 2. Property Type Field */}
+          {/* Property Type Dropdown */}
           <div className="flex-1 relative" ref={dropdownRef}>
             <div 
               onClick={() => setPropertyDropdownOpen(!propertyDropdownOpen)}
@@ -475,7 +454,6 @@ export default function HomePage() {
               <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${propertyDropdownOpen ? 'rotate-180' : ''}`} />
             </div>
 
-            {/* Custom Modern Dropdown list */}
             <AnimatePresence>
               {propertyDropdownOpen && (
                 <motion.div 
@@ -515,10 +493,9 @@ export default function HomePage() {
             </AnimatePresence>
           </div>
 
-          {/* 3. Streamlined Search Action Button */}
           <button 
             type="submit" 
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-8 py-4 md:py-3.5 rounded-xl md:rounded-full flex items-center justify-center gap-2 transition duration-200 cursor-pointer shadow-sm hover:shadow-md shrink-0 md:mr-1"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-8 py-4 md:py-3.5 rounded-xl md:rounded-full flex items-center justify-center gap-2 transition duration-200 shadow-sm hover:shadow-md shrink-0 md:mr-1"
           >
             <Search className="w-4 h-4" />
             <span>Apply Filters</span>
@@ -526,26 +503,7 @@ export default function HomePage() {
         </motion.form>
       </section>
 
-      {/* Quick Filter Category Chips */}
-      <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mb-12">
-        <div className="flex items-center gap-3 overflow-x-auto pb-3 scrollbar-none mask-image-inline">
-          {propertyTypes.map((type) => (
-            <button
-              key={type.label}
-              onClick={() => setPropertyType(type.label)}
-              className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all duration-200 whitespace-nowrap shadow-sm border ${
-                propertyType === type.label
-                  ? 'bg-emerald-600 border-emerald-600 text-white shadow-emerald-100'
-                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {type.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Dynamic Properties Layout */}
+      {/* Main Content Layout */}
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 space-y-16 mb-24">
         
         {isLoading ? (
@@ -555,7 +513,7 @@ export default function HomePage() {
           </div>
         ) : (
           <>
-            {/* Boosted Listings Section */}
+            {/* Boosted Listings */}
             {boostedListings.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-6">
@@ -592,7 +550,6 @@ export default function HomePage() {
                             <h3 className="text-xs font-bold text-slate-800 line-clamp-1 mt-0.5 group-hover:text-emerald-600 transition-colors">{p.title}</h3>
                             <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3 text-slate-400 shrink-0" /> <span className="truncate">{p.address}</span></div>
                           </div>
-                          
                           <div className="pt-2.5 border-t border-slate-100">
                             <Link 
                               href={`/property/${p.id}`} 
@@ -609,7 +566,7 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Latest Regular Listings Section */}
+            {/* Regular Listings */}
             <div>
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">Latest Available Rental Units</h2>
@@ -640,13 +597,12 @@ export default function HomePage() {
                             <h3 className="text-xs font-bold text-slate-800 line-clamp-1 mt-0.5 group-hover:text-emerald-600 transition-colors">{p.title}</h3>
                             <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3 text-slate-400 shrink-0" /> <span className="truncate">{p.address}</span></div>
                           </div>
-                          
                           <div className="pt-2.5 border-t border-slate-100">
                             <Link 
                               href={`/property/${p.id}`} 
-                              className="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] py-2.5 px-3 rounded-lg transition-all duration-200"
+                              className="block w-full text-center bg-slate-950 hover:bg-slate-800 text-white font-black text-[10px] py-2.5 px-3 rounded-lg transition-all duration-200"
                             >
-                              CLICK TO INQUIRE
+                              VIEW DETAILS
                             </Link>
                           </div>
                         </div>
@@ -655,18 +611,32 @@ export default function HomePage() {
                   })}
                 </div>
               ) : (
-                <div className="w-full border border-slate-100 bg-white rounded-3xl p-16 text-center space-y-4 shadow-sm flex flex-col items-center justify-center">
-                  <div className="bg-slate-50 p-4 rounded-full text-slate-400">
-                    <Search className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-xl font-black text-slate-950">No matching rentals found</h3>
-                  <p className="text-sm text-slate-400 max-w-sm">We couldn't find any listings matching your current selection. Try broadening your location filters or changing the property type.</p>
-                  <button onClick={() => { setSearch(''); setPropertyType('All Types'); }} className="text-emerald-600 font-extrabold text-xs tracking-wider uppercase hover:text-emerald-700 transition">Reset Filter Parameters</button>
+                <div className="w-full text-center py-16 bg-white rounded-2xl border border-slate-200 text-slate-400 font-bold">
+                  No matching rentals available at the moment. Try altering your filter parameters!
                 </div>
               )}
             </div>
           </>
         )}
+
+        {/* Testimonials */}
+        <section className="pt-8 border-t border-slate-200/60">
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight text-center mb-8">What Our Community Says</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {TESTIMONIALS.map((t, idx) => (
+              <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                <div className="flex gap-1">
+                  {[...Array(t.rating)].map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
+                </div>
+                <p className="text-slate-600 text-xs font-medium italic leading-relaxed">"{t.text}"</p>
+                <div>
+                  <h4 className="text-xs font-black text-slate-900">{t.name}</h4>
+                  <p className="text-[10px] font-bold text-emerald-600">{t.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
     </div>
   )
