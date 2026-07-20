@@ -92,7 +92,7 @@ export default function HomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Helper function to reliably evaluate boost status across table schemas
+  // Helper to check if property is currently boosted
   const checkIsBoosted = (p: any) => {
     const tierValue = p.boosting_tier || p.boost_tier
     if (!tierValue) return false
@@ -108,6 +108,25 @@ export default function HomePage() {
     return true
   }
 
+  // Helper to check if a standard (non-boosted) listing is still active (<= 30 days old)
+  const checkIsListingActive = (p: any) => {
+    // Paid active boosts bypass standard 30-day expiration
+    if (checkIsBoosted(p)) return true;
+
+    // Check expiration timestamp or created_at timestamp
+    const referenceDate = p.expires_at ? new Date(p.expires_at) : new Date(p.created_at)
+    const now = new Date()
+    
+    // If expires_at is directly set into the future
+    if (p.expires_at && new Date(p.expires_at) > now) return true;
+
+    // Standard 30-day expiration check from created_at date
+    const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000
+    const timeDiff = now.getTime() - new Date(p.created_at).getTime()
+
+    return timeDiff <= thirtyDaysInMs
+  }
+
   useEffect(() => {
     async function fetchProperties() {
       setIsLoading(true)
@@ -118,7 +137,10 @@ export default function HomePage() {
         .order('created_at', { ascending: false })
       
       if (!error && data) {
-        const sortedData = [...data].sort((a, b) => {
+        // Filter out properties that are older than 30 days and not renewed/boosted
+        const unexpiredData = data.filter(p => checkIsListingActive(p))
+
+        const sortedData = [...unexpiredData].sort((a, b) => {
           const aBoosted = checkIsBoosted(a)
           const bBoosted = checkIsBoosted(b)
 
@@ -225,11 +247,11 @@ export default function HomePage() {
     }
   }
 
-  // Pure Boosted filtering using corrected column mapping
-  const activeBoosted = filteredProperties.filter(p => checkIsBoosted(p))
-
-  const featuredItems = activeBoosted
+  // Active boosted items for Featured section
+  const featuredItems = filteredProperties.filter(p => checkIsBoosted(p))
   const featuredIds = new Set(featuredItems.map(f => f.id))
+  
+  // Active regular items (within 30 days) for main list
   const regularItems = filteredProperties.filter(p => !featuredIds.has(p.id))
 
   return (
@@ -627,7 +649,7 @@ export default function HomePage() {
                 </div>
               ) : (
                 <div className="w-full text-center py-12 text-slate-400 font-medium text-sm border border-dashed border-slate-200 rounded-2xl bg-white">
-                  No rentals match your exact query right now. Try selecting "All Types".
+                  No active rentals match your query right now. Try selecting "All Types".
                 </div>
               )}
             </div>
