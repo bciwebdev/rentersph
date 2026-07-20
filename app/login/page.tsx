@@ -50,21 +50,8 @@ export default function LandlordLoginPage() {
 
       if (signUpError) {
         setError(signUpError.message)
-        setLoading(false)
-        return
-      }
-
-      // DEVELOPMENT AUTO-BYPASS LOOP:
-      // Immediately log the user in using the credentials they just generated
-      const { error: autoSignInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      })
-
-      if (autoSignInError) {
-        setError('Account created! However, your Supabase project configuration strictly requires manual email validation before logging in. Please check your Supabase dashboard > Authentication > Users to confirm this email.')
       } else {
-        router.push('/landlord')
+        setMessage('Account created! Please check your email inbox to verify your account before logging in.')
       }
     } else {
       // Standard Sign In Processing
@@ -186,7 +173,7 @@ export default function LandlordLoginPage() {
             disabled={loading}
             className="w-full bg-[#00aa4f] hover:bg-[#009444] text-white font-extrabold text-base py-4 rounded-2xl transition-all duration-200 shadow-md transform active:scale-[0.99] disabled:opacity-50 cursor-pointer"
           >
-            {loading ? 'Processing Auth...' : isSignUp ? 'Sign Up & Login' : 'Sign In'}
+            {loading ? 'Processing...' : isSignUp ? 'Sign Up' : 'Sign In'}
           </button>
         </form>
 
