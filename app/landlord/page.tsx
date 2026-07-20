@@ -679,471 +679,375 @@ export default function LandlordPortalPage() {
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-500">Monthly Rent (PHP)</label>
                   <input 
-                    type="number" 
+                    type="number"
                     required 
+                    min="0"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    placeholder="e.g., 5000"
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Floor Area (sqm)</label>
-                  <input 
-                    type="number" 
-                    required 
-                    value={area}
-                    onChange={(e) => setArea(e.target.value)}
-                    placeholder="e.g., 30"
+                    placeholder="e.g., 12000"
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Bedrooms Count</label>
-                  <select 
+                  <label className="text-xs font-bold text-slate-500">Bedrooms</label>
+                  <input 
+                    type="number"
+                    required 
+                    min="0"
                     value={bedrooms}
                     onChange={(e) => setBedrooms(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                  >
-                    <option>0 (Studio)</option>
-                    <option>1</option>
-                    <option>2</option>
-                    <option>3</option>
-                    <option>4+</option>
-                  </select>
+                  />
                 </div>
-
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Bathrooms Count</label>
-                  <select 
+                  <label className="text-xs font-bold text-slate-500">Bathrooms</label>
+                  <input 
+                    type="number"
+                    required 
+                    min="0"
                     value={bathrooms}
                     onChange={(e) => setBathrooms(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                  >
-                    <option>1</option>
-                    <option>2</option>
-                    <option>3+</option>
-                  </select>
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500">Floor Area (sqm)</label>
+                  <input 
+                    type="number"
+                    required 
+                    min="0"
+                    value={area}
+                    onChange={(e) => setArea(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Restroom Privacy</label>
+                  <label className="text-xs font-bold text-slate-500">Toilet Privacy</label>
                   <select 
                     value={restroomPrivacy}
                     onChange={(e) => setRestroomPrivacy(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   >
                     <option>Private (Own Toilet)</option>
-                    <option>Shared Toilet</option>
+                    <option>Shared</option>
                   </select>
                 </div>
-
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Bathroom Privacy</label>
+                  <label className="text-xs font-bold text-slate-500">Shower Privacy</label>
                   <select 
                     value={bathroomPrivacy}
                     onChange={(e) => setBathroomPrivacy(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   >
                     <option>Private (Own Shower)</option>
-                    <option>Shared Shower</option>
+                    <option>Shared</option>
                   </select>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">2. Geolocation Details</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Detailed Address</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={manualAddress}
-                    onChange={(e) => setManualAddress(e.target.value)}
-                    placeholder="e.g., Door 3, J&M Bldg, Claveria St, Davao City"
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Google Plus Code (Optional)</label>
-                  <input 
-                    type="text" 
-                    value={plusCode}
-                    onChange={(e) => setPlusCode(e.target.value)}
-                    placeholder="e.g., HV4V+8J Davao City"
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                  />
-                </div>
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">2. Location Details</h2>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500">Complete Address</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={manualAddress}
+                  onChange={(e) => setManualAddress(e.target.value)}
+                  placeholder="Street, Barangay, City/Municipality, Province"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                  Google Plus Code 
+                  <span className="text-[10px] text-slate-400 font-normal">(Optional but highly recommended)</span>
+                </label>
+                <input 
+                  type="text" 
+                  value={plusCode}
+                  onChange={(e) => setPlusCode(e.target.value)}
+                  placeholder="e.g., 7Q2R+3P Manila, Metro Manila"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                />
               </div>
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">3. Media & Rules</h2>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500">Contact Number</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={contactNumber}
-                  onChange={(e) => setContactNumber(e.target.value)}
-                  placeholder="e.g., 09123456789"
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500">Description & Rules</label>
-                <textarea 
-                  required 
-                  value={descriptionRules}
-                  onChange={(e) => setDescriptionRules(e.target.value)}
-                  placeholder="Include landlord criteria, house rules (e.g., no curfew, no pets allowed), utility arrangements, etc."
-                  rows={4}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500">Upload Property Photos (Max 10)</label>
-                <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-200 border-dashed rounded-2xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-8 h-8 text-slate-400 mb-2" />
-                      <p className="text-xs text-slate-500 font-bold">Click to upload files</p>
-                      <p className="text-[10px] text-slate-400">PNG, JPG or JPEG up to 10 photos</p>
-                    </div>
-                    <input 
-                      type="file" 
-                      multiple 
-                      accept="image/*" 
-                      onChange={handleFileChange} 
-                      className="hidden" 
-                    />
-                  </label>
-                </div>
-                {selectedFiles.length > 0 && (
-                  <div className="grid grid-cols-5 gap-2 mt-4">
-                    {selectedFiles.map((file, idx) => (
-                      <div key={idx} className="relative w-full h-16 rounded-xl overflow-hidden border border-slate-100">
-                        <img src={file.previewUrl} alt="preview" className="w-full h-full object-cover" />
-                        <button 
-                          type="button" 
-                          onClick={() => handleRemoveImage(idx)}
-                          className="absolute top-1 right-1 bg-black/55 text-white rounded-full p-0.5 hover:bg-black/75 transition cursor-pointer"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h2 className="text-sm font-black uppercase tracking-wider text-[#00aa4f] border-b border-slate-50 pb-2">4. Visibility Rank Boosting (Optional)</h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                
-                {/* Standard Listing (BASE_PRICE only) */}
-                <label className={`border rounded-2xl p-4 flex flex-col justify-between cursor-pointer transition ${
-                  boostingOption === 'none' ? 'border-[#00aa4f] bg-emerald-50/10' : 'border-slate-100 hover:border-slate-200 bg-white'
-                }`}>
-                  <input 
-                    type="radio" 
-                    name="boosting" 
-                    value="none" 
-                    checked={boostingOption === 'none'}
-                    onChange={() => setBoostingOption('none')}
-                    className="sr-only"
-                  />
-                  <div>
-                    <h3 className="text-xs font-black text-slate-800">1-Month Standard</h3>
-                    <p className="text-[10px] text-slate-400 font-medium mt-1">Normal search placement, 30-day publication validity.</p>
-                  </div>
-                  <span className="text-[#00aa4f] font-black text-xs mt-4">₱20</span>
-                </label>
-
-                {/* Hot Boost */}
-                <label className={`border rounded-2xl p-4 flex flex-col justify-between cursor-pointer transition ${
-                  boostingOption === '5days' ? 'border-[#00aa4f] bg-emerald-50/10' : 'border-slate-100 hover:border-slate-200 bg-white'
-                }`}>
-                  <input 
-                    type="radio" 
-                    name="boosting" 
-                    value="5days" 
-                    checked={boostingOption === '5days'}
-                    onChange={() => setBoostingOption('5days')}
-                    className="sr-only"
-                  />
-                  <div>
-                    <h3 className="text-xs font-black text-slate-800">5-Day Hot Boost</h3>
-                    <p className="text-[10px] text-slate-400 font-medium mt-1">Promoted listings appear high on relevant searches for 5 days.</p>
-                  </div>
-                  <span className="text-[#00aa4f] font-black text-xs mt-4">₱49</span>
-                </label>
-
-                {/* Visibility Surge */}
-                <label className={`border rounded-2xl p-4 flex flex-col justify-between cursor-pointer transition ${
-                  boostingOption === '2weeks' ? 'border-[#00aa4f] bg-emerald-50/10' : 'border-slate-100 hover:border-slate-200 bg-white'
-                }`}>
-                  <input 
-                    type="radio" 
-                    name="boosting" 
-                    value="2weeks" 
-                    checked={boostingOption === '2weeks'}
-                    onChange={() => setBoostingOption('2weeks')}
-                    className="sr-only"
-                  />
-                  <div>
-                    <h3 className="text-xs font-black text-slate-800">2-Week Surge</h3>
-                    <p className="text-[10px] text-slate-400 font-medium mt-1">Sustained premium placement high above standard listings.</p>
-                  </div>
-                  <span className="text-[#00aa4f] font-black text-xs mt-4">₱99</span>
-                </label>
-
-                {/* Market Domination */}
-                <label className={`border rounded-2xl p-4 flex flex-col justify-between cursor-pointer transition ${
-                  boostingOption === '1month' ? 'border-[#00aa4f] bg-emerald-50/10' : 'border-slate-100 hover:border-slate-200 bg-white'
-                }`}>
-                  <input 
-                    type="radio" 
-                    name="boosting" 
-                    value="1month" 
-                    checked={boostingOption === '1month'}
-                    onChange={() => setBoostingOption('1month')}
-                    className="sr-only"
-                  />
-                  <div>
-                    <h3 className="text-xs font-black text-slate-800">1-Month Dominate</h3>
-                    <p className="text-[10px] text-slate-400 font-medium mt-1">Highest ranking prioritization placement for absolute maximum reach.</p>
-                  </div>
-                  <span className="text-[#00aa4f] font-black text-xs mt-4">₱199</span>
-                </label>
-
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-              <div className="flex items-baseline gap-1">
-                <span className="text-xs font-bold text-slate-400">Total Price:</span>
-                <span className="text-xl font-black text-[#00aa4f]">₱{totalAmount.toLocaleString()}</span>
-              </div>
-              <button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs px-6 py-3.5 rounded-xl flex items-center gap-2 transition shadow-sm disabled:opacity-50 cursor-pointer"
-              >
-                {isSubmitting ? 'Processing Upload...' : 'Publish Listing'}
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-
-          </form>
-        )}
-
-      </main>
-
-      {/* EDIT MODAL */}
-      {isEditModalOpen && editingProperty && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl w-full max-w-xl max-h-[85vh] overflow-y-auto p-6 shadow-2xl space-y-6">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-              <div>
-                <h3 className="font-black text-slate-800 text-sm">Update Listing Specifications</h3>
-                <p className="text-[10px] text-slate-400 mt-0.5">Edit structural core data below.</p>
-              </div>
-              <button 
-                type="button" 
-                onClick={() => { setIsEditModalOpen(false); setEditingProperty(null); }}
-                className="bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full p-1 transition cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleUpdateProperty} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500">Listing Title / Catchphrase</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Property Category</label>
-                  <select 
-                    value={editPropertyType}
-                    onChange={(e) => setEditPropertyType(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                  >
-                    <option>Apartment</option>
-                    <option>Condo Unit</option>
-                    <option>Dormitory Bedspace</option>
-                    <option>Single House</option>
-                    <option>Room Rental Only</option>
-                    <option>Boarding House</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Monthly Rent (PHP)</label>
-                  <input 
-                    type="number" 
-                    required 
-                    value={editPrice}
-                    onChange={(e) => setEditPrice(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Floor Area (sqm)</label>
-                  <input 
-                    type="number" 
-                    required 
-                    value={editArea}
-                    onChange={(e) => setEditArea(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                  />
-                </div>
-              </div>
-
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2">3. Contact & Rules</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Bedrooms Count</label>
-                  <select 
-                    value={editBedrooms}
-                    onChange={(e) => setEditBedrooms(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                  >
-                    <option>0 (Studio)</option>
-                    <option>1</option>
-                    <option>2</option>
-                    <option>3</option>
-                    <option>4+</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Bathrooms Count</label>
-                  <select 
-                    value={editBathrooms}
-                    onChange={(e) => setEditBathrooms(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                  >
-                    <option>1</option>
-                    <option>2</option>
-                    <option>3+</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Restroom Privacy</label>
-                  <select 
-                    value={editRestroomPrivacy}
-                    onChange={(e) => setEditRestroomPrivacy(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                  >
-                    <option>Private (Own Toilet)</option>
-                    <option>Shared Toilet</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Bathroom Privacy</label>
-                  <select 
-                    value={editBathroomPrivacy}
-                    onChange={(e) => setEditBathroomPrivacy(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                  >
-                    <option>Private (Own Shower)</option>
-                    <option>Shared Shower</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500">Detailed Address</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={editManualAddress}
-                  onChange={(e) => setEditManualAddress(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500">Google Plus Code (Optional)</label>
-                  <input 
-                    type="text" 
-                    value={editPlusCode}
-                    onChange={(e) => setEditPlusCode(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                  />
-                </div>
-
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-500">Contact Number</label>
                   <input 
                     type="text" 
                     required 
-                    value={editContactNumber}
-                    onChange={(e) => setEditContactNumber(e.target.value)}
+                    value={contactNumber}
+                    onChange={(e) => setContactNumber(e.target.value)}
+                    placeholder="e.g., +639123456789"
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500">Email Address</label>
+                  <input 
+                    type="email" 
+                    required 
+                    value={emailAddress}
+                    onChange={(e) => setEmailAddress(e.target.value)}
+                    className="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none cursor-not-allowed"
+                    readOnly
+                  />
+                </div>
               </div>
-
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500">Description & Rules</label>
+                <label className="text-xs font-bold text-slate-500">Additional Descriptions & House Rules</label>
                 <textarea 
                   required 
-                  value={editDescriptionRules}
-                  onChange={(e) => setEditDescriptionRules(e.target.value)}
-                  rows={3}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  value={descriptionRules}
+                  onChange={(e) => setDescriptionRules(e.target.value)}
+                  rows={4}
+                  placeholder="Describe your property amenities and specific house rules (e.g., No pets allowed, Curfew at 10 PM)."
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition resize-none"
                 />
               </div>
+            </div>
 
-              <div className="flex gap-3 pt-4 border-t border-slate-100 justify-end">
-                <button
-                  type="button"
-                  onClick={() => { setIsEditModalOpen(false); setEditingProperty(null); }}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-5 py-3 rounded-xl transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs px-5 py-3 rounded-xl transition disabled:opacity-50 cursor-pointer"
-                >
-                  {isSubmitting ? 'Saving...' : 'Save Changes'}
-                </button>
+            <div className="space-y-4">
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-400 border-b border-slate-50 pb-2 flex justify-between items-end">
+                <span>4. Property Photos</span>
+                <span className="text-[10px] normal-case text-slate-400 font-medium">Max 10 images</span>
+              </h2>
+              
+              <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center bg-slate-50/50 hover:bg-slate-50 transition relative">
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="flex flex-col items-center justify-center pointer-events-none">
+                  <Upload className="w-8 h-8 text-slate-400 mb-2" />
+                  <p className="text-xs font-bold text-slate-600">Click or drag images here</p>
+                  <p className="text-[10px] text-slate-400 mt-1">JPG, PNG, WEBP supported</p>
+                </div>
               </div>
-            </form>
+
+              {selectedFiles.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4">
+                  {selectedFiles.map((item, index) => (
+                    <div key={index} className="relative group rounded-xl overflow-hidden aspect-square border border-slate-200 bg-slate-100">
+                      <img src={item.previewUrl} alt="preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute top-1.5 right-1.5 bg-rose-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition shadow-sm"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl p-5">
+              <h2 className="text-sm font-black uppercase tracking-wider text-[#00aa4f] border-b border-emerald-100/50 pb-2 flex items-center gap-1.5">
+                <Zap className="w-4 h-4" /> Optional Listing Boost
+              </h2>
+              <p className="text-xs text-slate-500">Stand out from the crowd! Pinned listings receive up to 5x more inquiries.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
+                {[
+                  { id: 'none', label: 'Standard Listing', desc: 'No boost', price: 0 },
+                  { id: '5days', label: 'Hot Boost', desc: '5 Days Priority', price: 49 },
+                  { id: '2weeks', label: 'Visibility Surge', desc: '14 Days Promoted', price: 99 },
+                  { id: '1month', label: 'Market Domination', desc: '30 Days Pinned', price: 199 },
+                ].map(option => (
+                  <label 
+                    key={option.id}
+                    className={`border rounded-xl p-3 flex flex-col cursor-pointer transition ${
+                      boostingOption === option.id 
+                        ? 'border-[#00aa4f] bg-emerald-50 shadow-sm ring-1 ring-[#00aa4f]/20' 
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <input 
+                      type="radio" 
+                      name="boost" 
+                      value={option.id}
+                      checked={boostingOption === option.id}
+                      onChange={() => setBoostingOption(option.id)}
+                      className="sr-only"
+                    />
+                    <span className={`text-[11px] font-black uppercase tracking-wider ${boostingOption === option.id ? 'text-[#00aa4f]' : 'text-slate-600'}`}>
+                      {option.label}
+                    </span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">{option.desc}</span>
+                    <span className={`text-xs font-bold mt-auto pt-2 ${boostingOption === option.id ? 'text-slate-800' : 'text-slate-500'}`}>
+                      {option.price === 0 ? 'Free' : `+₱${option.price}`}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between items-center bg-slate-800 text-white p-5 rounded-2xl gap-4">
+              <div>
+                <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Total Payable Amount</p>
+                <p className="text-2xl font-black text-[#00aa4f]">₱{totalAmount}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Includes standard listing fee (₱{BASE_PRICE})</p>
+              </div>
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full sm:w-auto bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs px-8 py-3.5 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-70 disabled:cursor-not-allowed shadow-md"
+              >
+                {isSubmitting ? 'Processing...' : 'Proceed to Payment'}
+                {!isSubmitting && <ArrowRight className="w-4 h-4" />}
+              </button>
+            </div>
+
+          </form>
+        )}
+      </main>
+
+      {/* EDIT MODAL OVERLAY */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-slate-50/50">
+              <div>
+                <h3 className="text-sm font-black text-slate-800">Edit Listing Information</h3>
+                <p className="text-[10px] text-slate-400 mt-0.5">Update particulars for {editTitle}</p>
+              </div>
+              <button 
+                onClick={() => setIsEditModalOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-500 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
+              
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500">Listing Title</label>
+                  <input 
+                    type="text" 
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full bg-white border border-slate-200 focus:border-[#00aa4f] rounded-xl px-3.5 py-2 text-xs font-medium outline-none transition"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-slate-500">Property Category</label>
+                    <select 
+                      value={editPropertyType}
+                      onChange={(e) => setEditPropertyType(e.target.value)}
+                      className="w-full bg-white border border-slate-200 focus:border-[#00aa4f] rounded-xl px-3.5 py-2 text-xs font-medium outline-none transition"
+                    >
+                      <option>Apartment</option>
+                      <option>Condo Unit</option>
+                      <option>Dormitory Bedspace</option>
+                      <option>Single House</option>
+                      <option>Room Rental Only</option>
+                      <option>Boarding House</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-slate-500">Monthly Rent (PHP)</label>
+                    <input 
+                      type="number"
+                      value={editPrice}
+                      onChange={(e) => setEditPrice(e.target.value)}
+                      className="w-full bg-white border border-slate-200 focus:border-[#00aa4f] rounded-xl px-3.5 py-2 text-xs font-medium outline-none transition"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-slate-500">Bedrooms</label>
+                    <input 
+                      type="number"
+                      value={editBedrooms}
+                      onChange={(e) => setEditBedrooms(e.target.value)}
+                      className="w-full bg-white border border-slate-200 focus:border-[#00aa4f] rounded-xl px-3.5 py-2 text-xs font-medium outline-none transition"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-slate-500">Bathrooms</label>
+                    <input 
+                      type="number"
+                      value={editBathrooms}
+                      onChange={(e) => setEditBathrooms(e.target.value)}
+                      className="w-full bg-white border border-slate-200 focus:border-[#00aa4f] rounded-xl px-3.5 py-2 text-xs font-medium outline-none transition"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-slate-500">Area (sqm)</label>
+                    <input 
+                      type="number"
+                      value={editArea}
+                      onChange={(e) => setEditArea(e.target.value)}
+                      className="w-full bg-white border border-slate-200 focus:border-[#00aa4f] rounded-xl px-3.5 py-2 text-xs font-medium outline-none transition"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500">Complete Address</label>
+                  <input 
+                    type="text"
+                    value={editManualAddress}
+                    onChange={(e) => setEditManualAddress(e.target.value)}
+                    className="w-full bg-white border border-slate-200 focus:border-[#00aa4f] rounded-xl px-3.5 py-2 text-xs font-medium outline-none transition"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500">Descriptions & House Rules</label>
+                  <textarea 
+                    value={editDescriptionRules}
+                    onChange={(e) => setEditDescriptionRules(e.target.value)}
+                    rows={3}
+                    className="w-full bg-white border border-slate-200 focus:border-[#00aa4f] rounded-xl px-3.5 py-2 text-xs font-medium outline-none transition resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-3xl">
+              <button 
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                onClick={handleUpdateProperty}
+                disabled={isSubmitting}
+                className="bg-[#00aa4f] hover:bg-[#009444] text-white px-5 py-2 text-xs font-bold rounded-xl transition flex items-center gap-2 cursor-pointer disabled:opacity-70"
+              >
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
           </div>
         </div>
       )}
-
     </div>
   )
 }
