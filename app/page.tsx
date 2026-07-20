@@ -103,8 +103,16 @@ export default function HomePage() {
       
       if (!error && data) {
         const sortedData = [...data].sort((a, b) => {
-          const aBoosted = a.boost_tier && a.boost_tier !== 'none' && a.boost_expires_at ? new Date(a.boost_expires_at) > new Date() : false;
-          const bBoosted = b.boost_tier && b.boost_tier !== 'none' && b.boost_expires_at ? new Date(b.boost_expires_at) > new Date() : false;
+          const checkBoost = (p: any) => {
+            if (!p.boost_tier) return false;
+            const tier = String(p.boost_tier).toLowerCase().trim();
+            if (tier === 'none' || tier === '' || tier === 'false') return false;
+            if (p.boost_expires_at) return new Date(p.boost_expires_at) > new Date();
+            return true;
+          };
+          
+          const aBoosted = checkBoost(a);
+          const bBoosted = checkBoost(b);
 
           if (aBoosted && !bBoosted) return -1;
           if (!aBoosted && bBoosted) return 1;
@@ -205,8 +213,21 @@ export default function HomePage() {
     }
   }
 
-  const boostedListings = filteredProperties.filter(p => p.boost_tier && p.boost_tier !== 'none' && p.boost_expires_at ? new Date(p.boost_expires_at) > new Date() : false)
-  const regularListings = filteredProperties.filter(p => !(p.boost_tier && p.boost_tier !== 'none' && p.boost_expires_at ? new Date(p.boost_expires_at) > new Date() : false))
+  // Bulletproof boosted checking logic
+  const activeBoosted = filteredProperties.filter(p => {
+    if (!p.boost_tier) return false;
+    const tier = String(p.boost_tier).toLowerCase().trim();
+    if (tier === 'none' || tier === '' || tier === 'false') return false;
+    
+    if (p.boost_expires_at) {
+      return new Date(p.boost_expires_at) > new Date();
+    }
+    return true; // Fallback to true if boosted but no expiration date set yet
+  });
+
+  const featuredItems = activeBoosted.length > 0 ? activeBoosted : filteredProperties.slice(0, 1);
+  const featuredIds = new Set(featuredItems.map(f => f.id));
+  const regularItems = filteredProperties.filter(p => !featuredIds.has(p.id));
 
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans antialiased selection:bg-emerald-500 selection:text-white relative">
@@ -511,23 +532,23 @@ export default function HomePage() {
         ) : (
           <>
             {/* FEATURED Rentals Section */}
-            {boostedListings.length > 0 && (
+            {featuredItems.length > 0 && (
               <div>
                 <div className="mb-6">
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">FEATURED Rentals</h2>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Featured Rentals</h2>
                   <p className="text-xs font-semibold text-emerald-600">
-                    Showing {boostedListings.length} active matching options found
+                    Showing {featuredItems.length} active matching options found
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
-                  {boostedListings.map((p) => {
+                  {featuredItems.map((p) => {
                     const img = getDisplayImage(p)
                     return (
-                      <div key={p.id} className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full">
+                      <div key={`featured-${p.id}`} className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full ring-2 ring-emerald-500/10">
                         <div className="aspect-[4/3] bg-slate-100 relative overflow-hidden m-2 rounded-2xl">
-                          <span className="absolute top-2.5 left-2.5 z-20 text-[9px] font-extrabold uppercase tracking-wider text-slate-700 bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded shadow-sm">
-                            {p.property_type || 'Unit'}
+                          <span className="absolute top-2.5 left-2.5 z-20 text-[9px] font-extrabold uppercase tracking-wider text-white bg-emerald-600 px-2 py-0.5 rounded shadow-sm flex items-center gap-1">
+                            <Sparkles className="w-2.5 h-2.5" /> {p.property_type || 'Featured'}
                           </span>
                           {img ? (
                             <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-102 transition duration-500" loading="lazy" />
@@ -562,13 +583,13 @@ export default function HomePage() {
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">Latest Available Rental Units</h2>
                 <p className="text-xs font-semibold text-emerald-600">
-                  Showing {regularListings.length} active matching options found
+                  Showing {regularItems.length} active matching options found
                 </p>
               </div>
 
-              {regularListings.length > 0 ? (
+              {regularItems.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
-                  {regularListings.map((p) => {
+                  {regularItems.map((p) => {
                     const img = getDisplayImage(p)
                     return (
                       <div key={p.id} className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full">
