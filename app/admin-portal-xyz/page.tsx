@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { ShieldAlert, CheckCircle, Clock, MapPin, Hash, DollarSign, LogOut, ImageIcon, Lock, Banknote } from 'lucide-react'
+import { ShieldAlert, CheckCircle, Clock, MapPin, Hash, DollarSign, LogOut, ImageIcon, Lock, Banknote, Trash2 } from 'lucide-react'
 
 // Initialize Supabase Client
 const supabase = createClient(
@@ -136,6 +136,26 @@ export default function AdminVerificationDashboard() {
     } else {
       console.error("Database update failed:", error.message)
       alert(`Failed to approve listing: ${error.message}`)
+    }
+    setActionLoadingId(null)
+  }
+
+  // Delete Listing Action
+  const handleDeleteProperty = async (id: string, title: string) => {
+    const confirmed = window.confirm(`Are you sure you want to permanently delete "${title || 'this listing'}"?`)
+    if (!confirmed) return
+
+    setActionLoadingId(id)
+    const { error } = await supabase
+      .from('properties')
+      .delete()
+      .eq('id', id)
+
+    if (!error) {
+      setProperties(prev => prev.filter(item => item.id !== id))
+    } else {
+      console.error("Delete failed:", error.message)
+      alert(`Failed to delete listing: ${error.message}`)
     }
     setActionLoadingId(null)
   }
@@ -371,6 +391,15 @@ export default function AdminVerificationDashboard() {
                       {actionLoadingId === item.id ? 'Activating Trigger...' : 'Approve & Publish Live'}
                     </button>
                   )}
+
+                  <button
+                    type="button"
+                    disabled={actionLoadingId === item.id}
+                    onClick={() => handleDeleteProperty(item.id, item.title)}
+                    className="w-full bg-rose-50 hover:bg-rose-100 disabled:bg-slate-100 text-rose-600 border border-rose-200 text-xs font-bold py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Delete Listing
+                  </button>
                 </div>
 
               </div>
