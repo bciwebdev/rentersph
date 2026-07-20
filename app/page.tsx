@@ -92,6 +92,22 @@ export default function HomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Helper function to reliably evaluate boost status across table schemas
+  const checkIsBoosted = (p: any) => {
+    const tierValue = p.boosting_tier || p.boost_tier
+    if (!tierValue) return false
+
+    const tier = String(tierValue).toLowerCase().trim()
+    if (tier === 'none' || tier === '' || tier === 'false') return false
+
+    const expiration = p.expires_at || p.boost_expires_at
+    if (expiration) {
+      return new Date(expiration) > new Date()
+    }
+
+    return true
+  }
+
   useEffect(() => {
     async function fetchProperties() {
       setIsLoading(true)
@@ -103,21 +119,13 @@ export default function HomePage() {
       
       if (!error && data) {
         const sortedData = [...data].sort((a, b) => {
-          const checkBoost = (p: any) => {
-            if (!p.boost_tier) return false;
-            const tier = String(p.boost_tier).toLowerCase().trim();
-            if (tier === 'none' || tier === '' || tier === 'false') return false;
-            if (p.boost_expires_at) return new Date(p.boost_expires_at) > new Date();
-            return true;
-          };
-          
-          const aBoosted = checkBoost(a);
-          const bBoosted = checkBoost(b);
+          const aBoosted = checkIsBoosted(a)
+          const bBoosted = checkIsBoosted(b)
 
-          if (aBoosted && !bBoosted) return -1;
-          if (!aBoosted && bBoosted) return 1;
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        });
+          if (aBoosted && !bBoosted) return -1
+          if (!aBoosted && bBoosted) return 1
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        })
 
         setProperties(sortedData)
         setFilteredProperties(sortedData)
@@ -139,12 +147,13 @@ export default function HomePage() {
         p.address?.toLowerCase().includes(query) ||
         p.city?.toLowerCase().includes(query) ||
         p.province?.toLowerCase().includes(query) ||
-        p.barangay?.toLowerCase().includes(query)
+        p.barangay?.toLowerCase().includes(query) ||
+        p.manual_address?.toLowerCase().includes(query)
       )
     }
 
     if (propertyType !== 'All Types') {
-      const targetType = propertyTypes.find(t => t.label === propertyType);
+      const targetType = propertyTypes.find(t => t.label === propertyType)
       if (targetType) {
         temp = temp.filter(p => p.property_type === targetType.value)
       }
@@ -216,21 +225,12 @@ export default function HomePage() {
     }
   }
 
-  // Pure Boosted filtering (Only genuinely boosted items appear here)
-  const activeBoosted = filteredProperties.filter(p => {
-    if (!p.boost_tier) return false;
-    const tier = String(p.boost_tier).toLowerCase().trim();
-    if (tier === 'none' || tier === '' || tier === 'false') return false;
-    
-    if (p.boost_expires_at) {
-      return new Date(p.boost_expires_at) > new Date();
-    }
-    return true; 
-  });
+  // Pure Boosted filtering using corrected column mapping
+  const activeBoosted = filteredProperties.filter(p => checkIsBoosted(p))
 
-  const featuredItems = activeBoosted;
-  const featuredIds = new Set(featuredItems.map(f => f.id));
-  const regularItems = filteredProperties.filter(p => !featuredIds.has(p.id));
+  const featuredItems = activeBoosted
+  const featuredIds = new Set(featuredItems.map(f => f.id))
+  const regularItems = filteredProperties.filter(p => !featuredIds.has(p.id))
 
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans antialiased selection:bg-emerald-500 selection:text-white relative">
@@ -534,7 +534,7 @@ export default function HomePage() {
           </div>
         ) : (
           <>
-            {/* FEATURED Rentals Section (Only renders when active boosted properties match) */}
+            {/* FEATURED Rentals Section */}
             {featuredItems.length > 0 && (
               <div>
                 <div className="mb-6">
@@ -563,7 +563,7 @@ export default function HomePage() {
                           <div>
                             <div className="text-lg font-black text-slate-950">₱{p.price?.toLocaleString()}<span className="text-[10px] font-semibold text-slate-400">/mo</span></div>
                             <h3 className="text-sm font-bold text-slate-800 line-clamp-1 mt-0.5">{p.title}</h3>
-                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3 text-slate-400 shrink-0" /> <span className="truncate">{p.address}</span></div>
+                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3 text-slate-400 shrink-0" /> <span className="truncate">{p.address || p.manual_address}</span></div>
                           </div>
                           <div className="pt-2">
                             <Link 
@@ -610,7 +610,7 @@ export default function HomePage() {
                           <div>
                             <div className="text-lg font-black text-slate-950">₱{p.price?.toLocaleString()}<span className="text-[10px] font-semibold text-slate-400">/mo</span></div>
                             <h3 className="text-sm font-bold text-slate-800 line-clamp-1 mt-0.5">{p.title}</h3>
-                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3 text-slate-400 shrink-0" /> <span className="truncate">{p.address}</span></div>
+                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3 text-slate-400 shrink-0" /> <span className="truncate">{p.address || p.manual_address}</span></div>
                           </div>
                           <div className="pt-2">
                             <Link 
