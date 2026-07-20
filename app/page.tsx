@@ -510,13 +510,13 @@ export default function HomePage() {
           </div>
         ) : (
           <>
-            {/* FEATURED RENTALS SECTION */}
+            {/* FEATURED Rentals Section */}
             {boostedListings.length > 0 && (
               <div>
                 <div className="mb-6">
                   <h2 className="text-2xl font-black text-slate-900 tracking-tight">FEATURED Rentals</h2>
                   <p className="text-xs font-semibold text-emerald-600">
-                    Showing {boostedListings.length} premium matching options found
+                    Showing {boostedListings.length} active matching options found
                   </p>
                 </div>
 
@@ -557,7 +557,7 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* LATEST AVAILABLE RENTAL UNITS SECTION */}
+            {/* Latest Available Rental Units Section */}
             <div>
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">Latest Available Rental Units</h2>
