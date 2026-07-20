@@ -284,7 +284,7 @@ export default function HomePage() {
               <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse" /> Verified Property Ecosystem
             </span>
             <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">
-              Find your <span className="text-emerald-600">Renting Place 10x Faster</span>
+              Find your <span className="text-emerald-600">Renting Place</span> here
             </h1>
             <p className="text-slate-500 font-medium text-base sm:text-xl max-w-xl mx-auto mt-4">
               Discover verified rental apartments, dynamic condominiums, and residential boarding rooms seamlessly.
@@ -555,30 +555,24 @@ export default function HomePage() {
           </div>
         ) : (
           <>
-            {/* Boosted Listings Section */}
+            {/* FEATURED Rentals Section */}
             {boostedListings.length > 0 && (
               <div>
-                <div className="flex items-center gap-2 mb-6">
-                  <div className="bg-amber-500 p-1.5 rounded-lg text-white">
-                    <Zap className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Premium Featured Listings</h2>
-                    <p className="text-xs font-medium text-slate-500">Verified properties prioritized by our system.</p>
-                  </div>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">FEATURED Rentals</h2>
+                  <p className="text-xs font-semibold text-emerald-600">
+                    Showing {boostedListings.length} active matching options found
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
                   {boostedListings.map((p) => {
                     const img = getDisplayImage(p)
                     return (
-                      <div key={p.id} className="group bg-white rounded-2xl border border-amber-300 ring-2 ring-amber-400/10 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full hover:-translate-y-1">
+                      <div key={p.id} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full hover:-translate-y-1">
                         <div className="aspect-square bg-slate-100 relative overflow-hidden">
                           <span className="absolute top-2.5 left-2.5 z-20 text-[9px] font-extrabold uppercase tracking-wider text-slate-700 bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded shadow-sm">
                             {p.property_type || 'Unit'}
-                          </span>
-                          <span className="absolute top-2.5 right-2.5 z-20 text-[9px] font-extrabold uppercase tracking-wider text-white bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 rounded shadow-sm flex items-center gap-0.5">
-                            🚀 Boost
                           </span>
                           {img ? (
                             <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
@@ -596,9 +590,9 @@ export default function HomePage() {
                           <div className="pt-2.5 border-t border-slate-100">
                             <Link 
                               href={`/property/${p.id}`} 
-                              className="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] py-2.5 px-3 rounded-lg transition-all duration-200"
+                              className="block w-full text-center bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] py-2.5 px-3 rounded-lg transition-all duration-200"
                             >
-                              CLICK TO INQUIRE
+                              View Details
                             </Link>
                           </div>
                         </div>
@@ -609,16 +603,16 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Latest Regular Listings Section */}
+            {/* Latest Regular Rentals Section */}
             <div>
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">Latest Available Rental Units</h2>
                 <p className="text-xs font-semibold text-emerald-600">
-                  Showing {filteredProperties.length} active matching options found
+                  Showing {regularListings.length} active matching options found
                 </p>
               </div>
 
-              {regularListings.length > 0 || boostedListings.length > 0 ? (
+              {regularListings.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
                   {regularListings.map((p) => {
                     const img = getDisplayImage(p)
@@ -656,7 +650,7 @@ export default function HomePage() {
                 </div>
               ) : (
                 <div className="w-full text-center py-20 bg-white border border-slate-200 rounded-2xl text-slate-400 font-bold text-sm">
-                  No rentals found matching the selected filtering criteria.
+                  No standard rentals found matching the selected filtering criteria.
                 </div>
               )}
             </div>
