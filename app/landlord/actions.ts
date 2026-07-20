@@ -11,7 +11,6 @@ export async function updatePropertyAction(
   try {
     const supabase = await createClient();
 
-    // Extract values safely from FormData
     const title = formData.get('title') as string;
     const property_type = formData.get('property_type') as string;
     const price = parseFloat(formData.get('price') as string) || 0;
@@ -54,5 +53,37 @@ export async function updatePropertyAction(
 }
 
 export async function createProperty(prevState: any, formData: FormData) {
-  return { success: false, error: 'Not implemented' };
+  try {
+    const supabase = await createClient();
+
+    // Mapping form data
+    const newProperty = {
+      title: formData.get('title'),
+      property_type: formData.get('property_type'),
+      price: parseFloat(formData.get('price') as string),
+      bedrooms: parseInt(formData.get('bedrooms') as string),
+      bathrooms: parseInt(formData.get('bathrooms') as string),
+      area: parseFloat(formData.get('area') as string),
+      address: formData.get('address'),
+      latitude: parseFloat(formData.get('latitude') as string),
+      longitude: parseFloat(formData.get('longitude') as string),
+      contact_number: formData.get('contact_number'),
+      email: formData.get('email'),
+      description: formData.get('description'),
+      status: 'unpaid' // Force status to unpaid
+    };
+
+    const { data, error } = await supabase
+      .from('properties')
+      .insert(newProperty)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return { success: true, propertyId: data.id, error: null };
+  } catch (error: any) {
+    console.error('Creation Error:', error);
+    return { success: false, error: error.message || 'Failed to create property.' };
+  }
 }
