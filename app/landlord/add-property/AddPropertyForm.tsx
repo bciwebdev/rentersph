@@ -24,9 +24,10 @@ export default function AddPropertyForm() {
         </div>
       )}
 
-      {/* Hidden Location Fields */}
+      {/* Hidden Fields */}
       <input type="hidden" name="latitude" id="latitude" required />
       <input type="hidden" name="longitude" id="longitude" required />
+      <input type="hidden" name="status" value="unpaid" />
 
       <div className="space-y-4">
         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider border-b pb-2">Primary Info</h3>
