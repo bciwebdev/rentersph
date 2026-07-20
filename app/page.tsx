@@ -205,7 +205,6 @@ export default function HomePage() {
     }
   }
 
-  // Explicitly mapping your data filters for boosted items
   const boostedListings = filteredProperties.filter(p => p.boost_tier && p.boost_tier !== 'none' && p.boost_expires_at ? new Date(p.boost_expires_at) > new Date() : false)
   const regularListings = filteredProperties.filter(p => !(p.boost_tier && p.boost_tier !== 'none' && p.boost_expires_at ? new Date(p.boost_expires_at) > new Date() : false))
 
@@ -521,31 +520,31 @@ export default function HomePage() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
                   {boostedListings.map((p) => {
                     const img = getDisplayImage(p)
                     return (
-                      <div key={p.id} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full hover:-translate-y-1">
-                        <div className="aspect-square bg-slate-100 relative overflow-hidden">
+                      <div key={p.id} className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full">
+                        <div className="aspect-[4/3] bg-slate-100 relative overflow-hidden m-2 rounded-2xl">
                           <span className="absolute top-2.5 left-2.5 z-20 text-[9px] font-extrabold uppercase tracking-wider text-slate-700 bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded shadow-sm">
                             {p.property_type || 'Unit'}
                           </span>
                           {img ? (
-                            <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
+                            <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-102 transition duration-500" loading="lazy" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">No Image</div>
                           )}
                         </div>
-                        <div className="p-4 flex flex-col justify-between flex-grow space-y-2.5">
+                        <div className="p-5 flex flex-col justify-between flex-grow space-y-3">
                           <div>
                             <div className="text-lg font-black text-slate-950">₱{p.price?.toLocaleString()}<span className="text-[10px] font-semibold text-slate-400">/mo</span></div>
-                            <h3 className="text-xs font-bold text-slate-800 line-clamp-1 mt-0.5 group-hover:text-emerald-600 transition-colors">{p.title}</h3>
+                            <h3 className="text-sm font-bold text-slate-800 line-clamp-1 mt-0.5">{p.title}</h3>
                             <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3 text-slate-400 shrink-0" /> <span className="truncate">{p.address}</span></div>
                           </div>
-                          <div className="pt-2.5 border-t border-slate-100">
+                          <div className="pt-2">
                             <Link 
                               href={`/property/${p.id}`} 
-                              className="block w-full text-center bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] py-2.5 px-3 rounded-lg transition-all duration-200"
+                              className="block w-full text-center bg-[#0f172a] hover:bg-slate-800 text-white font-bold text-xs py-3 px-4 rounded-xl transition-all duration-200"
                             >
                               View Details
                             </Link>
@@ -558,7 +557,7 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* LATEST AVAILABLE UNITS SECTION */}
+            {/* LATEST AVAILABLE RENTAL UNITS SECTION */}
             <div>
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">Latest Available Rental Units</h2>
@@ -568,31 +567,31 @@ export default function HomePage() {
               </div>
 
               {regularListings.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
                   {regularListings.map((p) => {
                     const img = getDisplayImage(p)
                     return (
-                      <div key={p.id} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full hover:-translate-y-1">
-                        <div className="aspect-square bg-slate-100 relative overflow-hidden">
+                      <div key={p.id} className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full">
+                        <div className="aspect-[4/3] bg-slate-100 relative overflow-hidden m-2 rounded-2xl">
                           <span className="absolute top-2.5 left-2.5 z-20 text-[9px] font-extrabold uppercase tracking-wider text-slate-700 bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded shadow-sm">
                             {p.property_type || 'Unit'}
                           </span>
                           {img ? (
-                            <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
+                            <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-102 transition duration-500" loading="lazy" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">No Image</div>
                           )}
                         </div>
-                        <div className="p-4 flex flex-col justify-between flex-grow space-y-2.5">
+                        <div className="p-5 flex flex-col justify-between flex-grow space-y-3">
                           <div>
                             <div className="text-lg font-black text-slate-950">₱{p.price?.toLocaleString()}<span className="text-[10px] font-semibold text-slate-400">/mo</span></div>
-                            <h3 className="text-xs font-bold text-slate-800 line-clamp-1 mt-0.5 group-hover:text-emerald-600 transition-colors">{p.title}</h3>
+                            <h3 className="text-sm font-bold text-slate-800 line-clamp-1 mt-0.5">{p.title}</h3>
                             <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3 text-slate-400 shrink-0" /> <span className="truncate">{p.address}</span></div>
                           </div>
-                          <div className="pt-2.5 border-t border-slate-100">
+                          <div className="pt-2">
                             <Link 
                               href={`/property/${p.id}`} 
-                              className="block w-full text-center bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] py-2.5 px-3 rounded-lg transition-all duration-200"
+                              className="block w-full text-center bg-[#0f172a] hover:bg-slate-800 text-white font-bold text-xs py-3 px-4 rounded-xl transition-all duration-200"
                             >
                               View Details
                             </Link>
