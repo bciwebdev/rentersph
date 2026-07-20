@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { ShieldAlert, CheckCircle, Clock, MapPin, Hash, DollarSign, LogOut, ImageIcon, Lock } from 'lucide-react'
+import { ShieldAlert, CheckCircle, Clock, MapPin, Hash, DollarSign, LogOut, ImageIcon, Lock, Banknote } from 'lucide-react'
 
 // Initialize Supabase Client
 const supabase = createClient(
@@ -39,6 +39,17 @@ export default function AdminVerificationDashboard() {
   const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState<string | null>(null)
   const [loginLoading, setLoginLoading] = useState(false)
+
+  // Calculate total transactions from approved/paid properties
+  const transactionTotal = properties
+    .filter(item => item.is_paid || item.status === 'LIVE ON SITE')
+    .reduce((sum, item) => sum + (item.price || 0), 0)
+
+  // Format currency value safely using Philippine Peso
+  const formattedTotal = new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+  }).format(transactionTotal)
 
   // Check active session on load
   const checkUserAndFetch = async () => {
@@ -217,22 +228,38 @@ export default function AdminVerificationDashboard() {
       <div className="max-w-6xl mx-auto space-y-8">
         
         {/* Admin Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="space-y-1">
             <span className="text-[10px] font-black uppercase tracking-wider bg-slate-950 text-white px-2.5 py-1 rounded-md">
               Root Administrator Control
             </span>
             <h1 className="text-2xl font-black text-slate-950 tracking-tight pt-1">Payment Verification Queue</h1>
-            <p className="text-xs text-slate-400 font-medium">Review submitted GCash reference details and screenshots to manually approve storefront visibility.</p>
+            <p className="text-xs text-slate-400 font-medium max-w-xl">Review submitted GCash reference details and screenshots to manually approve storefront visibility.</p>
           </div>
           
-          <div className="flex items-center gap-3 self-start sm:self-center">
-            <div className="text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl">
+          <div className="flex flex-wrap items-center gap-3 self-start md:self-center">
+            {/* New Financial Metric Card */}
+            <div className="flex items-center gap-2.5 rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm">
+                <Banknote className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-700/80 leading-none">
+                  Transaction Total
+                </p>
+                <p className="text-sm font-black text-emerald-950 pt-0.5">
+                  {formattedTotal}
+                </p>
+              </div>
+            </div>
+
+            <div className="text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl h-fit">
               Admin: <span className="font-bold text-slate-900">{userEmail}</span>
             </div>
+            
             <button 
               onClick={handleAdminSignOut}
-              className="px-3 py-2 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-2 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer h-fit"
             >
               <LogOut className="w-3.5 h-3.5" /> Exit Portal
             </button>
