@@ -644,9 +644,9 @@ export default function HomePage() {
                           <div className="pt-2.5 border-t border-slate-100">
                             <Link 
                               href={`/property/${p.id}`} 
-                              className="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] py-2.5 px-3 rounded-lg transition-all duration-200"
+                              className="block w-full text-center bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] py-2.5 px-3 rounded-lg transition-all duration-200"
                             >
-                              CLICK TO INQUIRE
+                              View Details
                             </Link>
                           </div>
                         </div>
@@ -655,13 +655,8 @@ export default function HomePage() {
                   })}
                 </div>
               ) : (
-                <div className="w-full border border-slate-100 bg-white rounded-3xl p-16 text-center space-y-4 shadow-sm flex flex-col items-center justify-center">
-                  <div className="bg-slate-50 p-4 rounded-full text-slate-400">
-                    <Search className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-xl font-black text-slate-950">No matching rentals found</h3>
-                  <p className="text-sm text-slate-400 max-w-sm">We couldn't find any listings matching your current selection. Try broadening your location filters or changing the property type.</p>
-                  <button onClick={() => { setSearch(''); setPropertyType('All Types'); }} className="text-emerald-600 font-extrabold text-xs tracking-wider uppercase hover:text-emerald-700 transition">Reset Filter Parameters</button>
+                <div className="w-full text-center py-20 bg-white border border-slate-200 rounded-2xl text-slate-400 font-bold text-sm">
+                  No rentals found matching the selected filtering criteria.
                 </div>
               )}
             </div>
