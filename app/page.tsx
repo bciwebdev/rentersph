@@ -297,7 +297,7 @@ export default function HomePage() {
               <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse" /> Verified Property Ecosystem
             </span>
             <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">
-              Find your <span className="text-emerald-600">Renting Place</span> here
+              Find Rentals <span className="text-emerald-600">10X Faster</span>
             </h1>
             <p className="text-slate-500 font-medium text-base sm:text-xl max-w-xl mx-auto mt-4">
               Discover verified rental apartments, dynamic condominiums, and residential boarding rooms seamlessly.
@@ -642,8 +642,24 @@ export default function HomePage() {
                   })}
                 </div>
               ) : (
-                <div className="w-full text-center py-12 text-slate-400 font-medium text-sm border border-dashed border-slate-200 rounded-2xl bg-white">
-                  No active rentals match your query right now. Try selecting "All Types".
+                <div className="w-full text-center py-20 bg-white rounded-3xl border border-slate-100 flex flex-col items-center justify-center gap-3 shadow-sm">
+                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-2">
+                    <Search className="w-8 h-8 text-slate-300" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-700">No properties found</h3>
+                  <p className="text-sm text-slate-500 max-w-sm mx-auto">
+                    We couldn't find any rental units matching your current filters. Try adjusting your search criteria.
+                  </p>
+                  <button 
+                    onClick={() => {
+                      setSearch('');
+                      setPropertyType('All Types');
+                      resetLocFlow();
+                    }}
+                    className="mt-4 px-6 py-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 font-bold text-xs rounded-full transition-colors"
+                  >
+                    Clear Filters
+                  </button>
                 </div>
               )}
             </div>
