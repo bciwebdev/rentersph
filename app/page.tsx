@@ -205,6 +205,7 @@ export default function HomePage() {
     }
   }
 
+  // Explicitly mapping your data filters for boosted items
   const boostedListings = filteredProperties.filter(p => p.boost_tier && p.boost_tier !== 'none' && p.boost_expires_at ? new Date(p.boost_expires_at) > new Date() : false)
   const regularListings = filteredProperties.filter(p => !(p.boost_tier && p.boost_tier !== 'none' && p.boost_expires_at ? new Date(p.boost_expires_at) > new Date() : false))
 
@@ -510,12 +511,13 @@ export default function HomePage() {
           </div>
         ) : (
           <>
+            {/* FEATURED RENTALS SECTION */}
             {boostedListings.length > 0 && (
               <div>
                 <div className="mb-6">
                   <h2 className="text-2xl font-black text-slate-900 tracking-tight">FEATURED Rentals</h2>
                   <p className="text-xs font-semibold text-emerald-600">
-                    Showing {boostedListings.length} active matching options found
+                    Showing {boostedListings.length} premium matching options found
                   </p>
                 </div>
 
@@ -556,6 +558,7 @@ export default function HomePage() {
               </div>
             )}
 
+            {/* LATEST AVAILABLE UNITS SECTION */}
             <div>
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">Latest Available Rental Units</h2>
