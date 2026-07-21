@@ -93,7 +93,7 @@ export default function LandlordPortalPage() {
   const [editContactNumber, setEditContactNumber] = useState('')
   const [editDescriptionRules, setEditDescriptionRules] = useState('')
 
-  const BASE_PRICE = 20
+  const BASE_PRICE = 0
   const [boostingOption, setBoostingOption] = useState('none') 
   const [showTooltip, setShowTooltip] = useState(false)
 
@@ -322,7 +322,7 @@ export default function LandlordPortalPage() {
     }
   }
 
-  // Edit Feature Form Setups
+  // Edit Feature States
   const openEditModal = (property: any) => {
     setEditingProperty(property)
     setEditTitle(property.title || '')
@@ -486,7 +486,13 @@ export default function LandlordPortalPage() {
       if (dbError) throw new Error(dbError.message)
       
       router.refresh()
-      router.push(`/landlord/payment?total=${totalAmount}`)
+      if (totalAmount > 0) {
+        router.push(`/landlord/payment?total=${totalAmount}`)
+      } else {
+        alert("Listing successfully submitted for approval!")
+        setCurrentView('dashboard')
+        resetForm()
+      }
 
     } catch (err: any) {
       setErrorMessage(err.message || 'An error occurred.')
@@ -728,14 +734,14 @@ export default function LandlordPortalPage() {
                         
                         <button
                           type="button"
-                          onClick={() => router.push(`/landlord/payment?total=20&propertyId=${property.id}&type=extension`)}
+                          onClick={() => router.push(`/landlord/payment?total=0&propertyId=${property.id}&type=extension`)}
                           className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
                         >
                           <div>
                             <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">Standard 30-Day Extension</p>
                             <p className="text-[9px] text-slate-400 font-medium">Extend listing presence</p>
                           </div>
-                          <span className="text-slate-700 font-black text-[11px]">₱20</span>
+                          <span className="text-slate-700 font-black text-[11px]">FREE</span>
                         </button>
 
                         <p className="text-[9px] uppercase font-black tracking-wider text-[#00aa4f] pt-1 px-1">
@@ -744,38 +750,38 @@ export default function LandlordPortalPage() {
 
                         <button
                           type="button"
-                          onClick={() => router.push(`/landlord/payment?total=69&propertyId=${property.id}&type=extension&tier=5days`)}
+                          onClick={() => router.push(`/landlord/payment?total=49&propertyId=${property.id}&type=extension&tier=5days`)}
                           className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
                         >
                           <div>
                             <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 5-Day Hot Boost</p>
                             <p className="text-[9px] text-slate-400 font-medium">Extend + Blitz Promotion</p>
                           </div>
-                          <span className="text-[#00aa4f] font-black text-[11px]">₱69</span>
+                          <span className="text-[#00aa4f] font-black text-[11px]">₱49</span>
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => router.push(`/landlord/payment?total=119&propertyId=${property.id}&type=extension&tier=2weeks`)}
+                          onClick={() => router.push(`/landlord/payment?total=99&propertyId=${property.id}&type=extension&tier=2weeks`)}
                           className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
                         >
                           <div>
                             <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 2-Week Visibility Surge</p>
                             <p className="text-[9px] text-slate-400 font-medium">Extend + Horizon Lift</p>
                           </div>
-                          <span className="text-[#00aa4f] font-black text-[11px]">₱119</span>
+                          <span className="text-[#00aa4f] font-black text-[11px]">₱99</span>
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => router.push(`/landlord/payment?total=219&propertyId=${property.id}&type=extension&tier=1month`)}
+                          onClick={() => router.push(`/landlord/payment?total=199&propertyId=${property.id}&type=extension&tier=1month`)}
                           className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
                         >
                           <div>
                             <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 1-Month Domination</p>
                             <p className="text-[9px] text-slate-400 font-medium">Extend + Premium Pinning</p>
                           </div>
-                          <span className="text-[#00aa4f] font-black text-[11px]">₱219</span>
+                          <span className="text-[#00aa4f] font-black text-[11px]">₱199</span>
                         </button>
                       </div>
                     )}
@@ -1103,12 +1109,12 @@ export default function LandlordPortalPage() {
                   onChange={(e) => setBoostingOption(e.target.value)}
                   className="w-full bg-slate-50 border-2 border-emerald-500/80 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                 >
-                  <option value="none">Standard Listing — ₱20 (Active for 30 Days)</option>
-                  <option value="5days">5-Day Hot Boost — ₱69 (₱20 base + ₱49 boost)</option>
-                  <option value="2weeks">2-Week Visibility Surge — ₱119 (₱20 base + ₱99 boost)</option>
-                  <option value="1month">1-Month Domination — ₱219 (₱20 base + ₱199 boost)</option>
+                  <option value="none">Standard Listing — FREE (Active for 30 Days)</option>
+                  <option value="5days">5-Day Hot Boost — ₱49</option>
+                  <option value="2weeks">2-Week Visibility Surge — ₱99</option>
+                  <option value="1month">1-Month Domination — ₱199</option>
                 </select>
-                <p className="text-[10px] text-slate-400 mt-1">* Standard tier active timeline begins immediately upon payment verification completion.</p>
+                <p className="text-[10px] text-slate-400 mt-1">* Standard tier active timeline begins immediately upon submission.</p>
               </div>
             </div>
 
@@ -1119,7 +1125,11 @@ export default function LandlordPortalPage() {
                 disabled={isSubmitting}
                 className="w-full bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs py-3.5 rounded-xl transition cursor-pointer shadow-md disabled:opacity-50"
               >
-                {isSubmitting ? 'Processing...' : 'Proceed to Payment Allocation'}
+                {isSubmitting 
+                  ? 'Processing...' 
+                  : totalAmount > 0 
+                    ? `Proceed to Payment Allocation (₱${totalAmount})` 
+                    : 'Submit Free Listing'}
               </button>
             </div>
           </form>
