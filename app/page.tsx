@@ -607,18 +607,18 @@ export default function HomePage() {
               <button
                 key={type.label}
                 onClick={() => setPropertyType(isSelected ? 'All Types' : type.label)}
-                className={`flex flex-col items-center justify-center py-4 px-2 rounded-2xl transition-all duration-200 border ${
+                className={`flex flex-col items-center justify-center py-3.5 px-1.5 sm:py-4 sm:px-2 rounded-2xl transition-all duration-200 border ${
                   isSelected
                     ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/20'
                     : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50 shadow-sm'
                 }`}
               >
-                <div className={`p-2.5 rounded-xl flex items-center justify-center mb-2.5 ${
+                <div className={`p-2 sm:p-2.5 rounded-xl flex items-center justify-center mb-1.5 sm:mb-2.5 ${
                   isSelected ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600'
                 }`}>
-                  <type.icon className="w-6 h-6 stroke-[2]" />
+                  <type.icon className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
                 </div>
-                <span className="text-[11px] font-bold text-center leading-tight">{type.label}</span>
+                <span className="text-[10px] sm:text-[11px] font-bold text-center leading-tight">{type.label}</span>
               </button>
             )
           })}
@@ -637,15 +637,15 @@ export default function HomePage() {
             {/* FEATURED SECTION */}
             {featuredItems.length > 0 && (
               <div>
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Featured Listings</h2>
+                <div className="mb-3 sm:mb-4 flex items-center justify-between">
+                  <h2 className="text-lg md:text-2xl font-black text-slate-900 tracking-tight">Featured Listings</h2>
                   <button onClick={() => setPropertyType('All Types')} className="flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-700 transition">
                     View All <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                {/* Side-scrolling carousel on mobile, 3-column grid on desktop */}
-                <div className="flex md:grid overflow-x-auto md:overflow-visible gap-4 md:gap-6 pb-4 md:pb-0 scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:grid-cols-3">
+                {/* Compact Side-scrolling carousel on mobile (3 items visible on screen), 3-column grid on desktop */}
+                <div className="flex md:grid overflow-x-auto md:overflow-visible gap-2.5 sm:gap-4 md:gap-6 pb-3 md:pb-0 scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:grid-cols-3">
                   {featuredItems.map((p) => {
                     const img = getDisplayImage(p)
                     const isFav = !!favorites[p.id]
@@ -654,55 +654,55 @@ export default function HomePage() {
                       <Link 
                         key={`featured-${p.id}`} 
                         href={`/property/${p.id}`}
-                        className="w-[85vw] sm:w-[320px] md:w-full group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col shrink-0 md:shrink"
+                        className="w-[155px] sm:w-[200px] md:w-full group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col shrink-0 md:shrink"
                       >
-                        <div className="w-full h-44 sm:h-48 md:h-52 bg-slate-100 relative overflow-hidden">
-                          <span className="absolute top-2.5 left-2.5 z-20 text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-2 py-0.5 rounded-md shadow-sm">
+                        <div className="w-full h-28 sm:h-36 md:h-48 bg-slate-100 relative overflow-hidden">
+                          <span className="absolute top-2 left-2 z-20 text-[9px] sm:text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-1.5 py-0.5 rounded-md shadow-sm">
                             For Rent
                           </span>
 
                           <button
                             onClick={(e) => toggleFavorite(p.id, e)}
-                            className="absolute top-2.5 right-2.5 z-20 bg-white/80 hover:bg-white text-slate-700 p-1.5 rounded-full backdrop-blur-md transition-all shadow-sm"
+                            className="absolute top-2 right-2 z-20 bg-white/80 hover:bg-white text-slate-700 p-1.5 rounded-full backdrop-blur-md transition-all shadow-sm"
                           >
-                            <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-red-500 text-red-500' : 'text-slate-600'}`} />
+                            <Heart className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isFav ? 'fill-red-500 text-red-500' : 'text-slate-600'}`} />
                           </button>
 
                           {img ? (
                             <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-semibold">No Image Available</div>
+                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-semibold">No Image</div>
                           )}
                         </div>
 
-                        <div className="p-3.5 flex flex-col justify-between flex-grow space-y-2">
+                        <div className="p-2.5 sm:p-3.5 flex flex-col justify-between flex-grow space-y-1.5">
                           <div>
-                            <h3 className="text-xs md:text-sm font-bold text-slate-900 truncate">{p.title}</h3>
-                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5 font-medium">
-                              <MapPin className="w-3 h-3 text-slate-400 shrink-0" /> 
+                            <h3 className="text-[11px] sm:text-xs md:text-sm font-bold text-slate-900 truncate leading-tight">{p.title}</h3>
+                            <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5 font-medium">
+                              <MapPin className="w-2.5 h-2.5 text-slate-400 shrink-0" /> 
                               <span className="truncate">{p.address || p.manual_address || `${p.city || ''}, ${p.province || ''}`}</span>
                             </div>
 
-                            <div className="text-sm md:text-base font-black text-emerald-600 mt-1.5">
-                              ₱{p.price?.toLocaleString()}<span className="text-[10px] font-normal text-slate-400"> / month</span>
+                            <div className="text-xs sm:text-sm md:text-base font-black text-emerald-600 mt-1">
+                              ₱{p.price?.toLocaleString()}<span className="text-[9px] sm:text-[10px] font-normal text-slate-400"> / month</span>
                             </div>
                           </div>
 
-                          <div className="pt-2 border-t border-slate-50 flex items-center justify-between text-[11px] font-semibold text-slate-500">
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-1">
-                                <Bed className="w-3.5 h-3.5 text-slate-400" />
+                          <div className="pt-1.5 border-t border-slate-50 flex items-center justify-between text-[10px] font-semibold text-slate-500">
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-0.5">
+                                <Bed className="w-3 h-3 text-slate-400" />
                                 <span>{p.bedrooms ?? 1}</span>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Bath className="w-3.5 h-3.5 text-slate-400" />
+                              <div className="flex items-center gap-0.5">
+                                <Bath className="w-3 h-3 text-slate-400" />
                                 <span>{p.bathrooms ?? 1}</span>
                               </div>
                             </div>
 
                             <button
                               onClick={(e) => openReportModal(p, e)}
-                              className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                              className="text-slate-300 hover:text-red-500 transition-colors p-0.5"
                               title="Report Listing"
                             >
                               <Flag className="w-3 h-3" />
@@ -718,15 +718,15 @@ export default function HomePage() {
 
             {/* ALL AVAILABLE PROPERTIES */}
             <div>
-              <div className="mb-4 md:mb-6">
-                <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Available Units</h2>
-                <p className="text-xs font-semibold text-slate-400 mt-0.5">
+              <div className="mb-3 sm:mb-6">
+                <h2 className="text-lg md:text-2xl font-black text-slate-900 tracking-tight">Available Units</h2>
+                <p className="text-[10px] sm:text-xs font-semibold text-slate-400 mt-0.5">
                   Showing {regularItems.length} matching rentals found
                 </p>
               </div>
 
               {regularItems.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
                   {regularItems.map((p) => {
                     const img = getDisplayImage(p)
                     const isFav = !!favorites[p.id]
@@ -737,56 +737,56 @@ export default function HomePage() {
                         href={`/property/${p.id}`}
                         className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
                       >
-                        <div className="w-full h-44 sm:h-48 md:h-52 bg-slate-100 relative overflow-hidden">
-                          <span className="absolute top-2.5 left-2.5 z-20 text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-2 py-0.5 rounded-md shadow-sm">
+                        <div className="w-full h-28 sm:h-36 md:h-48 bg-slate-100 relative overflow-hidden">
+                          <span className="absolute top-2 left-2 z-20 text-[9px] sm:text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-1.5 py-0.5 rounded-md shadow-sm">
                             For Rent
                           </span>
 
                           <button
                             onClick={(e) => toggleFavorite(p.id, e)}
-                            className="absolute top-2.5 right-2.5 z-20 bg-white/80 hover:bg-white text-slate-700 p-1.5 rounded-full backdrop-blur-md transition-all shadow-sm"
+                            className="absolute top-2 right-2 z-20 bg-white/80 hover:bg-white text-slate-700 p-1.5 rounded-full backdrop-blur-md transition-all shadow-sm"
                           >
-                            <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-red-500 text-red-500' : 'text-slate-600'}`} />
+                            <Heart className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isFav ? 'fill-red-500 text-red-500' : 'text-slate-600'}`} />
                           </button>
 
                           {img ? (
                             <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-semibold">No Image Available</div>
+                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-semibold">No Image</div>
                           )}
                         </div>
 
-                        <div className="p-3.5 flex flex-col justify-between flex-grow space-y-2">
+                        <div className="p-2.5 sm:p-3.5 flex flex-col justify-between flex-grow space-y-1.5">
                           <div>
-                            <h3 className="text-xs md:text-sm font-bold text-slate-900 truncate">{p.title}</h3>
-                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5 font-medium">
-                              <MapPin className="w-3 h-3 text-slate-400 shrink-0" /> 
+                            <h3 className="text-[11px] sm:text-xs md:text-sm font-bold text-slate-900 truncate leading-tight">{p.title}</h3>
+                            <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5 font-medium">
+                              <MapPin className="w-2.5 h-2.5 text-slate-400 shrink-0" /> 
                               <span className="truncate">{p.address || p.manual_address || `${p.city || ''}, ${p.province || ''}`}</span>
                             </div>
 
-                            <div className="text-sm md:text-base font-black text-emerald-600 mt-1.5">
-                              ₱{p.price?.toLocaleString()}<span className="text-[10px] font-normal text-slate-400"> / month</span>
+                            <div className="text-xs sm:text-sm md:text-base font-black text-emerald-600 mt-1">
+                              ₱{p.price?.toLocaleString()}<span className="text-[9px] sm:text-[10px] font-normal text-slate-400"> / month</span>
                             </div>
                           </div>
 
-                          <div className="pt-2 border-t border-slate-50 flex items-center justify-between text-[11px] font-semibold text-slate-500">
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-1">
-                                <Bed className="w-3.5 h-3.5 text-slate-400" />
+                          <div className="pt-1.5 border-t border-slate-50 flex items-center justify-between text-[10px] font-semibold text-slate-500">
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-0.5">
+                                <Bed className="w-3 h-3 text-slate-400" />
                                 <span>{p.bedrooms ?? 1}</span>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Bath className="w-3.5 h-3.5 text-slate-400" />
+                              <div className="flex items-center gap-0.5">
+                                <Bath className="w-3 h-3 text-slate-400" />
                                 <span>{p.bathrooms ?? 1}</span>
                               </div>
                             </div>
 
                             <button
                               onClick={(e) => openReportModal(p, e)}
-                              className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                              className="text-slate-300 hover:text-red-500 transition-colors p-0.5"
                               title="Report Listing"
                             >
-                              <Flag className="w-3.5 h-3.5" />
+                              <Flag className="w-3 h-3" />
                             </button>
                           </div>
                         </div>
