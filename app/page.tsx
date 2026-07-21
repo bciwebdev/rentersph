@@ -353,31 +353,48 @@ export default function HomePage() {
         </AnimatePresence>
       </header>
 
-      {/* HERO SECTION */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50/50 pt-8 md:pt-16 pb-12 md:pb-20">
-        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 text-left md:text-center space-y-3 md:space-y-6 relative z-10">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <span className="hidden md:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-bold text-emerald-800 uppercase tracking-wider mb-4 shadow-sm">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse" /> Verified Property Ecosystem
-            </span>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
-              Find Rentals <span className="text-emerald-600">10X Faster</span>
+      {/* HERO SECTION WITH BACKGROUND IMAGE AND FORMATTED TITLE */}
+      <section className="relative overflow-hidden min-h-[360px] md:min-h-[460px] flex items-center pt-8 md:pt-12 pb-16 md:pb-24">
+        
+        {/* Background Image Container with Smooth Fade Gradient Overlay */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=2000" 
+            alt="Interior Background" 
+            className="w-full h-full object-cover object-center"
+          />
+          {/* Linear gradient fade ensuring high legibility for left-side typography */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 sm:via-white/80 to-transparent" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 text-left relative z-10 w-full">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.5 }}
+            className="max-w-lg"
+          >
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-[1.12] mb-3 md:mb-4">
+              Mangita og <br />
+              puy-an, <br />
+              <span className="text-emerald-600">madali</span> na.
             </h1>
-            <p className="text-slate-500 font-medium text-sm sm:text-lg max-w-xl md:mx-auto mt-2 md:mt-4 leading-relaxed">
-              Discover verified rental apartments, dynamic condominiums, and residential boarding rooms seamlessly.
+            
+            <p className="text-slate-600 font-semibold text-sm sm:text-base md:text-lg leading-snug">
+              Ang platform para sa renters sa tibuok Pilipinas.
             </p>
           </motion.div>
         </div>
       </section>
 
       {/* SEARCH BAR */}
-      <section className="max-w-5xl mx-auto px-5 -mt-6 md:-mt-10 mb-10 md:mb-16 relative z-20">
+      <section className="max-w-5xl mx-auto px-5 -mt-8 md:-mt-12 mb-10 md:mb-16 relative z-20">
         <motion.form 
           onSubmit={handleApplyFilters} 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ delay: 0.1, duration: 0.5 }} 
-          className="bg-white p-2 md:px-5 md:py-2.5 rounded-3xl border border-slate-200/80 shadow-lg shadow-slate-200/50 flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-4"
+          className="bg-white/95 backdrop-blur-md p-2 md:px-5 md:py-2.5 rounded-3xl border border-slate-200/80 shadow-lg shadow-slate-200/50 flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-4"
         >
           <div className="flex items-center w-full gap-2" ref={locDropdownRef}>
             <div 
@@ -394,7 +411,7 @@ export default function HomePage() {
                     if (!locationDropdownOpen) setLocationDropdownOpen(true);
                   }} 
                   type="text" 
-                  placeholder="Where do you want to live?" 
+                  placeholder="Asa ka nangita og puy-an?" 
                   className="w-full bg-transparent text-sm md:text-xs font-semibold md:font-bold text-slate-800 placeholder-slate-400 outline-none truncate" 
                 />
               </div>
@@ -644,7 +661,7 @@ export default function HomePage() {
                   </button>
                 </div>
 
-                {/* Compact Side-scrolling carousel on mobile (3 items visible on screen), 3-column grid on desktop */}
+                {/* Side-scrolling carousel on mobile, 3-column grid on desktop */}
                 <div className="flex md:grid overflow-x-auto md:overflow-visible gap-2.5 sm:gap-4 md:gap-6 pb-3 md:pb-0 scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:grid-cols-3">
                   {featuredItems.map((p) => {
                     const img = getDisplayImage(p)
