@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { createBrowserClient } from '@supabase/ssr'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Search, MapPin, Home, Building2,
+  Search, MapPin, Home, Building2, Bed, Bath, Heart,
   Sparkles, CheckCircle, Menu, X, ChevronDown, ChevronLeft, Flag, Bell, ArrowRight
 } from 'lucide-react'
 
@@ -68,6 +68,9 @@ export default function HomePage() {
   const [selectedProvince, setSelectedProvince] = useState<string | null>(null)
   const [selectedCity, setSelectedCity] = useState<string | null>(null)
 
+  // Favorites state
+  const [favorites, setFavorites] = useState<Record<string, boolean>>({})
+
   // Report Modal States
   const [reportModalOpen, setReportModalOpen] = useState(false)
   const [selectedPropertyForReport, setSelectedPropertyForReport] = useState<any | null>(null)
@@ -83,7 +86,7 @@ export default function HomePage() {
   const propertyTypes = [
     { label: 'All Types', value: 'All Types', icon: Home },
     { label: 'Apartment', value: 'Apartment', icon: Home },
-    { label: 'Boarding House', value: 'Dormitory Bedspace', icon: Home },
+    { label: 'Boarding House', value: 'Dormitory Bedspace', icon: Bed },
     { label: 'Condo', value: 'Condo Unit', icon: Building2 },
     { label: 'House', value: 'Single House', icon: Home },
     { label: 'Commercial', value: 'Commercial', icon: Building2 }
@@ -102,6 +105,12 @@ export default function HomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  const toggleFavorite = (id: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setFavorites(prev => ({ ...prev, [id]: !prev[id] }))
+  }
+
   // Check if property is admin-approved & actively boosted
   const checkIsBoosted = (p: any) => {
     const tierValue = p.boosting_tier || p.boost_tier
@@ -110,7 +119,6 @@ export default function HomePage() {
     const tier = String(tierValue).toLowerCase().trim()
     if (tier === 'none' || tier === '' || tier === 'false') return false
 
-    // Must be approved / paid in admin dashboard
     const isApprovedAndPaid = p.is_paid === true || (p.payment_status && p.payment_status.toLowerCase() === 'paid')
     if (!isApprovedAndPaid) return false
 
@@ -296,13 +304,13 @@ export default function HomePage() {
   const regularItems = filteredProperties.filter(p => !featuredIds.has(p.id))
 
   return (
-    <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans antialiased selection:bg-emerald-500 selection:text-white relative pb-12">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans antialiased selection:bg-emerald-600 selection:text-white relative pb-12">
       
       {/* HEADER SECTION */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm transition-all duration-300">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-white border-b border-slate-100 shadow-sm transition-all duration-300">
+        <div className="max-w-[1600px] mx-auto px-5 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 no-underline group relative z-50">
-            <div className="bg-emerald-600 p-1.5 md:p-2 rounded-xl text-white shadow-emerald-200 shadow-md">
+            <div className="bg-emerald-600 p-2 rounded-xl text-white shadow-emerald-200 shadow-md">
               <Home className="w-5 h-5" />
             </div>
             <span className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
@@ -312,8 +320,8 @@ export default function HomePage() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8 relative z-50">
-            <span onClick={() => { setPropertyType('All Types'); window.scrollTo({top: 800, behavior: 'smooth'}); }} className="text-sm font-semibold text-slate-600 cursor-pointer hover:text-emerald-600 transition-colors">Find Rentals</span>
-            <span className="text-sm font-semibold text-slate-600 cursor-pointer hover:text-emerald-600 transition-colors">Favorites</span>
+            <span onClick={() => { setPropertyType('All Types'); window.scrollTo({top: 800, behavior: 'smooth'}); }} className="text-sm font-bold text-slate-700 cursor-pointer hover:text-emerald-600 transition-colors">Find Rentals</span>
+            <span className="text-sm font-bold text-slate-700 cursor-pointer hover:text-emerald-600 transition-colors">Favorites</span>
             
             <Link href="/login" className="inline-flex items-center gap-2 text-sm font-bold bg-slate-900 text-white px-5 py-3 rounded-xl hover:bg-slate-800 transition shadow-sm hover:shadow-md cursor-pointer relative z-50">
               <Building2 className="w-4 h-4 text-emerald-400" />
@@ -321,12 +329,12 @@ export default function HomePage() {
             </Link>
           </nav>
 
-          {/* Mobile Right Icons (Bell & Menu) */}
-          <div className="flex md:hidden items-center gap-3 relative z-50">
-            <button className="p-2 text-slate-700 hover:bg-slate-100 rounded-full transition">
-              <Bell className="w-5 h-5 text-slate-800" />
+          {/* Mobile Right Icons */}
+          <div className="flex md:hidden items-center gap-2 relative z-50">
+            <button className="p-2 text-slate-800 hover:bg-slate-100 rounded-full transition">
+              <Bell className="w-5 h-5" />
             </button>
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-slate-800 hover:bg-slate-100 rounded-lg">
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-slate-800 hover:bg-slate-100 rounded-xl">
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
@@ -335,8 +343,8 @@ export default function HomePage() {
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute top-16 left-0 w-full bg-white border-b border-slate-200 shadow-xl px-6 py-6 flex flex-col gap-4 md:hidden z-40">
-              <span onClick={() => { setPropertyType('All Types'); setMobileMenuOpen(false); window.scrollTo({top: 800, behavior: 'smooth'}); }} className="text-base font-bold text-slate-700 py-2 border-b border-slate-50 cursor-pointer">Find Rentals</span>
-              <span className="text-base font-bold text-slate-700 py-2 border-b border-slate-50 cursor-pointer">Favorites</span>
+              <span onClick={() => { setPropertyType('All Types'); setMobileMenuOpen(false); window.scrollTo({top: 800, behavior: 'smooth'}); }} className="text-base font-bold text-slate-800 py-2 border-b border-slate-50 cursor-pointer">Find Rentals</span>
+              <span className="text-base font-bold text-slate-800 py-2 border-b border-slate-50 cursor-pointer">Favorites</span>
               <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="w-full text-center font-bold bg-slate-900 text-white py-3 rounded-xl shadow-md cursor-pointer block relative z-50">
                 Landlord Dashboard
               </Link>
@@ -346,40 +354,39 @@ export default function HomePage() {
       </header>
 
       {/* HERO SECTION */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50/40 via-white to-transparent pt-6 md:pt-12 pb-12 md:pb-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-left md:text-center space-y-4 md:space-y-6 relative z-10">
+      <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50/50 pt-8 md:pt-16 pb-12 md:pb-20">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 text-left md:text-center space-y-3 md:space-y-6 relative z-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-bold text-emerald-800 uppercase tracking-wider mb-4 shadow-sm">
+            <span className="hidden md:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-bold text-emerald-800 uppercase tracking-wider mb-4 shadow-sm">
               <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse" /> Verified Property Ecosystem
             </span>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight max-w-md md:max-w-none">
-              Mangita og puy-an, <span className="text-emerald-600">madali na.</span>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
+              Find your next home, <br className="hidden md:block" /><span className="text-emerald-600">made effortless.</span>
             </h1>
-            <p className="text-slate-500 font-medium text-sm sm:text-xl max-w-xl md:mx-auto mt-2 md:mt-4">
-              Ang platform para sa renters sa tibuok Pilipinas.
+            <p className="text-slate-500 font-medium text-sm sm:text-lg max-w-xl md:mx-auto mt-2 md:mt-4 leading-relaxed">
+              The premier platform for home rentals across the Philippines.
             </p>
           </motion.div>
         </div>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[350px] bg-gradient-to-tr from-emerald-200/20 to-teal-200/20 blur-3xl rounded-full -z-10" />
       </section>
 
-      {/* SEARCH BAR (Floating Reference Design on Mobile) */}
-      <section className="max-w-5xl mx-auto px-4 -mt-6 md:-mt-10 mb-8 md:mb-16 relative z-20">
+      {/* SEARCH BAR */}
+      <section className="max-w-5xl mx-auto px-5 -mt-6 md:-mt-10 mb-10 md:mb-16 relative z-20">
         <motion.form 
           onSubmit={handleApplyFilters} 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ delay: 0.1, duration: 0.5 }} 
-          className="bg-white p-2 md:px-5 md:py-2.5 rounded-2xl md:rounded-2xl border border-slate-200/80 shadow-xl flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-4"
+          className="bg-white p-2 md:px-5 md:py-2.5 rounded-3xl border border-slate-200/80 shadow-lg shadow-slate-200/50 flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-4"
         >
           <div className="flex items-center w-full gap-2" ref={locDropdownRef}>
             <div 
               onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
-              className="flex items-center gap-3 px-3 md:px-4 py-2 border-b-0 md:border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-xl transition duration-150 select-none flex-1 min-w-0"
+              className="flex items-center gap-3 px-3.5 md:px-4 py-2.5 border-b-0 md:border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-2xl transition duration-150 select-none flex-1 min-w-0"
             >
               <MapPin className="w-5 h-5 text-slate-700 shrink-0" />
               <div className="flex-1 text-left min-w-0">
-                <label className="hidden md:block text-[10px] font-black uppercase tracking-wider text-slate-400">Where</label>
+                <label className="hidden md:block text-[10px] font-black uppercase tracking-wider text-slate-400">Location</label>
                 <input 
                   value={search} 
                   onChange={(e) => {
@@ -387,17 +394,17 @@ export default function HomePage() {
                     if (!locationDropdownOpen) setLocationDropdownOpen(true);
                   }} 
                   type="text" 
-                  placeholder="Asa ka nangita og puy-an?" 
-                  className="w-full bg-transparent text-sm md:text-xs font-semibold md:font-bold text-slate-800 placeholder-slate-500 md:placeholder-slate-400 outline-none truncate" 
+                  placeholder="Where do you want to live?" 
+                  className="w-full bg-transparent text-sm md:text-xs font-semibold md:font-bold text-slate-800 placeholder-slate-400 outline-none truncate" 
                 />
               </div>
               <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 hidden md:block ${locationDropdownOpen ? 'rotate-180' : ''}`} />
             </div>
 
-            {/* Direct Mobile Green Action Button */}
+            {/* Mobile Action Button */}
             <button 
               type="submit" 
-              className="md:hidden bg-emerald-600 hover:bg-emerald-700 text-white p-3.5 rounded-xl flex items-center justify-center transition shrink-0 shadow-md"
+              className="md:hidden bg-emerald-600 hover:bg-emerald-700 text-white p-3.5 rounded-2xl flex items-center justify-center transition shrink-0 shadow-md shadow-emerald-600/30"
             >
               <Search className="w-5 h-5" />
             </button>
@@ -440,7 +447,7 @@ export default function HomePage() {
                     {selectedCity && (
                       <>
                         <span>/</span>
-                        <span className={locStep === 'barangay' ? 'text-emerald-600 font-extrabold font-black' : ''}>{selectedCity}</span>
+                        <span className={locStep === 'barangay' ? 'text-emerald-600 font-extrabold' : ''}>{selectedCity}</span>
                       </>
                     )}
                   </div>
@@ -449,7 +456,7 @@ export default function HomePage() {
                 <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
                   {locStep === 'island' && (
                     <>
-                      <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Region Group:</div>
+                      <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Region:</div>
                       {Object.keys(PHILIPPINES_LOCATIONS).map((island) => (
                         <button
                           type="button"
@@ -524,7 +531,7 @@ export default function HomePage() {
             )}
           </AnimatePresence>
 
-          {/* Desktop Property Dropdown */}
+          {/* Desktop Property Type Filter */}
           <div className="hidden md:flex flex-1 relative" ref={dropdownRef}>
             <div 
               onClick={() => setPropertyDropdownOpen(!propertyDropdownOpen)}
@@ -583,176 +590,208 @@ export default function HomePage() {
 
           <button 
             type="submit" 
-            className="hidden md:flex bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-8 py-4 md:py-3.5 rounded-xl md:rounded-full items-center justify-center gap-2 transition duration-200 cursor-pointer shadow-sm hover:shadow-md shrink-0 md:mr-1"
+            className="hidden md:flex bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-8 py-3.5 rounded-full items-center justify-center gap-2 transition duration-200 cursor-pointer shadow-md shadow-emerald-600/30 shrink-0"
           >
             <Search className="w-4 h-4" />
-            <span>Apply Filters</span>
+            <span>Search Rentals</span>
           </button>
         </motion.form>
       </section>
 
-      {/* CATEGORY CHIPS / ICON GRID (Matching Mobile Reference Design) */}
-      <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mb-10">
-        <div className="grid grid-cols-5 md:flex items-center gap-2 md:gap-3 overflow-x-auto pb-2 scrollbar-none">
+      {/* CATEGORY ICON GRID */}
+      <section className="max-w-[1600px] mx-auto px-5 sm:px-6 lg:px-8 mb-10">
+        <div className="grid grid-cols-5 gap-2.5 sm:gap-4 max-w-2xl mx-auto md:max-w-none">
           {propertyTypes.filter(t => t.label !== 'All Types').map((type) => {
             const isSelected = propertyType === type.label;
             return (
               <button
                 key={type.label}
-                onClick={() => setPropertyType(type.label)}
-                className={`flex flex-col md:flex-row items-center justify-center gap-2 p-3 md:px-5 md:py-2.5 rounded-2xl md:rounded-full transition-all duration-200 ${
+                onClick={() => setPropertyType(isSelected ? 'All Types' : type.label)}
+                className={`flex flex-col items-center justify-center py-4 px-2 rounded-2xl transition-all duration-200 border ${
                   isSelected
-                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-md'
-                    : 'bg-white border border-slate-100 text-slate-700 hover:bg-slate-50 shadow-sm'
+                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                    : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50 shadow-sm'
                 }`}
               >
-                <div className={`p-2 rounded-xl flex items-center justify-center ${isSelected ? 'text-white' : 'text-emerald-600 bg-emerald-50/50'}`}>
-                  <type.icon className="w-5 h-5 md:w-4 md:h-4 stroke-[1.8]" />
+                <div className={`p-2.5 rounded-xl flex items-center justify-center mb-2.5 ${
+                  isSelected ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600'
+                }`}>
+                  <type.icon className="w-6 h-6 stroke-[2]" />
                 </div>
-                <span className="text-[10px] md:text-xs font-bold text-center truncate">{type.label}</span>
+                <span className="text-[11px] font-bold text-center leading-tight">{type.label}</span>
               </button>
             )
           })}
         </div>
       </section>
 
-      {/* MAIN LISTINGS AREA */}
-      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12 mb-24">
+      {/* FEATURED LISTINGS */}
+      <main className="max-w-[1600px] mx-auto px-5 sm:px-6 lg:px-8 space-y-12 mb-24">
         {isLoading ? (
-          <div className="w-full text-center py-24 text-slate-500 font-bold text-lg flex flex-col items-center justify-center gap-3">
-            <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-            <span>Loading dynamic rental units from database...</span>
+          <div className="w-full text-center py-24 text-slate-500 font-bold text-sm flex flex-col items-center justify-center gap-3">
+            <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+            <span>Loading rental properties...</span>
           </div>
         ) : (
           <>
-            {/* FEATURED RENTALS SECTION */}
+            {/* FEATURED SECTION */}
             {featuredItems.length > 0 && (
               <div>
                 <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Featured Listings</h2>
-                    <p className="hidden md:block text-xs font-semibold text-emerald-600">
-                      Showing {featuredItems.length} active matching options found
-                    </p>
-                  </div>
-                  <button onClick={() => setPropertyType('All Types')} className="flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-700">
-                    Tan-awa tanan <ArrowRight className="w-3.5 h-3.5" />
+                  <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Featured Listings</h2>
+                  <button onClick={() => setPropertyType('All Types')} className="flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-700 transition">
+                    View All <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                {/* Horizontal side-scroll layout on mobile, 4-column grid on desktop */}
-                <div className="flex md:grid overflow-x-auto md:overflow-visible gap-4 md:gap-6 pb-4 md:pb-0 scrollbar-none -mx-4 px-4 md:mx-0 md:px-0 md:grid-cols-4">
+                {/* Side-scrolling carousel on mobile, 3-column grid on desktop */}
+                <div className="flex md:grid overflow-x-auto md:overflow-visible gap-4 md:gap-6 pb-4 md:pb-0 scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:grid-cols-3">
                   {featuredItems.map((p) => {
                     const img = getDisplayImage(p)
+                    const isFav = !!favorites[p.id]
+
                     return (
-                      <div key={`featured-${p.id}`} className="min-w-[260px] max-w-[260px] md:min-w-0 md:max-w-none group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col shrink-0 md:shrink">
+                      <Link 
+                        key={`featured-${p.id}`} 
+                        href={`/property/${p.id}`}
+                        className="min-w-[280px] sm:min-w-[320px] md:min-w-0 group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col shrink-0 md:shrink"
+                      >
                         <div className="aspect-[4/3] bg-slate-100 relative overflow-hidden m-2 rounded-2xl">
-                          <span className="absolute top-2.5 left-2.5 z-20 text-[9px] font-extrabold uppercase tracking-wider text-white bg-emerald-600 px-2 py-0.5 rounded shadow-sm flex items-center gap-1">
+                          <span className="absolute top-3 left-3 z-20 text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-2.5 py-1 rounded-md shadow-sm">
                             For Rent
                           </span>
 
                           <button
-                            onClick={(e) => openReportModal(p, e)}
-                            title="Report Listing"
-                            className="absolute top-2.5 right-2.5 z-20 bg-white/80 hover:bg-white text-slate-600 hover:text-red-600 p-1.5 rounded-full backdrop-blur-sm transition-colors shadow-sm"
+                            onClick={(e) => toggleFavorite(p.id, e)}
+                            className="absolute top-3 right-3 z-20 bg-white/80 hover:bg-white text-slate-700 p-2 rounded-full backdrop-blur-md transition-all shadow-sm"
                           >
-                            <Flag className="w-3.5 h-3.5" />
+                            <Heart className={`w-4 h-4 ${isFav ? 'fill-red-500 text-red-500' : 'text-slate-600'}`} />
                           </button>
 
                           {img ? (
-                            <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-102 transition duration-500" loading="lazy" />
+                            <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">No Image</div>
+                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-semibold">No Image Available</div>
                           )}
                         </div>
-                        <div className="p-4 md:p-5 flex flex-col justify-between flex-grow space-y-2">
+
+                        <div className="p-4 flex flex-col justify-between flex-grow space-y-2">
                           <div>
-                            <h3 className="text-sm font-bold text-slate-900 line-clamp-1">{p.title}</h3>
-                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                              <MapPin className="w-3 h-3 text-slate-400 shrink-0" /> 
-                              <span className="truncate">{p.address || p.manual_address}</span>
+                            <h3 className="text-sm font-bold text-slate-900 truncate">{p.title}</h3>
+                            <div className="text-xs text-slate-400 flex items-center gap-1 mt-1 font-medium">
+                              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> 
+                              <span className="truncate">{p.address || p.manual_address || `${p.city || ''}, ${p.province || ''}`}</span>
                             </div>
-                            <div className="text-sm md:text-lg font-black text-emerald-600 mt-2">
-                              ₱{p.price?.toLocaleString()}<span className="text-[10px] font-semibold text-slate-400"> / bulan</span>
+
+                            <div className="text-base md:text-lg font-black text-emerald-600 mt-2">
+                              ₱{p.price?.toLocaleString()}<span className="text-xs font-normal text-slate-400"> / month</span>
                             </div>
                           </div>
-                          <div className="pt-2">
-                            <Link 
-                              href={`/property/${p.id}`} 
-                              className="block w-full text-center bg-[#0f172a] hover:bg-slate-800 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-all duration-200"
-                            >
-                              View Details
-                            </Link>
+
+                          <div className="pt-2 border-t border-slate-50 flex items-center gap-4 text-xs font-semibold text-slate-500">
+                            <div className="flex items-center gap-1">
+                              <Bed className="w-4 h-4 text-slate-400" />
+                              <span>{p.bedrooms ?? 1}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Bath className="w-4 h-4 text-slate-400" />
+                              <span>{p.bathrooms ?? 1}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     )
                   })}
                 </div>
               </div>
             )}
 
-            {/* LATEST AVAILABLE UNITS SECTION */}
+            {/* ALL AVAILABLE PROPERTIES */}
             <div>
               <div className="mb-4 md:mb-6">
-                <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Latest Available Rental Units</h2>
-                <p className="text-xs font-semibold text-emerald-600">
-                  Showing {regularItems.length} active matching options found
+                <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Available Units</h2>
+                <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                  Showing {regularItems.length} matching rentals found
                 </p>
               </div>
 
               {regularItems.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 md:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                   {regularItems.map((p) => {
                     const img = getDisplayImage(p)
+                    const isFav = !!favorites[p.id]
+
                     return (
-                      <div key={p.id} className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full">
+                      <Link 
+                        key={p.id} 
+                        href={`/property/${p.id}`}
+                        className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
+                      >
                         <div className="aspect-[4/3] bg-slate-100 relative overflow-hidden m-2 rounded-2xl">
-                          <span className="absolute top-2.5 left-2.5 z-20 text-[9px] font-extrabold uppercase tracking-wider text-slate-700 bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded shadow-sm">
-                            {p.property_type || 'Unit'}
+                          <span className="absolute top-3 left-3 z-20 text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-2.5 py-1 rounded-md shadow-sm">
+                            For Rent
                           </span>
 
                           <button
-                            onClick={(e) => openReportModal(p, e)}
-                            title="Report Listing"
-                            className="absolute top-2.5 right-2.5 z-20 bg-white/80 hover:bg-white text-slate-600 hover:text-red-600 p-1.5 rounded-full backdrop-blur-sm transition-colors shadow-sm"
+                            onClick={(e) => toggleFavorite(p.id, e)}
+                            className="absolute top-3 right-3 z-20 bg-white/80 hover:bg-white text-slate-700 p-2 rounded-full backdrop-blur-md transition-all shadow-sm"
                           >
-                            <Flag className="w-3.5 h-3.5" />
+                            <Heart className={`w-4 h-4 ${isFav ? 'fill-red-500 text-red-500' : 'text-slate-600'}`} />
                           </button>
 
                           {img ? (
-                            <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-102 transition duration-500" loading="lazy" />
+                            <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">No Image</div>
+                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-semibold">No Image Available</div>
                           )}
                         </div>
-                        <div className="p-4 md:p-5 flex flex-col justify-between flex-grow space-y-3">
+
+                        <div className="p-4 flex flex-col justify-between flex-grow space-y-2">
                           <div>
-                            <div className="text-lg font-black text-slate-950">₱{p.price?.toLocaleString()}<span className="text-[10px] font-semibold text-slate-400">/mo</span></div>
-                            <h3 className="text-sm font-bold text-slate-800 line-clamp-1 mt-0.5">{p.title}</h3>
-                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3 text-slate-400 shrink-0" /> <span className="truncate">{p.address || p.manual_address}</span></div>
+                            <h3 className="text-sm font-bold text-slate-900 truncate">{p.title}</h3>
+                            <div className="text-xs text-slate-400 flex items-center gap-1 mt-1 font-medium">
+                              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> 
+                              <span className="truncate">{p.address || p.manual_address || `${p.city || ''}, ${p.province || ''}`}</span>
+                            </div>
+
+                            <div className="text-base md:text-lg font-black text-emerald-600 mt-2">
+                              ₱{p.price?.toLocaleString()}<span className="text-xs font-normal text-slate-400"> / month</span>
+                            </div>
                           </div>
-                          <div className="pt-2">
-                            <Link 
-                              href={`/property/${p.id}`} 
-                              className="block w-full text-center bg-[#0f172a] hover:bg-slate-800 text-white font-bold text-xs py-3 px-4 rounded-xl transition-all duration-200"
+
+                          <div className="pt-2 border-t border-slate-50 flex items-center justify-between text-xs font-semibold text-slate-500">
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-1">
+                                <Bed className="w-4 h-4 text-slate-400" />
+                                <span>{p.bedrooms ?? 1}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Bath className="w-4 h-4 text-slate-400" />
+                                <span>{p.bathrooms ?? 1}</span>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={(e) => openReportModal(p, e)}
+                              className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                              title="Report Listing"
                             >
-                              View Details
-                            </Link>
+                              <Flag className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     )
                   })}
                 </div>
               ) : (
                 <div className="w-full text-center py-20 bg-white rounded-3xl border border-slate-100 flex flex-col items-center justify-center gap-3 shadow-sm">
-                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-2">
-                    <Search className="w-8 h-8 text-slate-300" />
+                  <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mb-1">
+                    <Search className="w-7 h-7 text-slate-300" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-700">No properties found</h3>
-                  <p className="text-sm text-slate-500 max-w-sm mx-auto">
-                    We couldn't find any rental units matching your current filters. Try adjusting your search criteria.
+                  <h3 className="text-base font-bold text-slate-800">No properties found</h3>
+                  <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+                    We couldn't find any rental units matching your filters. Try clearing your search parameters.
                   </p>
                   <button 
                     onClick={() => {
@@ -760,9 +799,9 @@ export default function HomePage() {
                       setPropertyType('All Types');
                       resetLocFlow();
                     }}
-                    className="mt-4 px-6 py-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 font-bold text-xs rounded-full transition-colors"
+                    className="mt-2 px-5 py-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 font-bold text-xs rounded-full transition-colors"
                   >
-                    Clear Filters
+                    Reset Filters
                   </button>
                 </div>
               )}
@@ -771,7 +810,7 @@ export default function HomePage() {
         )}
       </main>
 
-      {/* REPORT PROPERTY MODAL */}
+      {/* REPORT MODAL */}
       <AnimatePresence>
         {reportModalOpen && selectedPropertyForReport && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
@@ -799,7 +838,7 @@ export default function HomePage() {
               ) : (
                 <form onSubmit={handleSubmitReport} className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-extrabold text-slate-900">Report Property</h3>
+                    <h3 className="text-lg font-extrabold text-slate-900">Report Listing</h3>
                     <p className="text-xs font-medium text-slate-500 line-clamp-1 mt-0.5">
                       {selectedPropertyForReport.title}
                     </p>
