@@ -656,7 +656,8 @@ export default function HomePage() {
                         href={`/property/${p.id}`}
                         className="w-[155px] sm:w-[200px] md:w-full group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col shrink-0 md:shrink"
                       >
-                        <div className="w-full h-28 sm:h-36 md:h-48 bg-slate-100 relative overflow-hidden">
+                        {/* Strictly fixed 4:3 Aspect Ratio Image Container */}
+                        <div className="w-full aspect-[4/3] bg-slate-100 relative overflow-hidden shrink-0">
                           <span className="absolute top-2 left-2 z-20 text-[9px] sm:text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-1.5 py-0.5 rounded-md shadow-sm">
                             For Rent
                           </span>
@@ -669,7 +670,12 @@ export default function HomePage() {
                           </button>
 
                           {img ? (
-                            <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
+                            <img 
+                              src={img} 
+                              alt={p.title} 
+                              className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
+                              loading="lazy" 
+                            />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-semibold">No Image</div>
                           )}
@@ -735,9 +741,10 @@ export default function HomePage() {
                       <Link 
                         key={p.id} 
                         href={`/property/${p.id}`}
-                        className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
+                        className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full w-full max-w-[155px] sm:max-w-none justify-self-start"
                       >
-                        <div className="w-full h-28 sm:h-36 md:h-48 bg-slate-100 relative overflow-hidden">
+                        {/* Strictly fixed 4:3 Aspect Ratio Image Container */}
+                        <div className="w-full aspect-[4/3] bg-slate-100 relative overflow-hidden shrink-0">
                           <span className="absolute top-2 left-2 z-20 text-[9px] sm:text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-1.5 py-0.5 rounded-md shadow-sm">
                             For Rent
                           </span>
@@ -750,7 +757,12 @@ export default function HomePage() {
                           </button>
 
                           {img ? (
-                            <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
+                            <img 
+                              src={img} 
+                              alt={p.title} 
+                              className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
+                              loading="lazy" 
+                            />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-semibold">No Image</div>
                           )}
