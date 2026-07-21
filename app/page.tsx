@@ -361,10 +361,10 @@ export default function HomePage() {
               <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse" /> Verified Property Ecosystem
             </span>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
-              Find your next home, <br className="hidden md:block" /><span className="text-emerald-600">made effortless.</span>
+              Find Rentals <span className="text-emerald-600">10X Faster</span>
             </h1>
             <p className="text-slate-500 font-medium text-sm sm:text-lg max-w-xl md:mx-auto mt-2 md:mt-4 leading-relaxed">
-              The premier platform for home rentals across the Philippines.
+              Discover verified rental apartments, dynamic condominiums, and residential boarding rooms seamlessly.
             </p>
           </motion.div>
         </div>
