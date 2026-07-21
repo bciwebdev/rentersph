@@ -45,8 +45,7 @@ export default function AdminVerificationDashboard() {
   const [loading, setLoading] = useState(true)
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
   
-  // FIXED TYPE UNION HERE: 'active' added, 'approved' replaced
-  const [filterStatus, setFilterStatus] = useState<'pending' | 'active' | 'pending_verifications' | 'approved_verifications' | 'all'>('pending_verifications')
+  const [filterStatus, setFilterStatus] = useState<'pending' | 'active' | 'pending_verifications' | 'approved_verifications' | 'all'>('approved_verifications')
   
   // Login Form States
   const [email, setEmail] = useState('')
@@ -108,7 +107,14 @@ export default function AdminVerificationDashboard() {
         .order('created_at', { ascending: false })
 
       if (!verErr && verData) {
-        setVerifications(verData)
+        // Deduplicate records by user_id to prevent UI repetition
+        const uniqueVerificationsMap = new Map<string, Verification>()
+        verData.forEach((item: Verification) => {
+          if (!uniqueVerificationsMap.has(item.user_id)) {
+            uniqueVerificationsMap.set(item.user_id, item)
+          }
+        })
+        setVerifications(Array.from(uniqueVerificationsMap.values()))
       }
     } else {
       setIsAuthenticated(false)
