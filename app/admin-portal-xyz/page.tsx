@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { ShieldAlert, CheckCircle, Clock, MapPin, Hash, DollarSign, LogOut, ImageIcon, Lock, Banknote, Trash2, UserCheck, XCircle, ExternalLink } from 'lucide-react'
+import { ShieldAlert, CheckCircle, Clock, MapPin, Hash, DollarSign, LogOut, ImageIcon, Lock, Banknote, Trash2, UserCheck, XCircle, ExternalLink, Eye, X } from 'lucide-react'
 
 // Initialize Supabase Client
 const supabase = createClient(
@@ -44,6 +44,9 @@ export default function AdminVerificationDashboard() {
   const [verifications, setVerifications] = useState<Verification[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
+  
+  // Modal State for Viewing Listing Details
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
   
   const [filterStatus, setFilterStatus] = useState<'pending' | 'active' | 'pending_verifications' | 'approved_verifications' | 'all'>('approved_verifications')
   
@@ -164,6 +167,9 @@ export default function AdminVerificationDashboard() {
 
     if (!error) {
       setProperties(prev => prev.map(item => item.id === id ? { ...item, status: 'LIVE ON SITE', is_paid: true } : item))
+      if (selectedProperty?.id === id) {
+        setSelectedProperty(prev => prev ? { ...prev, status: 'LIVE ON SITE', is_paid: true } : null)
+      }
     } else {
       console.error("Database update failed:", error.message)
       alert(`Failed to approve listing: ${error.message}`)
@@ -242,6 +248,9 @@ export default function AdminVerificationDashboard() {
       alert("Delete blocked by database policy. Please run the SQL policy setup in your Supabase dashboard.")
     } else {
       setProperties(prev => prev.filter(item => item.id !== id))
+      if (selectedProperty?.id === id) {
+        setSelectedProperty(null)
+      }
     }
     setActionLoadingId(null)
   }
@@ -550,12 +559,22 @@ export default function AdminVerificationDashboard() {
                   className={`bg-white rounded-3xl border transition shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 ${isPending(item.status) ? 'border-amber-200 hover:border-amber-300' : 'border-slate-200'}`}
                 >
                   
-                  <div className="p-6 lg:col-span-5 space-y-3 border-b lg:border-b-0 lg:border-r border-slate-100">
-                    <h3 className="font-black text-base text-slate-950 tracking-tight leading-tight">{item.title || 'Untitled Listing'}</h3>
-                    <div className="space-y-1.5 text-xs text-slate-500 font-medium">
-                      <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {item.address || 'No Address Provided'}</div>
-                      <div className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-slate-400 shrink-0" /> ₱{item.price?.toLocaleString() || 0}/month • {item.property_type || 'N/A'}</div>
+                  <div className="p-6 lg:col-span-5 space-y-3 border-b lg:border-b-0 lg:border-r border-slate-100 flex flex-col justify-between">
+                    <div className="space-y-3">
+                      <h3 className="font-black text-base text-slate-950 tracking-tight leading-tight">{item.title || 'Untitled Listing'}</h3>
+                      <div className="space-y-1.5 text-xs text-slate-500 font-medium">
+                        <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {item.address || 'No Address Provided'}</div>
+                        <div className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-slate-400 shrink-0" /> ₱{item.price?.toLocaleString() || 0}/month • {item.property_type || 'N/A'}</div>
+                      </div>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProperty(item)}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition cursor-pointer self-start mt-2"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-slate-500" /> View Listing Details
+                    </button>
                   </div>
 
                   <div className="p-6 lg:col-span-4 bg-slate-50/40 flex flex-col justify-center space-y-2 border-b lg:border-b-0 lg:border-r border-slate-100">
@@ -630,6 +649,99 @@ export default function AdminVerificationDashboard() {
           )
         )}
       </div>
+
+      {/* PROPERTY DETAILS MODAL */}
+      {selectedProperty && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-slate-200 max-w-2xl w-full p-6 space-y-6 shadow-2xl my-8 relative">
+            <button
+              onClick={() => setSelectedProperty(null)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-1 rounded-full bg-slate-100 hover:bg-slate-200 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-1">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md">
+                Listing Specification Payload
+              </span>
+              <h2 className="text-xl font-black text-slate-950 pt-2">{selectedProperty.title || 'Untitled Property'}</h2>
+            </div>
+
+            {/* Images Grid */}
+            {selectedProperty.images && selectedProperty.images.length > 0 ? (
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Uploaded Property Gallery</span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-56 overflow-y-auto p-1 bg-slate-50 rounded-2xl border border-slate-200">
+                  {selectedProperty.images.map((imgUrl, index) => (
+                    <a key={index} href={imgUrl} target="_blank" rel="noreferrer" className="block relative group aspect-video bg-slate-200 rounded-xl overflow-hidden">
+                      <img src={imgUrl} alt={`Property Image ${index + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition" />
+                      <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-[10px] font-bold gap-1">
+                        <ExternalLink className="w-3 h-3" /> Expand
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center text-xs text-slate-400 font-medium">
+                No images attached to this property listing.
+              </div>
+            )}
+
+            {/* Property Key Details */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Property Type</span>
+                <p className="font-bold text-slate-800">{selectedProperty.property_type || 'N/A'}</p>
+              </div>
+
+              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Monthly Rent Price</span>
+                <p className="font-bold text-emerald-700">₱{selectedProperty.price?.toLocaleString() || 0} / month</p>
+              </div>
+
+              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1 sm:col-span-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Complete Address</span>
+                <p className="font-semibold text-slate-800">{selectedProperty.address || 'No Address Provided'}</p>
+              </div>
+
+              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Payment Reference ID</span>
+                <p className="font-mono font-bold text-blue-600">{selectedProperty.payment_reference || 'NULL'}</p>
+              </div>
+
+              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Date Created</span>
+                <p className="font-semibold text-slate-700">{selectedProperty.created_at ? new Date(selectedProperty.created_at).toLocaleString('en-PH') : 'N/A'}</p>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setSelectedProperty(null)}
+                className="px-4 py-2.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer"
+              >
+                Close Window
+              </button>
+              
+              {isPending(selectedProperty.status) && (
+                <button
+                  type="button"
+                  disabled={actionLoadingId === selectedProperty.id}
+                  onClick={() => handleApprove(selectedProperty.id)}
+                  className="px-5 py-2.5 bg-slate-950 hover:bg-slate-900 disabled:bg-slate-300 text-white text-xs font-bold rounded-xl shadow-sm transition cursor-pointer"
+                >
+                  {actionLoadingId === selectedProperty.id ? 'Activating...' : 'Approve & Publish Live'}
+                </button>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   )
 }
