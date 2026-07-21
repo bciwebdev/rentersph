@@ -625,7 +625,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FEATURED LISTINGS */}
+      {/* FEATURED & AVAILABLE LISTINGS */}
       <main className="max-w-[1600px] mx-auto px-5 sm:px-6 lg:px-8 space-y-12 mb-24">
         {isLoading ? (
           <div className="w-full text-center py-24 text-slate-500 font-bold text-sm flex flex-col items-center justify-center gap-3">
@@ -654,80 +654,9 @@ export default function HomePage() {
                       <Link 
                         key={`featured-${p.id}`} 
                         href={`/property/${p.id}`}
-                        className="w-[240px] xs:w-[260px] sm:w-[280px] md:w-full group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col shrink-0 md:shrink"
+                        className="w-[85vw] sm:w-[320px] md:w-full group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col shrink-0 md:shrink"
                       >
-                        <div className="w-full aspect-[4/3] bg-slate-100 relative overflow-hidden">
-                          <span className="absolute top-2.5 left-2.5 z-20 text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-2 py-0.5 rounded-md shadow-sm">
-                            For Rent
-                          </span>
-
-                          <button
-                            onClick={(e) => toggleFavorite(p.id, e)}
-                            className="absolute top-2.5 right-2.5 z-20 bg-white/80 hover:bg-white text-slate-700 p-1.5 rounded-full backdrop-blur-md transition-all shadow-sm"
-                          >
-                            <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-red-500 text-red-500' : 'text-slate-600'}`} />
-                          </button>
-
-                          {img ? (
-                            <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-semibold">No Image Available</div>
-                          )}
-                        </div>
-
-                        <div className="p-3.5 flex flex-col justify-between flex-grow space-y-2">
-                          <div>
-                            <h3 className="text-xs md:text-sm font-bold text-slate-900 truncate">{p.title}</h3>
-                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5 font-medium">
-                              <MapPin className="w-3 h-3 text-slate-400 shrink-0" /> 
-                              <span className="truncate">{p.address || p.manual_address || `${p.city || ''}, ${p.province || ''}`}</span>
-                            </div>
-
-                            <div className="text-sm md:text-base font-black text-emerald-600 mt-1.5">
-                              ₱{p.price?.toLocaleString()}<span className="text-[10px] font-normal text-slate-400"> / month</span>
-                            </div>
-                          </div>
-
-                          <div className="pt-2 border-t border-slate-50 flex items-center gap-3 text-[11px] font-semibold text-slate-500">
-                            <div className="flex items-center gap-1">
-                              <Bed className="w-3.5 h-3.5 text-slate-400" />
-                              <span>{p.bedrooms ?? 1}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Bath className="w-3.5 h-3.5 text-slate-400" />
-                              <span>{p.bathrooms ?? 1}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* ALL AVAILABLE PROPERTIES */}
-            <div>
-              <div className="mb-4 md:mb-6">
-                <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Available Units</h2>
-                <p className="text-xs font-semibold text-slate-400 mt-0.5">
-                  Showing {regularItems.length} matching rentals found
-                </p>
-              </div>
-
-              {regularItems.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
-                  {regularItems.map((p) => {
-                    const img = getDisplayImage(p)
-                    const isFav = !!favorites[p.id]
-
-                    return (
-                      <Link 
-                        key={p.id} 
-                        href={`/property/${p.id}`}
-                        className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
-                      >
-                        <div className="w-full aspect-[4/3] bg-slate-100 relative overflow-hidden">
+                        <div className="w-full h-44 sm:h-48 md:h-52 bg-slate-100 relative overflow-hidden">
                           <span className="absolute top-2.5 left-2.5 z-20 text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-2 py-0.5 rounded-md shadow-sm">
                             For Rent
                           </span>
@@ -777,6 +706,87 @@ export default function HomePage() {
                               title="Report Listing"
                             >
                               <Flag className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ALL AVAILABLE PROPERTIES */}
+            <div>
+              <div className="mb-4 md:mb-6">
+                <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Available Units</h2>
+                <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                  Showing {regularItems.length} matching rentals found
+                </p>
+              </div>
+
+              {regularItems.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                  {regularItems.map((p) => {
+                    const img = getDisplayImage(p)
+                    const isFav = !!favorites[p.id]
+
+                    return (
+                      <Link 
+                        key={p.id} 
+                        href={`/property/${p.id}`}
+                        className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
+                      >
+                        <div className="w-full h-44 sm:h-48 md:h-52 bg-slate-100 relative overflow-hidden">
+                          <span className="absolute top-2.5 left-2.5 z-20 text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-2 py-0.5 rounded-md shadow-sm">
+                            For Rent
+                          </span>
+
+                          <button
+                            onClick={(e) => toggleFavorite(p.id, e)}
+                            className="absolute top-2.5 right-2.5 z-20 bg-white/80 hover:bg-white text-slate-700 p-1.5 rounded-full backdrop-blur-md transition-all shadow-sm"
+                          >
+                            <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-red-500 text-red-500' : 'text-slate-600'}`} />
+                          </button>
+
+                          {img ? (
+                            <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-semibold">No Image Available</div>
+                          )}
+                        </div>
+
+                        <div className="p-3.5 flex flex-col justify-between flex-grow space-y-2">
+                          <div>
+                            <h3 className="text-xs md:text-sm font-bold text-slate-900 truncate">{p.title}</h3>
+                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5 font-medium">
+                              <MapPin className="w-3 h-3 text-slate-400 shrink-0" /> 
+                              <span className="truncate">{p.address || p.manual_address || `${p.city || ''}, ${p.province || ''}`}</span>
+                            </div>
+
+                            <div className="text-sm md:text-base font-black text-emerald-600 mt-1.5">
+                              ₱{p.price?.toLocaleString()}<span className="text-[10px] font-normal text-slate-400"> / month</span>
+                            </div>
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-50 flex items-center justify-between text-[11px] font-semibold text-slate-500">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1">
+                                <Bed className="w-3.5 h-3.5 text-slate-400" />
+                                <span>{p.bedrooms ?? 1}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Bath className="w-3.5 h-3.5 text-slate-400" />
+                                <span>{p.bathrooms ?? 1}</span>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={(e) => openReportModal(p, e)}
+                              className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                              title="Report Listing"
+                            >
+                              <Flag className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
