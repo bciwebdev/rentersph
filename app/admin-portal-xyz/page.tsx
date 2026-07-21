@@ -44,7 +44,9 @@ export default function AdminVerificationDashboard() {
   const [verifications, setVerifications] = useState<Verification[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'verifications'>('pending')
+  
+  // FIXED TYPE UNION HERE: 'active' added, 'approved' replaced
+  const [filterStatus, setFilterStatus] = useState<'pending' | 'active' | 'pending_verifications' | 'approved_verifications' | 'all'>('pending_verifications')
   
   // Login Form States
   const [email, setEmail] = useState('')
@@ -251,8 +253,12 @@ export default function AdminVerificationDashboard() {
   const filteredProperties = properties.filter(item => {
     if (filterStatus === 'all') return true
     if (filterStatus === 'pending') return isPending(item.status)
-    return item.status === 'LIVE ON SITE'
+    if (filterStatus === 'active') return item.status === 'LIVE ON SITE'
+    return false
   })
+
+  const pendingVerifications = verifications.filter(v => v.status === 'pending')
+  const approvedVerifications = verifications.filter(v => v.status === 'approved')
 
   if (loading) {
     return (
@@ -365,25 +371,35 @@ export default function AdminVerificationDashboard() {
         </div>
 
         {/* Filter Toolbar Controls */}
-        <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
           <button 
             onClick={() => setFilterStatus('pending')}
             className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${filterStatus === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-slate-500 hover:text-slate-800'}`}
           >
             Pending Review ({properties.filter(p => isPending(p.status)).length})
           </button>
+          
           <button 
-            onClick={() => setFilterStatus('approved')}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${filterStatus === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-slate-500 hover:text-slate-800'}`}
+            onClick={() => setFilterStatus('active')}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${filterStatus === 'active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-slate-500 hover:text-slate-800'}`}
           >
             Active Listings ({properties.filter(p => p.status === 'LIVE ON SITE').length})
           </button>
+          
           <button 
-            onClick={() => setFilterStatus('verifications')}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 ${filterStatus === 'verifications' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-slate-500 hover:text-slate-800'}`}
+            onClick={() => setFilterStatus('pending_verifications')}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 ${filterStatus === 'pending_verifications' ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
           >
-            <UserCheck className="w-3.5 h-3.5" /> Landlord Verifications ({verifications.filter(v => v.status === 'pending').length})
+            <Clock className="w-3.5 h-3.5 text-amber-500" /> Pending Verifications ({pendingVerifications.length})
           </button>
+
+          <button 
+            onClick={() => setFilterStatus('approved_verifications')}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 ${filterStatus === 'approved_verifications' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+          >
+            <UserCheck className="w-3.5 h-3.5 text-emerald-500" /> Approved Landlords ({approvedVerifications.length})
+          </button>
+
           <button 
             onClick={() => setFilterStatus('all')}
             className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${filterStatus === 'all' ? 'bg-slate-200 text-slate-800' : 'text-slate-500 hover:text-slate-800'}`}
@@ -392,85 +408,130 @@ export default function AdminVerificationDashboard() {
           </button>
         </div>
 
-        {/* LANDLORD VERIFICATIONS VIEW */}
-        {filterStatus === 'verifications' ? (
-          <div className="space-y-4">
-            {verifications.length === 0 ? (
-              <div className="text-center bg-white rounded-3xl border border-slate-200 text-xs text-slate-400 font-medium py-20">
-                No identity verification submissions recorded yet.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {verifications.map((ver) => (
-                  <div key={ver.id} className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4 shadow-sm flex flex-col justify-between">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Landlord Legal Name</span>
-                          <h3 className="text-base font-black text-slate-900">{ver.full_name}</h3>
-                        </div>
-                        <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${
-                          ver.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                          ver.status === 'rejected' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-                          'bg-amber-50 text-amber-700 border border-amber-200'
-                        }`}>
-                          {ver.status}
-                        </span>
+        {/* PENDING LANDLORD VERIFICATIONS TAB */}
+        {filterStatus === 'pending_verifications' && (
+          pendingVerifications.length === 0 ? (
+            <div className="text-center bg-white rounded-3xl border border-slate-200 text-xs text-slate-400 font-medium py-20">
+              No pending identity verification submissions.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {pendingVerifications.map((ver) => (
+                <div key={ver.id} className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4 shadow-sm flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Landlord Legal Name</span>
+                        <h3 className="text-base font-black text-slate-900">{ver.full_name}</h3>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-3 pt-2">
-                        {/* ID PHOTO */}
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase">1. Valid ID Photo</span>
-                          <a href={ver.id_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
-                            <img src={ver.id_photo_url} alt="ID Photo" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                            <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
-                              <ExternalLink className="w-3.5 h-3.5" /> Open
-                            </div>
-                          </a>
-                        </div>
-
-                        {/* SELFIE WITH ID */}
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase">2. Selfie Holding ID</span>
-                          <a href={ver.selfie_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
-                            <img src={ver.selfie_photo_url} alt="Selfie with ID" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                            <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
-                              <ExternalLink className="w-3.5 h-3.5" /> Open
-                            </div>
-                          </a>
-                        </div>
-                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                        {ver.status}
+                      </span>
                     </div>
 
-                    {/* ACTION BUTTONS */}
-                    {ver.status === 'pending' && (
-                      <div className="flex gap-2 pt-2 border-t border-slate-100">
-                        <button
-                          type="button"
-                          disabled={actionLoadingId === ver.id}
-                          onClick={() => handleRejectVerification(ver.id)}
-                          className="w-1/2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1"
-                        >
-                          <XCircle className="w-3.5 h-3.5" /> Reject
-                        </button>
-                        <button
-                          type="button"
-                          disabled={actionLoadingId === ver.id}
-                          onClick={() => handleApproveVerification(ver)}
-                          className="w-1/2 bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1 shadow-sm"
-                        >
-                          <CheckCircle className="w-3.5 h-3.5" /> Approve Identity
-                        </button>
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      {/* ID PHOTO */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">1. Valid ID Photo</span>
+                        <a href={ver.id_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
+                          <img src={ver.id_photo_url} alt="ID Photo" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                          <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
+                            <ExternalLink className="w-3.5 h-3.5" /> Open
+                          </div>
+                        </a>
                       </div>
-                    )}
+
+                      {/* SELFIE WITH ID */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">2. Selfie Holding ID</span>
+                        <a href={ver.selfie_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
+                          <img src={ver.selfie_photo_url} alt="Selfie with ID" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                          <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
+                            <ExternalLink className="w-3.5 h-3.5" /> Open
+                          </div>
+                        </a>
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          /* PROPERTY LISTINGS DATA GRID */
+
+                  {/* ACTION BUTTONS */}
+                  <div className="flex gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      disabled={actionLoadingId === ver.id}
+                      onClick={() => handleRejectVerification(ver.id)}
+                      className="w-1/2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1"
+                    >
+                      <XCircle className="w-3.5 h-3.5" /> Reject
+                    </button>
+                    <button
+                      type="button"
+                      disabled={actionLoadingId === ver.id}
+                      onClick={() => handleApproveVerification(ver)}
+                      className="w-1/2 bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5" /> Approve Identity
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* APPROVED LANDLORD VERIFICATIONS TAB */}
+        {filterStatus === 'approved_verifications' && (
+          approvedVerifications.length === 0 ? (
+            <div className="text-center bg-white rounded-3xl border border-slate-200 text-xs text-slate-400 font-medium py-20">
+              No approved landlords found.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {approvedVerifications.map((ver) => (
+                <div key={ver.id} className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4 shadow-sm flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Landlord Legal Name</span>
+                        <h3 className="text-base font-black text-slate-900">{ver.full_name}</h3>
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        APPROVED
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      {/* ID PHOTO */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">1. Valid ID Photo</span>
+                        <a href={ver.id_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
+                          <img src={ver.id_photo_url} alt="ID Photo" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                          <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
+                            <ExternalLink className="w-3.5 h-3.5" /> Open
+                          </div>
+                        </a>
+                      </div>
+
+                      {/* SELFIE WITH ID */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">2. Selfie Holding ID</span>
+                        <a href={ver.selfie_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
+                          <img src={ver.selfie_photo_url} alt="Selfie with ID" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                          <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
+                            <ExternalLink className="w-3.5 h-3.5" /> Open
+                          </div>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* PROPERTY LISTINGS DATA GRID */}
+        {(filterStatus === 'pending' || filterStatus === 'active' || filterStatus === 'all') && (
           filteredProperties.length === 0 ? (
             <div className="text-center bg-white rounded-3xl border border-slate-200 text-xs text-slate-400 font-medium py-20">
               No property listings currently match this status filter profile.
