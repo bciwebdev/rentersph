@@ -120,16 +120,25 @@ export default function LandlordPortalPage() {
         setEmailAddress(user.email || '')
         setCurrentView('dashboard')
         
-        // Fetch Landlord Verification Status
+        // 1. Fetch Profile Verification Flag
         const { data: profile } = await supabase
           .from('profiles')
           .select('is_verified, full_name')
           .eq('id', user.id)
           .single()
 
-        if (profile?.is_verified) {
+        // 2. Fetch Direct Verification Queue Records
+        const { data: verifications } = await supabase
+          .from('landlord_verifications')
+          .select('status')
+          .eq('user_id', user.id)
+
+        const isApprovedInTable = verifications?.some(v => v.status === 'approved')
+
+        if (profile?.is_verified || isApprovedInTable) {
           setIsVerified(true)
         }
+
         if (profile?.full_name) {
           setVerificationFullName(profile.full_name)
         }
@@ -235,7 +244,7 @@ export default function LandlordPortalPage() {
         .from('verification-docs')
         .getPublicUrl(selfieFilePath)
 
-      // 3. Save to verification table & Update Profile
+      // 3. Save to verification table
       const { error: verErr } = await supabase
         .from('landlord_verifications')
         .insert([{
@@ -248,15 +257,14 @@ export default function LandlordPortalPage() {
 
       if (verErr) throw verErr
 
-      // Auto mark or set pending status
+      // Update name on profile
       await supabase
         .from('profiles')
-        .update({ full_name: verificationFullName.trim(), is_verified: true })
+        .update({ full_name: verificationFullName.trim() })
         .eq('id', userId)
 
-      setIsVerified(true)
       setIsVerificationModalOpen(false)
-      alert("Verification details submitted successfully! You can now create property listings.")
+      alert("Verification details submitted successfully! Please await administrative approval.")
     } catch (err: any) {
       setVerificationError(err.message || "An error occurred during verification submission.")
     } finally {
@@ -665,7 +673,7 @@ export default function LandlordPortalPage() {
                       </div>
                     </div>
 
-                    {/* EXTEND POPOVER - SAFE INSIDE CARD BOUNDARIES */}
+                    {/* EXTEND POPOVER */}
                     {activeExtendPopoverId === property.id && (
                       <div 
                         className="absolute bottom-[44px] left-4 right-4 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-50 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-150"
@@ -676,7 +684,6 @@ export default function LandlordPortalPage() {
                           Extension Options
                         </p>
                         
-                        {/* Standard Extension */}
                         <button
                           type="button"
                           onClick={() => router.push(`/landlord/payment?total=20&propertyId=${property.id}&type=extension`)}
@@ -731,7 +738,7 @@ export default function LandlordPortalPage() {
                       </div>
                     )}
 
-                    {/* BOOST POPOVER - SAFE INSIDE CARD BOUNDARIES */}
+                    {/* BOOST POPOVER */}
                     {activeBoostPopoverId === property.id && (
                       <div 
                         className="absolute bottom-[44px] left-4 right-4 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-50 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-150"
