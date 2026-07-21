@@ -4,10 +4,11 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import { 
-  FileText, MapPin, Phone, Image as ImageIcon, ArrowRight, LogOut, HelpCircle, Upload, X, Plus, Building2, RefreshCw, Trash2, Zap, Edit2, ShieldAlert, ShieldCheck, UserCheck, Camera, CheckCircle2
+  FileText, MapPin, Phone, Image as ImageIcon, ArrowRight, LogOut, HelpCircle, Upload, X, Plus, Building2, RefreshCw, Trash2, Zap, Edit2, ShieldAlert, ShieldCheck, UserCheck, Camera, CheckCircle2, Clock
 } from 'lucide-react'
 
 type ViewState = 'dashboard' | 'create'
+type VerificationStatus = 'unverified' | 'pending' | 'approved'
 
 interface SelectedFile {
   file: File
@@ -45,7 +46,7 @@ export default function LandlordPortalPage() {
   const [currentView, setCurrentView] = useState<ViewState>('dashboard')
   
   // Verification States
-  const [isVerified, setIsVerified] = useState<boolean>(false)
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('unverified')
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false)
   const [verificationFullName, setVerificationFullName] = useState('')
   const [idPhoto, setIdPhoto] = useState<SelectedFile | null>(null)
@@ -127,16 +128,21 @@ export default function LandlordPortalPage() {
           .eq('id', user.id)
           .single()
 
-        // 2. Fetch Direct Verification Queue Records
+        // 2. Check Verification Queue Status
         const { data: verifications } = await supabase
           .from('landlord_verifications')
           .select('status')
           .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
 
-        const isApprovedInTable = verifications?.some(v => v.status === 'approved')
+        const latestRecord = verifications && verifications.length > 0 ? verifications[0] : null
 
-        if (profile?.is_verified || isApprovedInTable) {
-          setIsVerified(true)
+        if (profile?.is_verified || latestRecord?.status === 'approved') {
+          setVerificationStatus('approved')
+        } else if (latestRecord?.status === 'pending') {
+          setVerificationStatus('pending')
+        } else {
+          setVerificationStatus('unverified')
         }
 
         if (profile?.full_name) {
@@ -176,8 +182,12 @@ export default function LandlordPortalPage() {
   }
 
   const handleCreateClick = () => {
-    if (!isVerified) {
-      setIsVerificationModalOpen(true)
+    if (verificationStatus !== 'approved') {
+      if (verificationStatus === 'unverified') {
+        setIsVerificationModalOpen(true)
+      } else {
+        alert("Your identity verification request is currently under administrative review. You will be able to post listings once approved.")
+      }
       return
     }
     setCurrentView('create')
@@ -264,7 +274,7 @@ export default function LandlordPortalPage() {
         .eq('id', userId)
 
       setIsVerificationModalOpen(false)
-      alert("Verification details submitted successfully! Please await administrative approval.")
+      setVerificationStatus('pending')
     } catch (err: any) {
       setVerificationError(err.message || "An error occurred during verification submission.")
     } finally {
@@ -413,8 +423,8 @@ export default function LandlordPortalPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!isVerified) {
-      setIsVerificationModalOpen(true)
+    if (verificationStatus !== 'approved') {
+      alert('You must be a verified landlord to create a listing.')
       return
     }
 
@@ -490,9 +500,17 @@ export default function LandlordPortalPage() {
       
       <header className="max-w-4xl mx-auto px-4 pt-8 pb-6 flex justify-between items-center border-b border-slate-100">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-[#0f172a]">
-            {currentView === 'dashboard' ? 'Landlord Dashboard' : 'Create Rental Listing'}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black tracking-tight text-[#0f172a]">
+              {currentView === 'dashboard' ? 'Landlord Dashboard' : 'Create Rental Listing'}
+            </h1>
+            {/* VERIFIED BADGE HEADER */}
+            {verificationStatus === 'approved' && (
+              <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] font-black px-2.5 py-1 rounded-full border border-emerald-200">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#00aa4f]" /> Verified
+              </span>
+            )}
+          </div>
           <p className="text-xs text-slate-400 mt-0.5">
             {currentView === 'dashboard' ? 'Manage your registered active property profiles.' : 'Fill out the details below to add your unit to rentersPH.'}
           </p>
@@ -519,8 +537,8 @@ export default function LandlordPortalPage() {
 
       <main className="max-w-4xl mx-auto px-4 mt-8">
         
-        {/* UNVERIFIED WARNING BANNER */}
-        {!isVerified && (
+        {/* UNVERIFIED BANNER */}
+        {verificationStatus === 'unverified' && (
           <div className="mb-6 bg-amber-50/80 border border-amber-200/80 p-5 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
             <div className="flex items-start gap-3.5">
               <div className="w-10 h-10 bg-amber-100/80 text-amber-700 rounded-2xl flex items-center justify-center shrink-0 mt-0.5">
@@ -543,6 +561,26 @@ export default function LandlordPortalPage() {
           </div>
         )}
 
+        {/* PENDING VERIFICATION BANNER */}
+        {verificationStatus === 'pending' && (
+          <div className="mb-6 bg-blue-50/80 border border-blue-200/80 p-5 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 bg-blue-100/80 text-blue-700 rounded-2xl flex items-center justify-center shrink-0 mt-0.5">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-black text-blue-900">Verification Under Review</h4>
+                <p className="text-xs text-blue-700/90 mt-0.5">
+                  Your identity verification details have been submitted. You can post rental listings once an administrator approves your verification.
+                </p>
+              </div>
+            </div>
+            <span className="bg-blue-100 text-blue-800 border border-blue-200 font-black text-xs px-4 py-2.5 rounded-xl shrink-0 uppercase tracking-wider">
+              PENDING APPROVAL
+            </span>
+          </div>
+        )}
+
         {currentView === 'dashboard' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center bg-white border border-[#f1f5f9] p-5 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
@@ -553,7 +591,11 @@ export default function LandlordPortalPage() {
               <button
                 type="button"
                 onClick={handleCreateClick}
-                className="bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs px-4 py-3 rounded-xl flex items-center gap-1.5 transition shadow-sm cursor-pointer"
+                className={`font-bold text-xs px-4 py-3 rounded-xl flex items-center gap-1.5 transition shadow-sm cursor-pointer ${
+                  verificationStatus === 'approved' 
+                    ? 'bg-[#00aa4f] hover:bg-[#009444] text-white' 
+                    : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                }`}
               >
                 <Plus className="w-4 h-4" /> Add New Listing
               </button>
