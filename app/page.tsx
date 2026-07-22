@@ -385,7 +385,7 @@ export default function HomePage() {
 
       </section>
 
-      {/* SLIM & ORGANIZED SEARCH BAR (Slightly rounded ~10% with gap from background) */}
+      {/* SLIM & ORGANIZED SEARCH BAR */}
       <section className="max-w-4xl mx-auto px-5 mt-6 md:mt-8 mb-6 md:mb-10 relative z-20">
         <motion.form 
           onSubmit={handleApplyFilters} 
@@ -696,7 +696,7 @@ export default function HomePage() {
                   </button>
                 </div>
 
-                <div className="flex md:grid overflow-x-auto md:overflow-visible gap-2.5 sm:gap-4 md:gap-6 pb-3 md:pb-0 scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:grid-cols-3">
+                <div className="flex md:grid overflow-x-auto md:overflow-visible gap-2.5 sm:gap-4 md:gap-6 pb-3 md:pb-0 scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4">
                   {featuredItems.map((p) => {
                     const img = getDisplayImage(p)
                     const isFav = !!favorites[p.id]
@@ -705,7 +705,7 @@ export default function HomePage() {
                       <Link 
                         key={`featured-${p.id}`} 
                         href={`/property/${p.id}`}
-                        className="w-[155px] sm:w-[200px] md:w-full group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col shrink-0 md:shrink"
+                        className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full w-full max-w-[155px] sm:max-w-none justify-self-start shrink-0 md:shrink"
                       >
                         <div className="w-full aspect-[4/3] bg-slate-100 relative overflow-hidden shrink-0">
                           <span className="absolute top-2 left-2 z-20 text-[9px] sm:text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-1.5 py-0.5 rounded-md shadow-sm">
