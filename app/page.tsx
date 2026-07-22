@@ -354,20 +354,20 @@ export default function HomePage() {
       {/* HERO SECTION */}
       <section className="relative overflow-hidden bg-white pt-6 pb-12 md:pt-14 md:pb-20">
         
-        {/* BACKGROUND IMAGE WITH TIGHT FADE */}
-        <div className="absolute top-0 right-0 w-[80%] sm:w-[65%] md:w-[60%] h-full z-0 pointer-events-none">
+        {/* BACKGROUND IMAGE WITH DESKTOP-ONLY REFINED GRADIENT OVERLAY */}
+        <div className="absolute top-0 right-0 w-full sm:w-[80%] md:w-[60%] h-full z-0 pointer-events-none">
           <img 
             src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=1200" 
             alt="Interior Background" 
             className="w-full h-full object-cover object-right-bottom"
           />
-          {/* Focused, narrow overlay to blend text legibility with maximum photo exposure */}
-          <div className="absolute top-0 left-0 w-[45%] sm:w-[35%] md:w-[30%] h-full bg-gradient-to-r from-white via-white/70 to-transparent" />
+          {/* Mobile gradient overlay left completely untouched; Desktop gradient narrowed specifically to md:w-[30%] */}
+          <div className="absolute top-0 left-0 w-full md:w-[30%] h-full bg-gradient-to-r from-white via-white/70 to-transparent" />
         </div>
 
         {/* HERO CONTENT */}
         <div className="max-w-[1600px] mx-auto px-5 sm:px-6 lg:px-8 relative z-10">
-          <div className="max-w-[260px] sm:max-w-md md:max-w-xl lg:max-w-2xl text-left">
+          <div className="max-w-full sm:max-w-md md:max-w-xl lg:max-w-2xl text-left">
             <motion.div 
               initial={{ opacity: 0, y: 15 }} 
               animate={{ opacity: 1, y: 0 }} 
