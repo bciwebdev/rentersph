@@ -373,11 +373,12 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }} 
               transition={{ duration: 0.4 }}
             >
-              <h1 className="text-2xl sm:text-4xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight leading-[1.1] mb-2.5">
-                Find Rentals <br />
-                <span className="text-emerald-600">10X Faster</span>
+              {/* UPDATED MOBILE TITLE & TEXT DESIGN */}
+              <h1 className="text-[32px] leading-[1.15] sm:text-4xl md:text-6xl lg:text-7xl font-black tracking-tight mb-3">
+                <span className="text-[#0d141c]">Find Rentals</span> <br />
+                <span className="text-[#059669]">10X Faster</span>
               </h1>
-              <p className="text-slate-500 font-medium text-xs sm:text-sm md:text-lg lg:text-xl leading-relaxed">
+              <p className="text-[#475569] font-medium text-sm sm:text-sm md:text-lg lg:text-xl leading-[1.5] max-w-[320px] sm:max-w-none">
                 Discover verified rental apartments, dynamic condominiums, and residential boarding rooms seamlessly.
               </p>
             </motion.div>
