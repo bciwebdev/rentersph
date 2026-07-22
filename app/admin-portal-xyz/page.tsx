@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { ShieldAlert, CheckCircle, Clock, MapPin, Hash, DollarSign, LogOut, ImageIcon, Lock, Banknote, Trash2, UserCheck, XCircle, ExternalLink, Eye, X, Flag, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
+import { ShieldAlert, CheckCircle, Clock, MapPin, Hash, DollarSign, LogOut, ImageIcon, Lock, Banknote, Trash2, UserCheck, XCircle, ExternalLink, Eye, X, Flag, AlertTriangle, ChevronDown, ChevronUp, Calendar as CalendarIcon, ArrowUpDown } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -62,10 +62,27 @@ export default function AdminVerificationDashboard() {
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false)
   const [filterStatus, setFilterStatus] = useState<'pending' | 'active' | 'pending_verifications' | 'approved_verifications' | 'reports' | 'all'>('active')
   
+  // Date Sorting State
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'specific'>('newest')
+  const [selectedSpecificDate, setSelectedSpecificDate] = useState<string>('')
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const datePickerRef = useRef<HTMLDivElement>(null)
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState<string | null>(null)
   const [loginLoading, setLoginLoading] = useState(false)
+
+  // Close calendar popover on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDatePicker(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const transactionTotal = properties
     .filter(item => item.is_paid || item.status === 'LIVE ON SITE')
@@ -284,7 +301,6 @@ export default function AdminVerificationDashboard() {
 
     setActionLoadingId(id)
     try {
-      // 1. Revert verification status in profiles table
       const { error: profErr } = await supabase
         .from('profiles')
         .update({ is_verified: false })
@@ -295,7 +311,6 @@ export default function AdminVerificationDashboard() {
         throw new Error(`Profile update failed: ${profErr.message}`)
       }
 
-      // 2. Delete ALL verification records for this user_id and verify explicit deleted count
       const { error: verErr, count } = await supabase
         .from('landlord_verifications')
         .delete({ count: 'exact' })
@@ -306,13 +321,11 @@ export default function AdminVerificationDashboard() {
         throw new Error(`Database delete failed: ${verErr.message}`)
       }
 
-      // Strict check: catch silent RLS policy blocks
       if (count === 0) {
         alert('Deletion Failed: Supabase returned 0 deleted rows. Please execute the SQL RLS policies in Supabase SQL Editor.')
         return
       }
 
-      // 3. Remove from UI state only when database row deletion is confirmed
       setVerifications(prev => prev.filter(item => item.user_id !== userId))
       alert(`Landlord "${name}" deleted successfully from database (${count} record(s) removed).`)
     } catch (err: any) {
@@ -373,7 +386,21 @@ export default function AdminVerificationDashboard() {
       if (filterStatus === 'active') return item.status === 'LIVE ON SITE'
       return false
     })
-    .sort((a, b) => (a.title || '').localeCompare(b.title || ''))
+    .filter(item => {
+      if (sortOrder === 'specific' && selectedSpecificDate) {
+        if (!item.created_at) return false
+        const itemDate = new Date(item.created_at).toISOString().split('T')[0]
+        return itemDate === selectedSpecificDate
+      }
+      return true
+    })
+    .sort((a, b) => {
+      if (sortOrder === 'oldest') {
+        return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
+      }
+      // Default to newest first
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+    })
 
   const pendingVerifications = verifications.filter(v => v.status === 'pending')
   const approvedVerifications = verifications.filter(v => v.status === 'approved')
@@ -771,138 +798,214 @@ export default function AdminVerificationDashboard() {
 
         {/* PROPERTY LISTINGS ACCORDION DATA GRID */}
         {(filterStatus === 'pending' || filterStatus === 'active' || filterStatus === 'all') && (
-          filteredProperties.length === 0 ? (
-            <div className="text-center bg-white rounded-3xl border border-slate-200 text-xs text-slate-500 font-medium py-16 sm:py-20 px-4 shadow-sm">
-              No property listings currently match this status filter profile.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-3">
-              {filteredProperties.map((item) => {
-                const isExpanded = expandedPropertyId === item.id
-                return (
-                  <div 
-                    key={item.id} 
-                    className={`bg-white rounded-3xl border transition shadow-sm overflow-hidden p-4 sm:p-5 ${isPending(item.status) ? 'border-amber-300' : 'border-slate-200'}`}
+          <div className="space-y-3">
+            {/* Sort & Calendar Filter Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-white rounded-2xl border border-slate-200/80 px-4 py-3 shadow-xs">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+                <span>Sort by Date:</span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 relative" ref={datePickerRef}>
+                <button
+                  type="button"
+                  onClick={() => { setSortOrder('newest'); setSelectedSpecificDate(''); setShowDatePicker(false); }}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer ${sortOrder === 'newest' ? 'bg-slate-950 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
+                >
+                  Newest First
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setSortOrder('oldest'); setSelectedSpecificDate(''); setShowDatePicker(false); }}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer ${sortOrder === 'oldest' ? 'bg-slate-950 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
+                >
+                  Oldest First
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowDatePicker(!showDatePicker)}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 ${sortOrder === 'specific' ? 'bg-slate-950 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
+                >
+                  <CalendarIcon className="w-3.5 h-3.5 text-amber-500" />
+                  {selectedSpecificDate ? `Date: ${selectedSpecificDate}` : 'Pick Specific Date'}
+                </button>
+
+                {selectedSpecificDate && (
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedSpecificDate(''); setSortOrder('newest'); }}
+                    className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 transition cursor-pointer"
+                    title="Clear Specific Date Filter"
                   >
-                    {/* Collapsed Header Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="space-y-0.5">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Property Listing Title</span>
-                        <h3 className="font-black text-base text-slate-950 tracking-tight">{item.title || 'Untitled Listing'}</h3>
-                      </div>
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
 
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shrink-0 ${isPending(item.status) ? 'bg-amber-50 text-amber-800 border border-amber-300' : item.status === 'revoked' ? 'bg-rose-50 text-rose-800 border border-rose-300' : 'bg-emerald-50 text-emerald-800 border border-emerald-300'}`}>
-                          {isPending(item.status) ? (
-                            <>
-                              <Clock className="w-3 h-3 text-amber-500" /> Pending
-                            </>
-                          ) : item.status === 'revoked' ? (
-                            <>
-                              <XCircle className="w-3 h-3 text-rose-500" /> Revoked
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle className="w-3 h-3 text-emerald-600" /> Live on Site
-                            </>
-                          )}
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => toggleExpandProperty(item.id)}
-                          className="inline-flex items-center justify-center gap-1 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition cursor-pointer shrink-0"
-                        >
-                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-slate-500" />}
-                          {isExpanded ? 'Hide Details' : 'View Listing Details'}
-                        </button>
-                      </div>
+                {/* Hovering Date Picker Popover */}
+                {showDatePicker && (
+                  <div className="absolute right-0 top-full mt-2 z-30 bg-white rounded-2xl border border-slate-200 p-4 shadow-xl space-y-3 min-w-[240px]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Select Specific Date</span>
+                      <button onClick={() => setShowDatePicker(false)} className="text-slate-400 hover:text-slate-700">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
 
-                    {/* Expandable Details Drawer */}
-                    {isExpanded && (
-                      <div className="pt-4 mt-4 border-t border-slate-100 grid grid-cols-1 lg:grid-cols-12 gap-4">
-                        <div className="lg:col-span-5 space-y-3">
-                          <div className="space-y-1.5 text-xs text-slate-600 font-medium">
-                            <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> <span className="truncate">{item.address || 'No Address Provided'}</span></div>
-                            <div className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-slate-400 shrink-0" /> ₱{item.price?.toLocaleString() || 0}/month • {item.property_type || 'N/A'}</div>
-                          </div>
+                    <input 
+                      type="date" 
+                      value={selectedSpecificDate}
+                      onChange={(e) => {
+                        setSelectedSpecificDate(e.target.value)
+                        setSortOrder('specific')
+                        setShowDatePicker(false)
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-amber-500 transition cursor-pointer"
+                    />
 
-                          <button
-                            type="button"
-                            onClick={() => setSelectedProperty(item)}
-                            className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition cursor-pointer w-full sm:w-auto"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5 text-slate-500" /> Open Full Modal View
-                          </button>
+                    <div className="text-[10px] text-slate-400 font-medium leading-tight">
+                      Filters listings created on the specified calendar date.
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {filteredProperties.length === 0 ? (
+              <div className="text-center bg-white rounded-3xl border border-slate-200 text-xs text-slate-500 font-medium py-16 sm:py-20 px-4 shadow-sm">
+                No property listings match your selected date or status criteria.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {filteredProperties.map((item) => {
+                  const isExpanded = expandedPropertyId === item.id
+                  return (
+                    <div 
+                      key={item.id} 
+                      className={`bg-white rounded-3xl border transition shadow-sm overflow-hidden p-4 sm:p-5 ${isPending(item.status) ? 'border-amber-300' : 'border-slate-200'}`}
+                    >
+                      {/* Collapsed Header Bar */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Property Listing Title</span>
+                          <h3 className="font-black text-base text-slate-950 tracking-tight">{item.title || 'Untitled Listing'}</h3>
                         </div>
 
-                        <div className="lg:col-span-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 flex flex-col justify-center space-y-2">
-                          <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                            <Hash className="w-3 h-3 text-blue-600" /> Declared Transaction Payload
-                          </span>
-                          
-                          <div className="text-xs text-slate-600 font-medium truncate">
-                            Reference #: <span className="font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded text-[11px] select-all inline-block truncate max-w-full align-bottom">{item.payment_reference || 'NULL'}</span>
-                          </div>
-                          
-                          <div className="pt-0.5">
-                            {item.payment_screenshot ? (
-                              <a 
-                                href={item.payment_screenshot} 
-                                target="_blank" 
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition cursor-pointer"
-                              >
-                                <ImageIcon className="w-3 h-3" /> View Payment Screenshot ↗
-                              </a>
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shrink-0 ${isPending(item.status) ? 'bg-amber-50 text-amber-800 border border-amber-300' : item.status === 'revoked' ? 'bg-rose-50 text-rose-800 border border-rose-300' : 'bg-emerald-50 text-emerald-800 border border-emerald-300'}`}>
+                            {isPending(item.status) ? (
+                              <>
+                                <Clock className="w-3 h-3 text-amber-500" /> Pending
+                              </>
+                            ) : item.status === 'revoked' ? (
+                              <>
+                                <XCircle className="w-3 h-3 text-rose-500" /> Revoked
+                              </>
                             ) : (
-                              <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded font-semibold inline-block">
-                                No Screenshot Uploaded
-                              </span>
+                              <>
+                                <CheckCircle className="w-3 h-3 text-emerald-600" /> Live on Site
+                              </>
                             )}
-                          </div>
-                        </div>
-
-                        <div className="lg:col-span-3 flex flex-col justify-center gap-2">
-                          {isPending(item.status) && (
-                            <button
-                              type="button"
-                              disabled={actionLoadingId === item.id}
-                              onClick={() => handleApprove(item.id)}
-                              className="w-full bg-slate-950 hover:bg-slate-900 disabled:bg-slate-300 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
-                            >
-                              {actionLoadingId === item.id ? 'Activating Trigger...' : 'Approve & Publish Live'}
-                            </button>
-                          )}
-
-                          {item.status === 'LIVE ON SITE' && (
-                            <button
-                              type="button"
-                              disabled={actionLoadingId === item.id}
-                              onClick={() => handleRevokeProperty(item.id)}
-                              className="w-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold py-2 rounded-xl transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
-                            >
-                              Revoke Visibility
-                            </button>
-                          )}
+                          </span>
 
                           <button
                             type="button"
-                            disabled={actionLoadingId === item.id}
-                            onClick={() => handleDeleteProperty(item.id, item.title)}
-                            className="w-full bg-rose-50 hover:bg-rose-100 disabled:bg-slate-100 text-rose-600 border border-rose-200 text-xs font-bold py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
+                            onClick={() => toggleExpandProperty(item.id)}
+                            className="inline-flex items-center justify-center gap-1 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition cursor-pointer shrink-0"
                           >
-                            <Trash2 className="w-3.5 h-3.5" /> Delete Listing
+                            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-slate-500" />}
+                            {isExpanded ? 'Hide Details' : 'View Listing Details'}
                           </button>
                         </div>
                       </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )
+
+                      {/* Expandable Details Drawer */}
+                      {isExpanded && (
+                        <div className="pt-4 mt-4 border-t border-slate-100 grid grid-cols-1 lg:grid-cols-12 gap-4">
+                          <div className="lg:col-span-5 space-y-3">
+                            <div className="space-y-1.5 text-xs text-slate-600 font-medium">
+                              <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> <span className="truncate">{item.address || 'No Address Provided'}</span></div>
+                              <div className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-slate-400 shrink-0" /> ₱{item.price?.toLocaleString() || 0}/month • {item.property_type || 'N/A'}</div>
+                              <div className="flex items-center gap-1.5 text-slate-400 text-[11px]"><CalendarIcon className="w-3.5 h-3.5 shrink-0" /> {item.created_at ? new Date(item.created_at).toLocaleString('en-PH') : 'Date N/A'}</div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setSelectedProperty(item)}
+                              className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition cursor-pointer w-full sm:w-auto"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5 text-slate-500" /> Open Full Modal View
+                            </button>
+                          </div>
+
+                          <div className="lg:col-span-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 flex flex-col justify-center space-y-2">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                              <Hash className="w-3 h-3 text-blue-600" /> Declared Transaction Payload
+                            </span>
+                            
+                            <div className="text-xs text-slate-600 font-medium truncate">
+                              Reference #: <span className="font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded text-[11px] select-all inline-block truncate max-w-full align-bottom">{item.payment_reference || 'NULL'}</span>
+                            </div>
+                            
+                            <div className="pt-0.5">
+                              {item.payment_screenshot ? (
+                                <a 
+                                  href={item.payment_screenshot} 
+                                  target="_blank" 
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition cursor-pointer"
+                                >
+                                  <ImageIcon className="w-3 h-3" /> View Payment Screenshot ↗
+                                </a>
+                              ) : (
+                                <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded font-semibold inline-block">
+                                  No Screenshot Uploaded
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="lg:col-span-3 flex flex-col justify-center gap-2">
+                            {isPending(item.status) && (
+                              <button
+                                type="button"
+                                disabled={actionLoadingId === item.id}
+                                onClick={() => handleApprove(item.id)}
+                                className="w-full bg-slate-950 hover:bg-slate-900 disabled:bg-slate-300 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
+                              >
+                                {actionLoadingId === item.id ? 'Activating Trigger...' : 'Approve & Publish Live'}
+                              </button>
+                            )}
+
+                            {item.status === 'LIVE ON SITE' && (
+                              <button
+                                type="button"
+                                disabled={actionLoadingId === item.id}
+                                onClick={() => handleRevokeProperty(item.id)}
+                                className="w-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold py-2 rounded-xl transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                Revoke Visibility
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              disabled={actionLoadingId === item.id}
+                              onClick={() => handleDeleteProperty(item.id, item.title)}
+                              className="w-full bg-rose-50 hover:bg-rose-100 disabled:bg-slate-100 text-rose-600 border border-rose-200 text-xs font-bold py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Delete Listing
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
