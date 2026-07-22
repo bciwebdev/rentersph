@@ -385,20 +385,20 @@ export default function HomePage() {
 
       </section>
 
-      {/* SLIM & ORGANIZED SEARCH BAR */}
-      <section className="max-w-4xl mx-auto px-5 -mt-4 md:mt-0 mb-6 md:mb-8 relative z-20">
+      {/* SLIM & ORGANIZED SEARCH BAR (Slightly rounded ~10% with gap from background) */}
+      <section className="max-w-4xl mx-auto px-5 mt-6 md:mt-8 mb-6 md:mb-10 relative z-20">
         <motion.form 
           onSubmit={handleApplyFilters} 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ delay: 0.1, duration: 0.5 }} 
-          className="bg-white p-1.5 md:p-2 rounded-2xl md:rounded-full border border-slate-200/80 shadow-lg shadow-slate-200/40 flex flex-col md:flex-row items-stretch md:items-center gap-1.5 md:gap-3"
+          className="bg-white p-2 md:p-2.5 rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3"
         >
           {/* LOCATION INPUT */}
           <div className="flex items-center w-full gap-2 flex-1 min-w-0" ref={locDropdownRef}>
             <div 
               onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
-              className="flex items-center gap-3 px-3.5 md:px-5 py-1.5 md:py-2 border-b-0 md:border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-xl md:rounded-l-full transition duration-150 select-none flex-1 min-w-0"
+              className="flex items-center gap-3 px-3.5 md:px-5 py-2 border-b-0 md:border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-xl transition duration-150 select-none flex-1 min-w-0"
             >
               <MapPin className="w-4 h-4 text-slate-500 shrink-0" />
               <div className="flex-1 text-left min-w-0">
@@ -563,7 +563,7 @@ export default function HomePage() {
           <div className="hidden md:flex relative min-w-[200px]" ref={dropdownRef}>
             <div 
               onClick={() => setPropertyDropdownOpen(!propertyDropdownOpen)}
-              className="flex items-center gap-3 px-4 py-1.5 border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-xl transition duration-150 select-none w-full"
+              className="flex items-center gap-3 px-4 py-2 border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-xl transition duration-150 select-none w-full"
             >
               <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
               <div className="flex-1 text-left min-w-0">
@@ -618,7 +618,7 @@ export default function HomePage() {
 
           <button 
             type="submit" 
-            className="hidden md:flex bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-6 py-2.5 rounded-full items-center justify-center gap-2 transition duration-200 cursor-pointer shadow-md shadow-emerald-600/30 shrink-0"
+            className="hidden md:flex bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-6 py-3 rounded-xl items-center justify-center gap-2 transition duration-200 cursor-pointer shadow-md shadow-emerald-600/20 shrink-0"
           >
             <Search className="w-3.5 h-3.5" />
             <span>Apply Filters</span>
