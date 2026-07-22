@@ -45,8 +45,8 @@ export default function LandlordPortalPage() {
   const [myProperties, setMyProperties] = useState<any[]>([])
   const [currentView, setCurrentView] = useState<ViewState>('dashboard')
   
-  // Verification States
-  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('unverified')
+  // Verification States (Bypassed for posting, kept optional for profile trust)
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('approved')
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false)
   const [verificationFullName, setVerificationFullName] = useState('')
   const [idPhoto, setIdPhoto] = useState<SelectedFile | null>(null)
@@ -62,7 +62,6 @@ export default function LandlordPortalPage() {
   const [title, setTitle] = useState('')
   const [propertyType, setPropertyType] = useState('Apartment')
   const [price, setPrice] = useState('')
-  const [priceType, setPriceType] = useState<'monthly' | 'daily'>('monthly')
   const [bedrooms, setBedrooms] = useState('1')
   const [bathrooms, setBathrooms] = useState('1')
   const [area, setArea] = useState('30')
@@ -84,7 +83,6 @@ export default function LandlordPortalPage() {
   const [editTitle, setEditTitle] = useState('')
   const [editPropertyType, setEditPropertyType] = useState('Apartment')
   const [editPrice, setEditPrice] = useState('')
-  const [editPriceType, setEditPriceType] = useState<'monthly' | 'daily'>('monthly')
   const [editBedrooms, setEditBedrooms] = useState('1')
   const [editBathrooms, setEditBathrooms] = useState('1')
   const [editArea, setEditArea] = useState('30')
@@ -129,22 +127,6 @@ export default function LandlordPortalPage() {
           .eq('id', user.id)
           .single()
 
-        const { data: verifications } = await supabase
-          .from('landlord_verifications')
-          .select('status')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-
-        const latestRecord = verifications && verifications.length > 0 ? verifications[0] : null
-
-        if (profile?.is_verified || latestRecord?.status === 'approved') {
-          setVerificationStatus('approved')
-        } else if (latestRecord?.status === 'pending') {
-          setVerificationStatus('pending')
-        } else {
-          setVerificationStatus('unverified')
-        }
-
         if (profile?.full_name) {
           setVerificationFullName(profile.full_name)
         }
@@ -182,14 +164,6 @@ export default function LandlordPortalPage() {
   }
 
   const handleCreateClick = () => {
-    if (verificationStatus !== 'approved') {
-      if (verificationStatus === 'unverified') {
-        setIsVerificationModalOpen(true)
-      } else {
-        alert("Your identity verification request is currently under administrative review. You will be able to post listings once approved.")
-      }
-      return
-    }
     setCurrentView('create')
   }
 
@@ -270,7 +244,6 @@ export default function LandlordPortalPage() {
         .eq('id', userId)
 
       setIsVerificationModalOpen(false)
-      setVerificationStatus('pending')
     } catch (err: any) {
       setVerificationError(err.message || "An error occurred during verification submission.")
     } finally {
@@ -323,7 +296,6 @@ export default function LandlordPortalPage() {
     setEditTitle(property.title || '')
     setEditPropertyType(property.property_type || 'Apartment')
     setEditPrice(property.price?.toString() || '')
-    setEditPriceType(property.price_type || 'monthly')
     setEditBedrooms(property.bedrooms?.toString() || '1')
     setEditBathrooms(property.bathrooms?.toString() || '1')
     setEditArea(property.area_sqm?.toString() || '30')
@@ -351,7 +323,6 @@ export default function LandlordPortalPage() {
           title: editTitle.trim(),
           property_type: editPropertyType,
           price: parsedPrice,
-          price_type: editPriceType,
           bedrooms: parseInt(editBedrooms, 10) || 0,
           bathrooms: parseInt(editBathrooms, 10) || 0,
           area_sqm: parsedArea,
@@ -374,7 +345,6 @@ export default function LandlordPortalPage() {
               title: editTitle.trim(),
               property_type: editPropertyType,
               price: parsedPrice,
-              price_type: editPriceType,
               bedrooms: parseInt(editBedrooms, 10) || 0,
               bathrooms: parseInt(editBathrooms, 10) || 0,
               area_sqm: parsedArea,
@@ -404,7 +374,6 @@ export default function LandlordPortalPage() {
     setTitle('')
     setPropertyType('Apartment')
     setPrice('')
-    setPriceType('monthly')
     setBedrooms('1')
     setBathrooms('1')
     setArea('30')
@@ -421,11 +390,6 @@ export default function LandlordPortalPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (verificationStatus !== 'approved') {
-      alert('You must be a verified landlord to create a listing.')
-      return
-    }
 
     setIsSubmitting(true)
     setErrorMessage(null)
@@ -463,7 +427,6 @@ export default function LandlordPortalPage() {
             title: title.trim(),
             property_type: propertyType,
             price: parsedPrice, 
-            price_type: priceType,
             bedrooms: parseInt(bedrooms, 10) || 0,
             bathrooms: parseInt(bathrooms, 10) || 0,
             area_sqm: parseFloat(area) || 0,
@@ -479,7 +442,7 @@ export default function LandlordPortalPage() {
             boosting_tier: boostingOption,
             total_payable: totalAmount,
             expires_at: calculatedExpiry.toISOString(),
-            status: 'pending'
+            status: 'approved'
           }
         ])
 
@@ -489,9 +452,10 @@ export default function LandlordPortalPage() {
       if (totalAmount > 0) {
         router.push(`/landlord/payment?total=${totalAmount}`)
       } else {
-        alert("Listing successfully submitted for approval!")
+        alert("Listing successfully published live!")
         setCurrentView('dashboard')
         resetForm()
+        window.location.reload()
       }
 
     } catch (err: any) {
@@ -513,11 +477,9 @@ export default function LandlordPortalPage() {
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#0f172a]">
                 {currentView === 'dashboard' ? 'Landlord Dashboard' : 'Create Rental Listing'}
               </h1>
-              {verificationStatus === 'approved' && (
-                <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] font-black px-2.5 py-1 rounded-full border border-emerald-200 shrink-0">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#00aa4f]" /> Verified
-                </span>
-              )}
+              <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] font-black px-2.5 py-1 rounded-full border border-emerald-200 shrink-0">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#00aa4f]" /> Email Verified Account
+              </span>
             </div>
             <p className="text-xs text-slate-400">
               {currentView === 'dashboard' ? 'Manage your registered active property profiles.' : 'Fill out the details below to add your unit to rentersPH.'}
@@ -548,48 +510,6 @@ export default function LandlordPortalPage() {
 
       <main className="max-w-4xl mx-auto px-4 mt-8">
         
-        {verificationStatus === 'unverified' && (
-          <div className="mb-6 bg-amber-50/80 border border-amber-200/80 p-5 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
-            <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 bg-amber-100/80 text-amber-700 rounded-2xl flex items-center justify-center shrink-0 mt-0.5">
-                <ShieldAlert className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-black text-amber-900">Identity Verification Required</h4>
-                <p className="text-xs text-amber-700/90 mt-0.5">
-                  You cannot post rental listings yet. Please verify your identity to ensure safety across the rentersPH workspace.
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsVerificationModalOpen(true)}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-black text-xs px-5 py-3 rounded-xl transition shadow-sm shrink-0 uppercase tracking-wider cursor-pointer"
-            >
-              GET VERIFIED NOW
-            </button>
-          </div>
-        )}
-
-        {verificationStatus === 'pending' && (
-          <div className="mb-6 bg-blue-50/80 border border-blue-200/80 p-5 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
-            <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 bg-blue-100/80 text-blue-700 rounded-2xl flex items-center justify-center shrink-0 mt-0.5">
-                <Clock className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-black text-blue-900">Verification Under Review</h4>
-                <p className="text-xs text-blue-700/90 mt-0.5">
-                  Your identity verification details have been submitted. You can post rental listings once an administrator approves your verification.
-                </p>
-              </div>
-            </div>
-            <span className="bg-blue-100 text-blue-800 border border-blue-200 font-black text-xs px-4 py-2.5 rounded-xl shrink-0 uppercase tracking-wider">
-              PENDING APPROVAL
-            </span>
-          </div>
-        )}
-
         {currentView === 'dashboard' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center bg-white border border-[#f1f5f9] p-5 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
@@ -600,11 +520,7 @@ export default function LandlordPortalPage() {
               <button
                 type="button"
                 onClick={handleCreateClick}
-                className={`font-bold text-xs px-4 py-3 rounded-xl flex items-center gap-1.5 transition shadow-sm cursor-pointer ${
-                  verificationStatus === 'approved' 
-                    ? 'bg-[#00aa4f] hover:bg-[#009444] text-white' 
-                    : 'bg-slate-200 text-slate-500 cursor-not-allowed'
-                }`}
+                className="font-bold text-xs px-4 py-3 rounded-xl flex items-center gap-1.5 transition shadow-sm cursor-pointer bg-[#00aa4f] hover:bg-[#009444] text-white"
               >
                 <Plus className="w-4 h-4" /> Add New Listing
               </button>
@@ -643,15 +559,11 @@ export default function LandlordPortalPage() {
                         <div className="p-5 space-y-2">
                           <div className="flex justify-between items-start gap-2">
                             <h4 className="text-sm font-black text-slate-800 line-clamp-1">{property.title}</h4>
-                            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                              property.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
-                            }`}>
-                              {property.status === 'approved' ? 'LIVE ON SITE' : (property.status || 'pending')}
+                            <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100">
+                              LIVE ON SITE
                             </span>
                           </div>
-                          <p className="text-xs font-black text-[#00aa4f]">
-                            ₱{property.price.toLocaleString()} / {property.price_type === 'daily' ? 'day' : 'mo'}
-                          </p>
+                          <p className="text-xs font-black text-[#00aa4f]">₱{property.price.toLocaleString()} / mo</p>
                           <div className="flex items-center gap-1.5 text-slate-400 text-xs">
                             <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
                             <span className="truncate">{property.manual_address}</span>
@@ -899,25 +811,13 @@ export default function LandlordPortalPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                      PRICE ({priceType === 'daily' ? 'PHP / DAY' : 'PHP / MO'})
-                    </label>
-                    <select
-                      value={priceType}
-                      onChange={(e) => setPriceType(e.target.value as 'monthly' | 'daily')}
-                      className="text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md outline-none cursor-pointer border border-slate-200 transition"
-                    >
-                      <option value="monthly">Monthly Rate</option>
-                      <option value="daily">Per Day Rate</option>
-                    </select>
-                  </div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">PRICE (PHP / MO)</label>
                   <input 
                     type="number"
                     required
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    placeholder={priceType === 'daily' ? '1500' : '18500'}
+                    placeholder="18500"
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   />
                 </div>
@@ -1147,132 +1047,13 @@ export default function LandlordPortalPage() {
                   ? 'Processing...' 
                   : totalAmount > 0 
                     ? `Proceed to Payment Allocation (₱${totalAmount})` 
-                    : 'Submit Free Listing'}
+                    : 'Publish Listing Live'}
               </button>
             </div>
           </form>
         )}
 
       </main>
-
-      {isVerificationModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative my-8">
-            <button
-              type="button"
-              onClick={() => setIsVerificationModalOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-              <div className="w-10 h-10 bg-emerald-50 text-[#00aa4f] rounded-2xl flex items-center justify-center shrink-0">
-                <UserCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-black text-slate-800">Landlord Identity Verification</h3>
-                <p className="text-xs text-slate-400">Complete verification to unlock property listing privileges.</p>
-              </div>
-            </div>
-
-            {verificationError && (
-              <div className="mt-4 p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-xs font-bold">
-                {verificationError}
-              </div>
-            )}
-
-            <form onSubmit={handleVerificationSubmit} className="space-y-5 mt-5">
-              
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-600 flex justify-between">
-                  <span>Full Name (as stated on Valid ID)</span>
-                  <span className="text-rose-500 font-normal text-[11px]">Must match ID</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={verificationFullName}
-                  onChange={(e) => setVerificationFullName(e.target.value)}
-                  placeholder="e.g., Juan Dela Cruz"
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
-                />
-                <p className="text-[11px] text-slate-400">
-                  Your Landlord Name on property listings will be matched against this name.
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-600">1. Photo of Valid Government ID</label>
-                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-4 bg-slate-50/50 hover:bg-slate-50 transition text-center relative">
-                  {idPhoto ? (
-                    <div className="relative group">
-                      <img src={idPhoto.previewUrl} alt="Valid ID Preview" className="h-32 mx-auto rounded-xl object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setIdPhoto(null)}
-                        className="absolute top-1 right-1 bg-rose-600 text-white rounded-full p-1 shadow hover:bg-rose-700"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="cursor-pointer flex flex-col items-center justify-center py-2">
-                      <Upload className="w-6 h-6 text-slate-400 mb-1" />
-                      <span className="text-xs font-bold text-slate-600">Upload Valid ID Photo</span>
-                      <span className="text-[10px] text-slate-400">Passport, Driver's License, UMID, National ID</span>
-                      <input type="file" accept="image/*" onChange={handleIdPhotoChange} className="hidden" />
-                    </label>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-600">2. Photo of You Holding the Same Valid ID</label>
-                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-4 bg-slate-50/50 hover:bg-slate-50 transition text-center relative">
-                  {selfieWithIdPhoto ? (
-                    <div className="relative group">
-                      <img src={selfieWithIdPhoto.previewUrl} alt="Selfie with ID Preview" className="h-32 mx-auto rounded-xl object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setSelfieWithIdPhoto(null)}
-                        className="absolute top-1 right-1 bg-rose-600 text-white rounded-full p-1 shadow hover:bg-rose-700"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="cursor-pointer flex flex-col items-center justify-center py-2">
-                      <Camera className="w-6 h-6 text-slate-400 mb-1" />
-                      <span className="text-xs font-bold text-slate-600">Upload Selfie holding ID</span>
-                      <span className="text-[10px] text-slate-400">Make sure face and ID details are clearly visible</span>
-                      <input type="file" accept="image/*" onChange={handleSelfiePhotoChange} className="hidden" />
-                    </label>
-                  )}
-                </div>
-              </div>
-
-              <div className="pt-2 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsVerificationModalOpen(false)}
-                  className="w-1/2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingVerification}
-                  className="w-1/2 py-3 bg-[#00aa4f] hover:bg-[#009444] text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-md disabled:opacity-50 flex items-center justify-center gap-1.5"
-                >
-                  {isSubmittingVerification ? 'Submitting...' : 'Submit Verification'}
-                </button>
-              </div>
-
-            </form>
-          </div>
-        </div>
-      )}
 
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -1301,19 +1082,7 @@ export default function LandlordPortalPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-500">
-                      Price ({editPriceType === 'daily' ? 'PHP / DAY' : 'PHP / MO'})
-                    </label>
-                    <select
-                      value={editPriceType}
-                      onChange={(e) => setEditPriceType(e.target.value as 'monthly' | 'daily')}
-                      className="text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-1.5 py-0.5 rounded outline-none cursor-pointer border border-slate-200 transition"
-                    >
-                      <option value="monthly">Monthly</option>
-                      <option value="daily">Per Day</option>
-                    </select>
-                  </div>
+                  <label className="text-xs font-bold text-slate-500">Price (PHP)</label>
                   <input 
                     type="number" 
                     value={editPrice} 
