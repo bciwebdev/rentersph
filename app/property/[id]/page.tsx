@@ -124,12 +124,14 @@ export default function PropertyDetailsPage() {
             <span className="hidden lg:inline text-xs font-bold ml-1">Back to Discover feed</span>
           </a>
 
-          {/* Logo (Centered on Mobile) */}
-          <a href="/" className="lg:hidden flex items-center gap-1.5 font-black text-lg text-emerald-600 tracking-tight">
-            <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-xs">
-              🏠
-            </div>
-            <span className="text-slate-900">renters<span className="text-emerald-600">ph</span></span>
+          {/* Official Logo (Centered on Mobile) */}
+          <a href="/" className="lg:hidden flex items-center gap-2 font-black text-xl text-slate-900 tracking-tight">
+            <img 
+              src="/icon.png" 
+              alt="rentersph" 
+              className="w-7 h-7 object-contain rounded-lg" 
+            />
+            <span>renters<span className="text-emerald-600">ph</span></span>
           </a>
 
           {/* Action Buttons */}
