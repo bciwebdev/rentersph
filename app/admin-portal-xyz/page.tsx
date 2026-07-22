@@ -273,6 +273,40 @@ export default function AdminVerificationDashboard() {
     }
   }
 
+  const handleDeleteLandlord = async (id: string, name: string, userId: string) => {
+    if (userEmail !== ALLOWED_ADMIN_EMAIL) {
+      alert('Unauthorized: Only root admin can perform deletions.')
+      return
+    }
+
+    const confirmed = window.confirm(`Are you sure you want to permanently delete landlord "${name || 'this record'}"?`)
+    if (!confirmed) return
+
+    setActionLoadingId(id)
+    try {
+      // 1. Revert verification status in profiles
+      await supabase
+        .from('profiles')
+        .update({ is_verified: false })
+        .eq('id', userId)
+
+      // 2. Delete verification record
+      const { error } = await supabase
+        .from('landlord_verifications')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      setVerifications(prev => prev.filter(item => item.id !== id))
+      alert(`Landlord "${name}" deleted successfully.`)
+    } catch (err: any) {
+      alert(`Delete rejected: ${err.message}`)
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
   const handleDeleteProperty = async (id: string, title: string) => {
     if (userEmail !== ALLOWED_ADMIN_EMAIL) {
       alert('Unauthorized: Only root admin can perform deletions.')
@@ -675,6 +709,15 @@ export default function AdminVerificationDashboard() {
                         >
                           {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-slate-500" />}
                           {isExpanded ? 'Hide Details' : 'View Verification Details'}
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={actionLoadingId === ver.id}
+                          onClick={() => handleDeleteLandlord(ver.id, ver.full_name, ver.user_id)}
+                          className="inline-flex items-center justify-center gap-1 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-2 rounded-xl transition cursor-pointer shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Delete
                         </button>
                       </div>
                     </div>
