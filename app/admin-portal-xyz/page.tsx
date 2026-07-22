@@ -284,25 +284,37 @@ export default function AdminVerificationDashboard() {
 
     setActionLoadingId(id)
     try {
-      // 1. Revert verification status in profiles
+      // 1. Revert verification status in profiles table
       const { error: profErr } = await supabase
         .from('profiles')
         .update({ is_verified: false })
         .eq('id', userId)
 
-      if (profErr) throw profErr
+      if (profErr) {
+        console.error('Profile update error:', profErr)
+        throw new Error(`Profile update failed: ${profErr.message}`)
+      }
 
-      // 2. Delete ALL verification records associated with this landlord user_id
-      const { error: verErr } = await supabase
+      // 2. Delete ALL verification records for this user_id and verify explicit deleted count
+      const { error: verErr, count } = await supabase
         .from('landlord_verifications')
-        .delete()
+        .delete({ count: 'exact' })
         .eq('user_id', userId)
 
-      if (verErr) throw verErr
+      if (verErr) {
+        console.error('Verification delete error:', verErr)
+        throw new Error(`Database delete failed: ${verErr.message}`)
+      }
 
-      // Remove all records for this user_id from local state
+      // Strict check: catch silent RLS policy blocks
+      if (count === 0) {
+        alert('Deletion Failed: Supabase returned 0 deleted rows. Please execute the SQL RLS policies in Supabase SQL Editor.')
+        return
+      }
+
+      // 3. Remove from UI state only when database row deletion is confirmed
       setVerifications(prev => prev.filter(item => item.user_id !== userId))
-      alert(`Landlord "${name}" deleted successfully.`)
+      alert(`Landlord "${name}" deleted successfully from database (${count} record(s) removed).`)
     } catch (err: any) {
       alert(`Delete rejected: ${err.message}`)
     } finally {
@@ -757,7 +769,7 @@ export default function AdminVerificationDashboard() {
           )
         )}
 
-        {/* PROPERTY LISTINGS ACCORDION DATA GRID (ALPHABETICAL) */}
+        {/* PROPERTY LISTINGS ACCORDION DATA GRID */}
         {(filterStatus === 'pending' || filterStatus === 'active' || filterStatus === 'all') && (
           filteredProperties.length === 0 ? (
             <div className="text-center bg-white rounded-3xl border border-slate-200 text-xs text-slate-500 font-medium py-16 sm:py-20 px-4 shadow-sm">
