@@ -411,7 +411,7 @@ export default function HomePage() {
                     if (!locationDropdownOpen) setLocationDropdownOpen(true);
                   }} 
                   type="text" 
-                  placeholder="enter the city" 
+                  placeholder="Enter Location" 
                   className="w-full bg-transparent text-sm md:text-xs font-semibold md:font-bold text-slate-800 placeholder-slate-400 outline-none truncate" 
                 />
               </div>
