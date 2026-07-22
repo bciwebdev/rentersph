@@ -59,6 +59,7 @@ export default function AdminVerificationDashboard() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
   const [expandedVerificationId, setExpandedVerificationId] = useState<string | null>(null)
   const [expandedPropertyId, setExpandedPropertyId] = useState<string | null>(null)
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false)
   const [filterStatus, setFilterStatus] = useState<'pending' | 'active' | 'pending_verifications' | 'approved_verifications' | 'reports' | 'all'>('approved_verifications')
   
   const [email, setEmail] = useState('')
@@ -399,43 +400,60 @@ export default function AdminVerificationDashboard() {
     <div className="min-h-screen bg-slate-50/60 text-slate-900 font-sans antialiased py-6 sm:py-10 px-3 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
         
-        {/* Admin Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 sm:gap-6 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="space-y-1">
-            <span className="inline-block text-[10px] font-black uppercase tracking-wider bg-slate-950 text-white px-2.5 py-1 rounded-md">
-              Root Administrator Control
-            </span>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight pt-1">Payment & Security Queue</h1>
-            <p className="text-xs text-slate-400 font-medium max-w-xl">Review GCash payments, landlord identity submissions, and scam reports from renters.</p>
-          </div>
-          
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-            <div className="flex-1 sm:flex-none flex items-center gap-2.5 rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 sm:px-4 py-2 h-10 min-w-[140px]">
-              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm shrink-0">
-                <Banknote className="h-3 w-3" />
-              </div>
-              <div className="truncate">
-                <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-emerald-700/80 leading-none">
-                  Transaction Total
-                </p>
-                <p className="text-xs font-black text-emerald-950 pt-0.5 leading-none truncate">
-                  {formattedTotal}
-                </p>
-              </div>
+        {/* Collapsible Admin Header */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-300">
+          <div className="p-4 sm:p-6 flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <span className="inline-block text-[10px] font-black uppercase tracking-wider bg-slate-950 text-white px-2.5 py-1 rounded-md">
+                Root Administrator Control
+              </span>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight pt-1">Payment & Security Queue</h1>
+              {!isHeaderCollapsed && (
+                <p className="text-xs text-slate-400 font-medium max-w-xl transition-all">Review GCash payments, landlord identity submissions, and scam reports from renters.</p>
+              )}
             </div>
 
-            <div className="flex-1 sm:flex-none text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-3 sm:px-4 rounded-xl flex items-center h-10 truncate min-w-[160px]">
-              <span className="shrink-0">Admin:&nbsp;</span>
-              <span className="font-bold text-slate-900 truncate">{userEmail}</span>
-            </div>
-            
-            <button 
-              onClick={handleAdminSignOut}
-              className="w-full sm:w-auto px-4 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer h-10 shrink-0"
+            <button
+              type="button"
+              onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer shrink-0 mt-1"
+              title={isHeaderCollapsed ? "Expand Dashboard Header" : "Collapse Dashboard Header"}
             >
-              <LogOut className="w-3.5 h-3.5" /> <span className="inline">Exit Portal</span>
+              {isHeaderCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
             </button>
           </div>
+
+          {!isHeaderCollapsed && (
+            <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-0 border-t border-slate-100 mt-2 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full md:w-auto pt-3">
+                <div className="flex-1 sm:flex-none flex items-center gap-2.5 rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 sm:px-4 py-2 h-10 min-w-[140px]">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm shrink-0">
+                    <Banknote className="h-3 w-3" />
+                  </div>
+                  <div className="truncate">
+                    <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-emerald-700/80 leading-none">
+                      Transaction Total
+                    </p>
+                    <p className="text-xs font-black text-emerald-950 pt-0.5 leading-none truncate">
+                      {formattedTotal}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex-1 sm:flex-none text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-3 sm:px-4 rounded-xl flex items-center h-10 truncate min-w-[160px]">
+                  <span className="shrink-0">Admin:&nbsp;</span>
+                  <span className="font-bold text-slate-900 truncate">{userEmail}</span>
+                </div>
+                
+                <button 
+                  onClick={handleAdminSignOut}
+                  className="w-full sm:w-auto px-4 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer h-10 shrink-0"
+                >
+                  <LogOut className="w-3.5 h-3.5" /> <span className="inline">Exit Portal</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Filter Toolbar Controls */}
