@@ -386,7 +386,7 @@ export default function HomePage() {
       </section>
 
       {/* SLIM & ORGANIZED SEARCH BAR */}
-      <section className="max-w-4xl mx-auto px-5 -mt-4 md:mt-0 mb-10 md:mb-16 relative z-20">
+      <section className="max-w-4xl mx-auto px-5 -mt-4 md:mt-0 mb-6 md:mb-8 relative z-20">
         <motion.form 
           onSubmit={handleApplyFilters} 
           initial={{ opacity: 0, y: 20 }} 
@@ -626,14 +626,37 @@ export default function HomePage() {
         </motion.form>
       </section>
 
-      {/* CATEGORY ICON GRID */}
+      {/* CATEGORY SELECTOR SECTION */}
       <section className="max-w-[1600px] mx-auto px-5 sm:px-6 lg:px-8 mb-10">
-        <div className="grid grid-cols-5 gap-2.5 sm:gap-4 max-w-2xl mx-auto md:max-w-none">
+        
+        {/* DESKTOP UI ONLY: Compact, low-profile horizontal text pills */}
+        <div className="hidden md:flex items-center justify-center gap-2 flex-wrap">
           {propertyTypes.filter(t => t.label !== 'All Types').map((type) => {
             const isSelected = propertyType === type.label;
             return (
               <button
-                key={type.label}
+                key={`desktop-${type.label}`}
+                onClick={() => setPropertyType(isSelected ? 'All Types' : type.label)}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-extrabold transition-all duration-150 border cursor-pointer ${
+                  isSelected
+                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
+                    : 'bg-white border-slate-200/80 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                }`}
+              >
+                <type.icon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-slate-500'}`} />
+                <span>{type.label}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* MOBILE UI ONLY: Original grid design preserved strictly unchanged */}
+        <div className="grid md:hidden grid-cols-5 gap-2.5 sm:gap-4 max-w-2xl mx-auto">
+          {propertyTypes.filter(t => t.label !== 'All Types').map((type) => {
+            const isSelected = propertyType === type.label;
+            return (
+              <button
+                key={`mobile-${type.label}`}
                 onClick={() => setPropertyType(isSelected ? 'All Types' : type.label)}
                 className={`flex flex-col items-center justify-center py-3.5 px-1.5 sm:py-4 sm:px-2 rounded-2xl transition-all duration-200 border ${
                   isSelected
@@ -651,6 +674,7 @@ export default function HomePage() {
             )
           })}
         </div>
+
       </section>
 
       {/* FEATURED & AVAILABLE LISTINGS */}
