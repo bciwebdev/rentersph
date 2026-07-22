@@ -58,6 +58,7 @@ export default function AdminVerificationDashboard() {
   
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
   const [expandedVerificationId, setExpandedVerificationId] = useState<string | null>(null)
+  const [expandedPropertyId, setExpandedPropertyId] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<'pending' | 'active' | 'pending_verifications' | 'approved_verifications' | 'reports' | 'all'>('approved_verifications')
   
   const [email, setEmail] = useState('')
@@ -307,16 +308,22 @@ export default function AdminVerificationDashboard() {
     setExpandedVerificationId(prev => prev === id ? null : id)
   }
 
+  const toggleExpandProperty = (id: string) => {
+    setExpandedPropertyId(prev => prev === id ? null : id)
+  }
+
   const isPending = (status: string) => {
     return status === 'pending' || status === 'pending_verification'
   }
 
-  const filteredProperties = properties.filter(item => {
-    if (filterStatus === 'all') return true
-    if (filterStatus === 'pending') return isPending(item.status)
-    if (filterStatus === 'active') return item.status === 'LIVE ON SITE'
-    return false
-  })
+  const filteredProperties = properties
+    .filter(item => {
+      if (filterStatus === 'all') return true
+      if (filterStatus === 'pending') return isPending(item.status)
+      if (filterStatus === 'active') return item.status === 'LIVE ON SITE'
+      return false
+    })
+    .sort((a, b) => (a.title || '').localeCompare(b.title || ''))
 
   const pendingVerifications = verifications.filter(v => v.status === 'pending')
   const approvedVerifications = verifications.filter(v => v.status === 'approved')
@@ -686,121 +693,138 @@ export default function AdminVerificationDashboard() {
           )
         )}
 
-        {/* PROPERTY LISTINGS DATA GRID */}
+        {/* PROPERTY LISTINGS ACCORDION DATA GRID (ALPHABETICAL) */}
         {(filterStatus === 'pending' || filterStatus === 'active' || filterStatus === 'all') && (
           filteredProperties.length === 0 ? (
             <div className="text-center bg-white rounded-3xl border border-slate-200 text-xs text-slate-400 font-medium py-16 sm:py-20 px-4">
               No property listings currently match this status filter profile.
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:gap-6">
-              {filteredProperties.map((item) => (
-                <div 
-                  key={item.id} 
-                  className={`bg-white rounded-3xl border transition shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 ${isPending(item.status) ? 'border-amber-200 hover:border-amber-300' : 'border-slate-200'}`}
-                >
-                  
-                  <div className="p-4 sm:p-6 lg:col-span-5 space-y-3 border-b lg:border-b-0 lg:border-r border-slate-100 flex flex-col justify-between">
-                    <div className="space-y-2 sm:space-y-3">
-                      <h3 className="font-black text-base text-slate-950 tracking-tight leading-tight">{item.title || 'Untitled Listing'}</h3>
-                      <div className="space-y-1.5 text-xs text-slate-500 font-medium">
-                        <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> <span className="truncate">{item.address || 'No Address Provided'}</span></div>
-                        <div className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-slate-400 shrink-0" /> ₱{item.price?.toLocaleString() || 0}/month • {item.property_type || 'N/A'}</div>
+            <div className="grid grid-cols-1 gap-3">
+              {filteredProperties.map((item) => {
+                const isExpanded = expandedPropertyId === item.id
+                return (
+                  <div 
+                    key={item.id} 
+                    className={`bg-white rounded-3xl border transition shadow-sm overflow-hidden p-4 sm:p-5 ${isPending(item.status) ? 'border-amber-200' : 'border-slate-200'}`}
+                  >
+                    {/* Collapsed Header Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Property Listing Title</span>
+                        <h3 className="font-black text-base text-slate-950 tracking-tight">{item.title || 'Untitled Listing'}</h3>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shrink-0 ${isPending(item.status) ? 'bg-amber-50 text-amber-700 border border-amber-200' : item.status === 'revoked' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+                          {isPending(item.status) ? (
+                            <>
+                              <Clock className="w-3 h-3 text-amber-500" /> Pending
+                            </>
+                          ) : item.status === 'revoked' ? (
+                            <>
+                              <XCircle className="w-3 h-3 text-rose-500" /> Revoked
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-3 h-3 text-emerald-500" /> Live on Site
+                            </>
+                          )}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => toggleExpandProperty(item.id)}
+                          className="inline-flex items-center justify-center gap-1 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition cursor-pointer shrink-0"
+                        >
+                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-slate-500" />}
+                          {isExpanded ? 'Hide Details' : 'View Listing Details'}
+                        </button>
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setSelectedProperty(item)}
-                      className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition cursor-pointer w-full sm:w-auto self-start mt-2"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-slate-500" /> View Listing Details
-                    </button>
-                  </div>
+                    {/* Expandable Details Drawer */}
+                    {isExpanded && (
+                      <div className="pt-4 mt-4 border-t border-slate-100 grid grid-cols-1 lg:grid-cols-12 gap-4">
+                        <div className="lg:col-span-5 space-y-3">
+                          <div className="space-y-1.5 text-xs text-slate-500 font-medium">
+                            <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> <span className="truncate">{item.address || 'No Address Provided'}</span></div>
+                            <div className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-slate-400 shrink-0" /> ₱{item.price?.toLocaleString() || 0}/month • {item.property_type || 'N/A'}</div>
+                          </div>
 
-                  <div className="p-4 sm:p-6 lg:col-span-4 bg-slate-50/40 flex flex-col justify-center space-y-2 border-b lg:border-b-0 lg:border-r border-slate-100">
-                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                      <Hash className="w-3 h-3 text-blue-500" /> Declared Transaction Payload
-                    </span>
-                    
-                    <div className="space-y-2 bg-white p-3 rounded-xl border border-slate-200">
-                      <div className="text-xs text-slate-500 font-medium truncate">
-                        Reference #: <span className="font-mono font-bold text-blue-600 bg-blue-50/50 px-1.5 py-0.5 rounded text-[11px] select-all inline-block truncate max-w-full align-bottom">{item.payment_reference || 'NULL'}</span>
-                      </div>
-                      
-                      <div className="pt-1">
-                        {item.payment_screenshot ? (
-                          <a 
-                            href={item.payment_screenshot} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition cursor-pointer"
+                          <button
+                            type="button"
+                            onClick={() => setSelectedProperty(item)}
+                            className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition cursor-pointer w-full sm:w-auto"
                           >
-                            <ImageIcon className="w-3 h-3" /> View Payment Screenshot ↗
-                          </a>
-                        ) : (
-                          <span className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded font-semibold inline-block">
-                            No Screenshot Uploaded
+                            <ExternalLink className="w-3.5 h-3.5 text-slate-500" /> Open Full Modal View
+                          </button>
+                        </div>
+
+                        <div className="lg:col-span-4 bg-slate-50/60 p-3.5 rounded-2xl border border-slate-200/80 flex flex-col justify-center space-y-2">
+                          <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                            <Hash className="w-3 h-3 text-blue-500" /> Declared Transaction Payload
                           </span>
-                        )}
+                          
+                          <div className="text-xs text-slate-500 font-medium truncate">
+                            Reference #: <span className="font-mono font-bold text-blue-600 bg-blue-50/50 px-1.5 py-0.5 rounded text-[11px] select-all inline-block truncate max-w-full align-bottom">{item.payment_reference || 'NULL'}</span>
+                          </div>
+                          
+                          <div className="pt-0.5">
+                            {item.payment_screenshot ? (
+                              <a 
+                                href={item.payment_screenshot} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition cursor-pointer"
+                              >
+                                <ImageIcon className="w-3 h-3" /> View Payment Screenshot ↗
+                              </a>
+                            ) : (
+                              <span className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded font-semibold inline-block">
+                                No Screenshot Uploaded
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="lg:col-span-3 flex flex-col justify-center gap-2">
+                          {isPending(item.status) && (
+                            <button
+                              type="button"
+                              disabled={actionLoadingId === item.id}
+                              onClick={() => handleApprove(item.id)}
+                              className="w-full bg-slate-950 hover:bg-slate-900 disabled:bg-slate-300 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              {actionLoadingId === item.id ? 'Activating Trigger...' : 'Approve & Publish Live'}
+                            </button>
+                          )}
+
+                          {item.status === 'LIVE ON SITE' && (
+                            <button
+                              type="button"
+                              disabled={actionLoadingId === item.id}
+                              onClick={() => handleRevokeProperty(item.id)}
+                              className="w-full bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold py-2 rounded-xl transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
+                            >
+                              Revoke Visibility
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            disabled={actionLoadingId === item.id}
+                            onClick={() => handleDeleteProperty(item.id, item.title)}
+                            className="w-full bg-rose-50 hover:bg-rose-100 disabled:bg-slate-100 text-rose-600 border border-rose-200 text-xs font-bold py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Delete Listing
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 sm:p-6 lg:col-span-3 flex flex-col justify-center items-stretch gap-2.5 sm:gap-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Status</span>
-                      <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${isPending(item.status) ? 'bg-amber-50 text-amber-700 border border-amber-200' : item.status === 'revoked' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
-                        {isPending(item.status) ? (
-                          <>
-                            <Clock className="w-3 h-3 text-amber-500" /> Pending Approval
-                          </>
-                        ) : item.status === 'revoked' ? (
-                          <>
-                            <XCircle className="w-3 h-3 text-rose-500" /> Revoked
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="w-3 h-3 text-emerald-500" /> Live on Site
-                          </>
-                        )}
-                      </span>
-                    </div>
-
-                    {isPending(item.status) && (
-                      <button
-                        type="button"
-                        disabled={actionLoadingId === item.id}
-                        onClick={() => handleApprove(item.id)}
-                        className="w-full bg-slate-950 hover:bg-slate-900 disabled:bg-slate-300 text-white text-xs font-bold py-2.5 sm:py-3 rounded-xl shadow-sm transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        {actionLoadingId === item.id ? 'Activating Trigger...' : 'Approve & Publish Live'}
-                      </button>
                     )}
-
-                    {item.status === 'LIVE ON SITE' && (
-                      <button
-                        type="button"
-                        disabled={actionLoadingId === item.id}
-                        onClick={() => handleRevokeProperty(item.id)}
-                        className="w-full bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold py-2 rounded-xl transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
-                      >
-                        Revoke Visibility
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      disabled={actionLoadingId === item.id}
-                      onClick={() => handleDeleteProperty(item.id, item.title)}
-                      className="w-full bg-rose-50 hover:bg-rose-100 disabled:bg-slate-100 text-rose-600 border border-rose-200 text-xs font-bold py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Delete Listing
-                    </button>
                   </div>
-
-                </div>
-              ))}
+                )
+              })}
             </div>
           )
         )}
