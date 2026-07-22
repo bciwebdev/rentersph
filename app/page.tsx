@@ -366,17 +366,17 @@ export default function HomePage() {
 
         {/* HERO CONTENT */}
         <div className="max-w-[1600px] mx-auto px-5 sm:px-6 lg:px-8 relative z-10">
-          <div className="max-w-[260px] sm:max-w-md md:max-w-xl text-left">
+          <div className="max-w-[260px] sm:max-w-md md:max-w-xl lg:max-w-2xl text-left">
             <motion.div 
               initial={{ opacity: 0, y: 15 }} 
               animate={{ opacity: 1, y: 0 }} 
               transition={{ duration: 0.4 }}
             >
-              <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-[1.15] mb-2.5">
+              <h1 className="text-2xl sm:text-4xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight leading-[1.1] mb-2.5">
                 Find Rentals <br />
                 <span className="text-emerald-600">10X Faster</span>
               </h1>
-              <p className="text-slate-500 font-medium text-xs sm:text-sm md:text-base leading-relaxed">
+              <p className="text-slate-500 font-medium text-xs sm:text-sm md:text-lg lg:text-xl leading-relaxed">
                 Discover verified rental apartments, dynamic condominiums, and residential boarding rooms seamlessly.
               </p>
             </motion.div>
