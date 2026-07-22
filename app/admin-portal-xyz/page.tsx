@@ -1,942 +1,1351 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
-import { ShieldAlert, CheckCircle, Clock, MapPin, Hash, DollarSign, LogOut, ImageIcon, Lock, Banknote, Trash2, UserCheck, XCircle, ExternalLink, Eye, X, Flag, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { createBrowserClient } from '@supabase/ssr'
+import { 
+  FileText, MapPin, Phone, Image as ImageIcon, ArrowRight, LogOut, HelpCircle, Upload, X, Plus, Building2, RefreshCw, Trash2, Zap, Edit2, ShieldAlert, ShieldCheck, UserCheck, Camera, CheckCircle2, Clock
+} from 'lucide-react'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+type ViewState = 'dashboard' | 'create'
+type VerificationStatus = 'unverified' | 'pending' | 'approved'
 
-const ALLOWED_ADMIN_EMAIL = 'bciwebdev25@gmail.com'
-
-interface Property {
-  id: string
-  title: string
-  property_type: string
-  price: number
-  address: string
-  images: string[]
-  is_paid: boolean
-  payment_reference: string | null
-  payment_screenshot: string | null
-  status: string
-  created_at: string
-  actual_payment_amount: number
+interface SelectedFile {
+  file: File
+  previewUrl: string
 }
 
-interface Verification {
-  id: string
-  user_id: string
-  full_name: string
-  id_photo_url: string
-  selfie_photo_url: string
-  status: string
-  created_at: string
-}
-
-interface PropertyReport {
-  id: string
-  property_id: string
-  reason: string
-  details: string
-  reporter_email: string
-  status: string
-  created_at: string
-  properties?: Property
-}
-
-export default function AdminVerificationDashboard() {
-  const [userEmail, setUserEmail] = useState<string | null>(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [properties, setProperties] = useState<Property[]>([])
-  const [verifications, setVerifications] = useState<Verification[]>([])
-  const [reports, setReports] = useState<PropertyReport[]>([])
-  const [loading, setLoading] = useState(true)
-  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
+function calculateDaysLeft(expiresAtString: string | null): number {
+  if (!expiresAtString) return 30
   
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
-  const [expandedVerificationId, setExpandedVerificationId] = useState<string | null>(null)
-  const [expandedPropertyId, setExpandedPropertyId] = useState<string | null>(null)
-  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false)
-  const [filterStatus, setFilterStatus] = useState<'pending' | 'active' | 'pending_verifications' | 'approved_verifications' | 'reports' | 'all'>('active')
+  const expiryDate = new Date(expiresAtString)
+  const today = new Date()
   
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loginError, setLoginError] = useState<string | null>(null)
-  const [loginLoading, setLoginLoading] = useState(false)
+  const diffTime = expiryDate.getTime() - today.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  return diffDays > 0 ? diffDays : 0
+}
 
-  const transactionTotal = properties
-    .filter(item => item.is_paid || item.status === 'LIVE ON SITE')
-    .reduce((sum, item) => sum + (item.actual_payment_amount || 0), 0)
-
-  const formattedTotal = new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-  }).format(transactionTotal)
-
-  const checkUserAndFetch = async () => {
-    setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (user && user.email === ALLOWED_ADMIN_EMAIL) {
-      setUserEmail(user.email)
-      setIsAuthenticated(true)
-      
-      // Fetch Properties
-      const { data, error } = await supabase
-        .from('properties')
-        .select(`
-          *,
-          payment_transactions (
-            checkout_session_id,
-            receipt_url,
-            amount
-          )
-        `)
-        .neq('status', 'unpaid')
-        .order('created_at', { ascending: false })
-
-      if (!error && data) {
-        const mappedData: Property[] = data.map((prop: any) => {
-          const transaction = prop.payment_transactions?.[0] || null;
-          return {
-            ...prop,
-            payment_reference: transaction ? transaction.checkout_session_id : null,
-            payment_screenshot: transaction ? transaction.receipt_url : null,
-            actual_payment_amount: transaction ? Number(transaction.amount || 0) : 0 
-          }
-        })
-        setProperties(mappedData)
-      }
-
-      // Fetch Verifications
-      const { data: verData, error: verErr } = await supabase
-        .from('landlord_verifications')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (!verErr && verData) {
-        const uniqueVerificationsMap = new Map<string, Verification>()
-        verData.forEach((item: Verification) => {
-          if (!uniqueVerificationsMap.has(item.user_id)) {
-            uniqueVerificationsMap.set(item.user_id, item)
-          }
-        })
-        setVerifications(Array.from(uniqueVerificationsMap.values()))
-      }
-
-      // Fetch Scam Reports
-      const { data: repData, error: repErr } = await supabase
-        .from('property_reports')
-        .select('*, properties(*)')
-        .order('created_at', { ascending: false })
-
-      if (!repErr && repData) {
-        setReports(repData)
-      }
-    } else {
-      setIsAuthenticated(false)
+export default function LandlordPortalPage() {
+  const router = useRouter()
+  
+  const [supabase] = useState(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!url || !key) {
+      console.error("Supabase environment variables are missing!")
     }
-    setLoading(false)
-  }
+    return createBrowserClient(url || '', key || '')
+  })
+  
+  const [sessionLoading, setSessionLoading] = useState(true)
+  const [propertiesLoading, setPropertiesLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [myProperties, setMyProperties] = useState<any[]>([])
+  const [currentView, setCurrentView] = useState<ViewState>('dashboard')
+  
+  // Verification States
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('unverified')
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false)
+  const [verificationFullName, setVerificationFullName] = useState('')
+  const [idPhoto, setIdPhoto] = useState<SelectedFile | null>(null)
+  const [selfieWithIdPhoto, setSelfieWithIdPhoto] = useState<SelectedFile | null>(null)
+  const [isSubmittingVerification, setIsSubmittingVerification] = useState(false)
+  const [verificationError, setVerificationError] = useState<string | null>(null)
+
+  // Hover State Trackers
+  const [activeBoostPopoverId, setActiveBoostPopoverId] = useState<string | null>(null)
+  const [activeExtendPopoverId, setActiveExtendPopoverId] = useState<string | null>(null)
+  
+  // Create Form States
+  const [title, setTitle] = useState('')
+  const [propertyType, setPropertyType] = useState('Apartment')
+  const [price, setPrice] = useState('')
+  const [bedrooms, setBedrooms] = useState('1')
+  const [bathrooms, setBathrooms] = useState('1')
+  const [area, setArea] = useState('30')
+  const [restroomPrivacy, setRestroomPrivacy] = useState('Private (Own Toilet)')
+  const [bathroomPrivacy, setBathroomPrivacy] = useState('Private (Own Shower)')
+  
+  const [manualAddress, setManualAddress] = useState('')
+  const [plusCode, setPlusCode] = useState('')
+  
+  const [contactNumber, setContactNumber] = useState('')
+  const [emailAddress, setEmailAddress] = useState('')
+  
+  const [descriptionRules, setDescriptionRules] = useState('')
+  const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([])
+
+  // Edit Feature States
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingProperty, setEditingProperty] = useState<any | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editPropertyType, setEditPropertyType] = useState('Apartment')
+  const [editPrice, setEditPrice] = useState('')
+  const [editBedrooms, setEditBedrooms] = useState('1')
+  const [editBathrooms, setEditBathrooms] = useState('1')
+  const [editArea, setEditArea] = useState('30')
+  const [editRestroomPrivacy, setEditRestroomPrivacy] = useState('Private (Own Toilet)')
+  const [editBathroomPrivacy, setEditBathroomPrivacy] = useState('Private (Own Shower)')
+  const [editManualAddress, setEditManualAddress] = useState('')
+  const [editPlusCode, setEditPlusCode] = useState('')
+  const [editContactNumber, setEditContactNumber] = useState('')
+  const [editDescriptionRules, setEditDescriptionRules] = useState('')
+
+  const BASE_PRICE = 0
+  const [boostingOption, setBoostingOption] = useState('none') 
+  const [showTooltip, setShowTooltip] = useState(false)
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    checkUserAndFetch()
-  }, [])
+    return () => {
+      selectedFiles.forEach(item => URL.revokeObjectURL(item.previewUrl))
+      if (idPhoto) URL.revokeObjectURL(idPhoto.previewUrl)
+      if (selfieWithIdPhoto) URL.revokeObjectURL(selfieWithIdPhoto.previewUrl)
+    }
+  }, [selectedFiles, idPhoto, selfieWithIdPhoto])
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
+  useEffect(() => {
+    const initializePortal = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+        if (error || !user) {
+          router.push('/login')
+          return
+        }
+        
+        setUserId(user.id)
+        setEmailAddress(user.email || '')
+        setCurrentView('dashboard')
+        
+        // 1. Fetch Profile Verification Flag
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_verified, full_name')
+          .eq('id', user.id)
+          .single()
+
+        // 2. Check Verification Queue Status
+        const { data: verifications } = await supabase
+          .from('landlord_verifications')
+          .select('status')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+
+        const latestRecord = verifications && verifications.length > 0 ? verifications[0] : null
+
+        if (profile?.is_verified || latestRecord?.status === 'approved') {
+          setVerificationStatus('approved')
+        } else if (latestRecord?.status === 'pending') {
+          setVerificationStatus('pending')
+        } else {
+          setVerificationStatus('unverified')
+        }
+
+        if (profile?.full_name) {
+          setVerificationFullName(profile.full_name)
+        }
+        
+        const { data: properties, error: dbError } = await supabase
+          .from('properties')
+          .select('*')
+          .or(`user_id.eq.${user.id},email_address.eq.${user.email}`)
+          .order('created_at', { ascending: false })
+
+        if (!dbError && properties) {
+          setMyProperties(properties)
+        }
+      } catch (err) {
+        router.push('/login')
+      } finally {
+        setPropertiesLoading(false)
+        setSessionLoading(false)
+      }
+    }
+    initializePortal()
+  }, [router, supabase])
+
+  const getBoostingPrice = () => {
+    if (boostingOption === '5days') return 49
+    if (boostingOption === '2weeks') return 99
+    if (boostingOption === '1month') return 199
+    return 0
+  }
+  const totalAmount = BASE_PRICE + getBoostingPrice()
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
+  const handleCreateClick = () => {
+    if (verificationStatus !== 'approved') {
+      if (verificationStatus === 'unverified') {
+        setIsVerificationModalOpen(true)
+      } else {
+        alert("Your identity verification request is currently under administrative review. You will be able to post listings once approved.")
+      }
+      return
+    }
+    setCurrentView('create')
+  }
+
+  const handleIdPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      if (idPhoto) URL.revokeObjectURL(idPhoto.previewUrl)
+      setIdPhoto({ file, previewUrl: URL.createObjectURL(file) })
+    }
+  }
+
+  const handleSelfiePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      if (selfieWithIdPhoto) URL.revokeObjectURL(selfieWithIdPhoto.previewUrl)
+      setSelfieWithIdPhoto({ file, previewUrl: URL.createObjectURL(file) })
+    }
+  }
+
+  const handleVerificationSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoginError(null)
-    setLoginLoading(true)
-
-    if (email !== ALLOWED_ADMIN_EMAIL) {
-      setLoginError('Access Denied: Unauthorized administrative profile.')
-      setLoginLoading(false)
+    if (!verificationFullName.trim()) {
+      setVerificationError("Please enter your full legal name as shown on your ID.")
+      return
+    }
+    if (!idPhoto) {
+      setVerificationError("Please upload a photo of your Valid Government ID.")
+      return
+    }
+    if (!selfieWithIdPhoto) {
+      setVerificationError("Please upload a photo of yourself holding your Valid ID.")
       return
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    setIsSubmittingVerification(true)
+    setVerificationError(null)
 
-    if (error) {
-      setLoginError(error.message)
-      setLoginLoading(false)
-    } else if (data.user) {
-      await checkUserAndFetch()
-    }
-  }
-
-  const handleApprove = async (id: string) => {
-    setActionLoadingId(id)
-    const { error } = await supabase
-      .from('properties')
-      .update({ 
-        status: 'LIVE ON SITE', 
-        is_paid: true
-      })
-      .eq('id', id)
-
-    if (!error) {
-      setProperties(prev => prev.map(item => item.id === id ? { ...item, status: 'LIVE ON SITE', is_paid: true } : item))
-      if (selectedProperty?.id === id) {
-        setSelectedProperty(prev => prev ? { ...prev, status: 'LIVE ON SITE', is_paid: true } : null)
-      }
-    } else {
-      alert(`Failed to approve listing: ${error.message}`)
-    }
-    setActionLoadingId(null)
-  }
-
-  const handleRevokeProperty = async (propertyId: string, reportId?: string) => {
-    const confirmed = window.confirm("Are you sure you want to REVOKE and unpublish this listing from public view?")
-    if (!confirmed) return
-
-    setActionLoadingId(propertyId)
-    const { error } = await supabase
-      .from('properties')
-      .update({ status: 'revoked', is_paid: false })
-      .eq('id', propertyId)
-
-    if (!error) {
-      if (reportId) {
-        await supabase.from('property_reports').update({ status: 'resolved' }).eq('id', reportId)
-        setReports(prev => prev.map(r => r.id === reportId ? { ...r, status: 'resolved' } : r))
-      }
-      setProperties(prev => prev.map(p => p.id === propertyId ? { ...p, status: 'revoked', is_paid: false } : p))
-      alert('Listing status successfully updated to REVOKED.')
-    } else {
-      alert(`Failed to revoke listing: ${error.message}`)
-    }
-    setActionLoadingId(null)
-  }
-
-  const handleDismissReport = async (reportId: string) => {
-    setActionLoadingId(reportId)
-    const { error } = await supabase
-      .from('property_reports')
-      .update({ status: 'dismissed' })
-      .eq('id', reportId)
-
-    if (!error) {
-      setReports(prev => prev.map(r => r.id === reportId ? { ...r, status: 'dismissed' } : r))
-    } else {
-      alert(`Failed to dismiss report: ${error.message}`)
-    }
-    setActionLoadingId(null)
-  }
-
-  const handleApproveVerification = async (ver: Verification) => {
-    setActionLoadingId(ver.id)
     try {
+      // 1. Upload ID Photo
+      const idExt = idPhoto.file.name.split('.').pop()
+      const idFilePath = `verifications/${userId}_id_${Date.now()}.${idExt}`
+      const { error: uploadIdErr } = await supabase.storage
+        .from('verification-docs')
+        .upload(idFilePath, idPhoto.file)
+
+      if (uploadIdErr) throw new Error(`ID Upload error: ${uploadIdErr.message}`)
+
+      const { data: { publicUrl: idPublicUrl } } = supabase.storage
+        .from('verification-docs')
+        .getPublicUrl(idFilePath)
+
+      // 2. Upload Selfie Photo
+      const selfieExt = selfieWithIdPhoto.file.name.split('.').pop()
+      const selfieFilePath = `verifications/${userId}_selfie_${Date.now()}.${selfieExt}`
+      const { error: uploadSelfieErr } = await supabase.storage
+        .from('verification-docs')
+        .upload(selfieFilePath, selfieWithIdPhoto.file)
+
+      if (uploadSelfieErr) throw new Error(`Selfie Upload error: ${uploadSelfieErr.message}`)
+
+      const { data: { publicUrl: selfiePublicUrl } } = supabase.storage
+        .from('verification-docs')
+        .getPublicUrl(selfieFilePath)
+
+      // 3. Save to verification table
       const { error: verErr } = await supabase
         .from('landlord_verifications')
-        .update({ status: 'approved' })
-        .eq('id', ver.id)
+        .insert([{
+          user_id: userId,
+          full_name: verificationFullName.trim(),
+          id_photo_url: idPublicUrl,
+          selfie_photo_url: selfiePublicUrl,
+          status: 'pending'
+        }])
 
       if (verErr) throw verErr
 
-      const { error: profErr } = await supabase
+      // Update name on profile
+      await supabase
         .from('profiles')
-        .update({ is_verified: true, full_name: ver.full_name })
-        .eq('id', ver.user_id)
+        .update({ full_name: verificationFullName.trim() })
+        .eq('id', userId)
 
-      if (profErr) throw profErr
-
-      setVerifications(prev => prev.map(item => item.id === ver.id ? { ...item, status: 'approved' } : item))
-      alert(`Landlord "${ver.full_name}" has been successfully verified!`)
+      setIsVerificationModalOpen(false)
+      setVerificationStatus('pending')
     } catch (err: any) {
-      alert(`Failed to approve verification: ${err.message}`)
+      setVerificationError(err.message || "An error occurred during verification submission.")
     } finally {
-      setActionLoadingId(null)
+      setIsSubmittingVerification(false)
     }
   }
 
-  const handleRejectVerification = async (id: string) => {
-    setActionLoadingId(id)
-    try {
-      const { error } = await supabase
-        .from('landlord_verifications')
-        .update({ status: 'rejected' })
-        .eq('id', id)
-
-      if (error) throw error
-
-      setVerifications(prev => prev.map(item => item.id === id ? { ...item, status: 'rejected' } : item))
-    } catch (err: any) {
-      alert(`Failed to reject verification: ${err.message}`)
-    } finally {
-      setActionLoadingId(null)
-    }
-  }
-
-  const handleDeleteProperty = async (id: string, title: string) => {
-    if (userEmail !== ALLOWED_ADMIN_EMAIL) {
-      alert('Unauthorized: Only root admin can perform deletions.')
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return
+    const filesArray = Array.from(e.target.files)
+    
+    if (selectedFiles.length + filesArray.length > 10) {
+      setErrorMessage('You can only upload a maximum of 10 photos per listing.')
       return
     }
 
-    const confirmed = window.confirm(`Are you sure you want to permanently delete "${title || 'this listing'}"?`)
-    if (!confirmed) return
+    const newSelections = filesArray.map(file => ({
+      file,
+      previewUrl: URL.createObjectURL(file)
+    }))
 
-    setActionLoadingId(id)
-    const { error } = await supabase
-      .from('properties')
-      .delete({ count: 'exact' })
-      .eq('id', id)
+    setSelectedFiles(prev => [...prev, ...newSelections])
+    setErrorMessage(null)
+  }
 
-    if (error) {
-      alert(`Delete rejected: ${error.message}`)
-    } else {
-      setProperties(prev => prev.filter(item => item.id !== id))
-      if (selectedProperty?.id === id) {
-        setSelectedProperty(null)
-      }
+  const handleRemoveImage = (index: number) => {
+    URL.revokeObjectURL(selectedFiles[index].previewUrl)
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleDeleteProperty = async (propertyId: string) => {
+    const isConfirmed = confirm("Are you sure you want to permanently delete this property listing?")
+    if (!isConfirmed) return
+
+    try {
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', propertyId)
+
+      if (error) throw error
+      setMyProperties(prev => prev.filter(prop => prop.id !== propertyId))
+    } catch (err: any) {
+      alert(err.message || "Failed to delete the listing.")
     }
-    setActionLoadingId(null)
   }
 
-  const handleAdminSignOut = async () => {
-    await supabase.auth.signOut()
-    setIsAuthenticated(false)
-    setUserEmail(null)
+  // Edit Feature States
+  const openEditModal = (property: any) => {
+    setEditingProperty(property)
+    setEditTitle(property.title || '')
+    setEditPropertyType(property.property_type || 'Apartment')
+    setEditPrice(property.price?.toString() || '')
+    setEditBedrooms(property.bedrooms?.toString() || '1')
+    setEditBathrooms(property.bathrooms?.toString() || '1')
+    setEditArea(property.area_sqm?.toString() || '30')
+    setEditRestroomPrivacy(property.restroom_privacy || 'Private (Own Toilet)')
+    setEditBathroomPrivacy(property.bathroom_privacy || 'Private (Own Shower)')
+    setEditManualAddress(property.manual_address || '')
+    setEditPlusCode(property.plus_code || '')
+    setEditContactNumber(property.contact_number || '')
+    setEditDescriptionRules(property.description_rules || '')
+    setIsEditModalOpen(true)
   }
 
-  const toggleExpandVerification = (id: string) => {
-    setExpandedVerificationId(prev => prev === id ? null : id)
+  const handleUpdateProperty = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingProperty) return
+    setIsSubmitting(true)
+
+    const parsedPrice = parseInt(editPrice, 10) || 0
+    const parsedArea = parseFloat(editArea) || 0
+
+    try {
+      const { error } = await supabase
+        .from('properties')
+        .update({
+          title: editTitle.trim(),
+          property_type: editPropertyType,
+          price: parsedPrice,
+          bedrooms: parseInt(editBedrooms, 10) || 0,
+          bathrooms: parseInt(editBathrooms, 10) || 0,
+          area_sqm: parsedArea,
+          restroom_privacy: editRestroomPrivacy,
+          bathroom_privacy: editBathroomPrivacy,
+          manual_address: editManualAddress.trim(),
+          address: editManualAddress.trim(),
+          plus_code: editPlusCode.trim() || null,
+          contact_number: editContactNumber.trim(),
+          description_rules: editDescriptionRules.trim(),
+        })
+        .eq('id', editingProperty.id)
+
+      if (error) throw error
+
+      setMyProperties(prev => 
+        prev.map(p => p.id === editingProperty.id 
+          ? { 
+              ...p, 
+              title: editTitle.trim(),
+              property_type: editPropertyType,
+              price: parsedPrice,
+              bedrooms: parseInt(editBedrooms, 10) || 0,
+              bathrooms: parseInt(editBathrooms, 10) || 0,
+              area_sqm: parsedArea,
+              restroom_privacy: editRestroomPrivacy,
+              bathroom_privacy: editBathroomPrivacy,
+              manual_address: editManualAddress.trim(),
+              address: editManualAddress.trim(),
+              plus_code: editPlusCode.trim() || null,
+              contact_number: editContactNumber.trim(),
+              description_rules: editDescriptionRules.trim()
+            } 
+          : p
+        )
+      )
+
+      setIsEditModalOpen(false)
+      setEditingProperty(null)
+      alert('Listing updated successfully!')
+    } catch (err: any) {
+      alert(err.message || 'Failed to update listing details.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const toggleExpandProperty = (id: string) => {
-    setExpandedPropertyId(prev => prev === id ? null : id)
+  const resetForm = () => {
+    setTitle('')
+    setPropertyType('Apartment')
+    setPrice('')
+    setBedrooms('1')
+    setBathrooms('1')
+    setArea('30')
+    setRestroomPrivacy('Private (Own Toilet)')
+    setBathroomPrivacy('Private (Own Shower)')
+    setManualAddress('')
+    setPlusCode('')
+    setContactNumber('')
+    setDescriptionRules('')
+    selectedFiles.forEach(item => URL.revokeObjectURL(item.previewUrl))
+    setSelectedFiles([])
+    setBoostingOption('none')
   }
 
-  const isPending = (status: string) => {
-    return status === 'pending' || status === 'pending_verification'
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
 
-  const filteredProperties = properties
-    .filter(item => {
-      if (filterStatus === 'all') return true
-      if (filterStatus === 'pending') return isPending(item.status)
-      if (filterStatus === 'active') return item.status === 'LIVE ON SITE'
-      return false
-    })
-    .sort((a, b) => (a.title || '').localeCompare(b.title || ''))
+    if (verificationStatus !== 'approved') {
+      alert('You must be a verified landlord to create a listing.')
+      return
+    }
 
-  const pendingVerifications = verifications.filter(v => v.status === 'pending')
-  const approvedVerifications = verifications.filter(v => v.status === 'approved')
-  const pendingReports = reports.filter(r => r.status === 'pending')
+    setIsSubmitting(true)
+    setErrorMessage(null)
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center font-sans">
-        <div className="text-center space-y-2">
-          <div className="w-6 h-6 border-2 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-xs font-bold text-slate-500 tracking-wider uppercase">Verifying Gateway Credentials...</p>
-        </div>
-      </div>
-    )
-  }
+    const parsedPrice = parseInt(price, 10) || 0
+    const uploadedImageUrls: string[] = []
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 text-center font-sans antialiased">
-        <div className="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl w-full max-w-md space-y-6 shadow-xl text-left">
-          <div className="text-center space-y-2">
-            <Lock className="w-10 h-10 text-amber-500 mx-auto" />
-            <h1 className="text-slate-950 font-black text-xl tracking-tight">Admin System Gateway</h1>
-            <p className="text-xs text-slate-500">Authenticate via root administrative credentials to access database management channels.</p>
-          </div>
+    try {
+      for (const item of selectedFiles) {
+        const fileExt = item.file.name.split('.').pop()
+        const fileName = `${Math.random()}_${Date.now()}.${fileExt}`
+        const filePath = `listings/${fileName}`
 
-          <form onSubmit={handleAdminLogin} className="space-y-4">
-            <div>
-              <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1">Admin Email Address</label>
-              <input 
-                type="email" 
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@example.com"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-amber-500 transition"
-              />
-            </div>
+        const { error: uploadError } = await supabase.storage
+          .from('property-images')
+          .upload(filePath, item.file)
 
-            <div>
-              <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1">Gateway Password</label>
-              <input 
-                type="password" 
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-amber-500 transition"
-              />
-            </div>
+        if (uploadError) throw new Error(`Storage upload error: ${uploadError.message}`)
 
-            {loginError && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-600 p-3 rounded-xl text-xs font-medium flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 shrink-0" />
-                <span>{loginError}</span>
-              </div>
-            )}
+        const { data: { publicUrl } } = supabase.storage
+          .from('property-images')
+          .getPublicUrl(filePath)
 
-            <button
-              type="submit"
-              disabled={loginLoading}
-              className="w-full bg-slate-950 hover:bg-slate-900 disabled:bg-slate-300 text-white font-bold text-sm py-3 rounded-xl transition shadow-sm text-center cursor-pointer"
-            >
-              {loginLoading ? 'Opening Workspace...' : 'Authenticate Credentials'}
-            </button>
-          </form>
-        </div>
-      </div>
-    )
+        uploadedImageUrls.push(publicUrl)
+      }
+
+      const calculatedExpiry = new Date()
+      calculatedExpiry.setDate(calculatedExpiry.getDate() + 30)
+
+      const { error: dbError } = await supabase
+        .from('properties')
+        .insert([
+          {
+            user_id: userId,
+            title: title.trim(),
+            property_type: propertyType,
+            price: parsedPrice, 
+            bedrooms: parseInt(bedrooms, 10) || 0,
+            bathrooms: parseInt(bathrooms, 10) || 0,
+            area_sqm: parseFloat(area) || 0,
+            restroom_privacy: restroomPrivacy,
+            bathroom_privacy: bathroomPrivacy,
+            manual_address: manualAddress.trim(),
+            address: manualAddress.trim(),
+            plus_code: plusCode.trim() || null,
+            contact_number: contactNumber.trim(),
+            email_address: emailAddress.trim(),
+            description_rules: descriptionRules.trim(),
+            images: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
+            boosting_tier: boostingOption,
+            total_payable: totalAmount,
+            expires_at: calculatedExpiry.toISOString(),
+            status: 'pending'
+          }
+        ])
+
+      if (dbError) throw new Error(dbError.message)
+      
+      router.refresh()
+      if (totalAmount > 0) {
+        router.push(`/landlord/payment?total=${totalAmount}`)
+      } else {
+        alert("Listing successfully submitted for approval!")
+        setCurrentView('dashboard')
+        resetForm()
+      }
+
+    } catch (err: any) {
+      setErrorMessage(err.message || 'An error occurred.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 font-sans antialiased py-6 sm:py-10 px-3 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
-        
-        {/* Collapsible Admin Header */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md overflow-hidden transition-all duration-300">
-          <div className="p-4 sm:p-6 flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <span className="inline-block text-[10px] font-black uppercase tracking-wider bg-slate-950 text-white px-2.5 py-1 rounded-md">
-                Root Administrator Control
-              </span>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight pt-1">Payment & Security Queue</h1>
-              {!isHeaderCollapsed && (
-                <p className="text-xs text-slate-500 font-medium max-w-xl transition-all">Review GCash payments, landlord identity submissions, and scam reports from renters.</p>
+    <div className="min-h-screen bg-[#fcfdfe] text-[#1e293b] antialiased font-sans pb-16">
+      
+      {/* HEADER SECTION - REORGANIZED FOR RESPONSIVE MOBILE ALIGNMENT */}
+      <header className="max-w-4xl mx-auto px-4 pt-6 pb-6 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#0f172a]">
+                {currentView === 'dashboard' ? 'Landlord Dashboard' : 'Create Rental Listing'}
+              </h1>
+              {verificationStatus === 'approved' && (
+                <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] font-black px-2.5 py-1 rounded-full border border-emerald-200 shrink-0">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#00aa4f]" /> Verified
+                </span>
               )}
             </div>
+            <p className="text-xs text-slate-400">
+              {currentView === 'dashboard' ? 'Manage your registered active property profiles.' : 'Fill out the details below to add your unit to rentersPH.'}
+            </p>
+          </div>
 
+          <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+            {currentView === 'create' && (
+              <button 
+                type="button" 
+                onClick={() => { setCurrentView('dashboard'); resetForm(); }}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2.5 rounded-xl transition cursor-pointer"
+              >
+                Back to Dashboard
+              </button>
+            )}
+            <button 
+              type="button" 
+              onClick={handleSignOut}
+              className="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" /> Sign Out
+            </button>
+          </div>
+
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-4 mt-8">
+        
+        {/* UNVERIFIED BANNER */}
+        {verificationStatus === 'unverified' && (
+          <div className="mb-6 bg-amber-50/80 border border-amber-200/80 p-5 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 bg-amber-100/80 text-amber-700 rounded-2xl flex items-center justify-center shrink-0 mt-0.5">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-black text-amber-900">Identity Verification Required</h4>
+                <p className="text-xs text-amber-700/90 mt-0.5">
+                  You cannot post rental listings yet. Please verify your identity to ensure safety across the rentersPH workspace.
+                </p>
+              </div>
+            </div>
             <button
               type="button"
-              onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer shrink-0 mt-1"
-              title={isHeaderCollapsed ? "Expand Dashboard Header" : "Collapse Dashboard Header"}
+              onClick={() => setIsVerificationModalOpen(true)}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-black text-xs px-5 py-3 rounded-xl transition shadow-sm shrink-0 uppercase tracking-wider cursor-pointer"
             >
-              {isHeaderCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+              GET VERIFIED NOW
             </button>
           </div>
+        )}
 
-          {!isHeaderCollapsed && (
-            <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-0 border-t border-slate-100 mt-2 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full md:w-auto pt-3">
-                <div className="flex-1 sm:flex-none flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 sm:px-4 py-2 h-10 min-w-[140px]">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm shrink-0">
-                    <Banknote className="h-3 w-3" />
-                  </div>
-                  <div className="truncate">
-                    <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-emerald-800 leading-none">
-                      Transaction Total
-                    </p>
-                    <p className="text-xs font-black text-emerald-950 pt-0.5 leading-none truncate">
-                      {formattedTotal}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex-1 sm:flex-none text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 sm:px-4 rounded-xl flex items-center h-10 truncate min-w-[160px]">
-                  <span className="shrink-0">Admin:&nbsp;</span>
-                  <span className="font-bold text-slate-900 truncate">{userEmail}</span>
-                </div>
-                
-                <button 
-                  onClick={handleAdminSignOut}
-                  className="w-full sm:w-auto px-4 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer h-10 shrink-0"
-                >
-                  <LogOut className="w-3.5 h-3.5" /> <span className="inline">Exit Portal</span>
-                </button>
+        {/* PENDING VERIFICATION BANNER */}
+        {verificationStatus === 'pending' && (
+          <div className="mb-6 bg-blue-50/80 border border-blue-200/80 p-5 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 bg-blue-100/80 text-blue-700 rounded-2xl flex items-center justify-center shrink-0 mt-0.5">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-black text-blue-900">Verification Under Review</h4>
+                <p className="text-xs text-blue-700/90 mt-0.5">
+                  Your identity verification details have been submitted. You can post rental listings once an administrator approves your verification.
+                </p>
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Filter Toolbar Controls */}
-        <div className="overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-none">
-          <div className="flex items-center gap-2 border-b border-slate-300 pb-2 min-w-max">
-            <button 
-              onClick={() => setFilterStatus('pending')}
-              className={`px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer whitespace-nowrap ${filterStatus === 'pending' ? 'bg-amber-50 text-amber-800 border border-amber-300 shadow-sm' : 'text-slate-600 hover:text-slate-900 bg-white/60 hover:bg-white'}`}
-            >
-              Pending Review ({properties.filter(p => isPending(p.status)).length})
-            </button>
-            
-            <button 
-              onClick={() => setFilterStatus('active')}
-              className={`px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer whitespace-nowrap ${filterStatus === 'active' ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-sm' : 'text-slate-600 hover:text-slate-900 bg-white/60 hover:bg-white'}`}
-            >
-              Active Listings ({properties.filter(p => p.status === 'LIVE ON SITE').length})
-            </button>
-            
-            <button 
-              onClick={() => setFilterStatus('pending_verifications')}
-              className={`px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${filterStatus === 'pending_verifications' ? 'bg-blue-50 text-blue-800 border border-blue-300 shadow-sm' : 'text-slate-600 hover:text-slate-900 bg-white/60 hover:bg-white'}`}
-            >
-              <Clock className="w-3.5 h-3.5 text-amber-500" /> Pending Verifications ({pendingVerifications.length})
-            </button>
-
-            <button 
-              onClick={() => setFilterStatus('approved_verifications')}
-              className={`px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${filterStatus === 'approved_verifications' ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-sm' : 'text-slate-600 hover:text-slate-900 bg-white/60 hover:bg-white'}`}
-            >
-              <UserCheck className="w-3.5 h-3.5 text-emerald-600" /> Approved Landlords ({approvedVerifications.length})
-            </button>
-
-            <button 
-              onClick={() => setFilterStatus('reports')}
-              className={`px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${filterStatus === 'reports' ? 'bg-rose-50 text-rose-800 border border-rose-300 shadow-sm' : 'text-slate-600 hover:text-slate-900 bg-white/60 hover:bg-white'}`}
-            >
-              <Flag className="w-3.5 h-3.5 text-rose-600" /> Reported Scam Listings ({pendingReports.length})
-            </button>
-
-            <button 
-              onClick={() => setFilterStatus('all')}
-              className={`px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer whitespace-nowrap ${filterStatus === 'all' ? 'bg-slate-950 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 bg-white/60 hover:bg-white'}`}
-            >
-              All Archive
-            </button>
+            <span className="bg-blue-100 text-blue-800 border border-blue-200 font-black text-xs px-4 py-2.5 rounded-xl shrink-0 uppercase tracking-wider">
+              PENDING APPROVAL
+            </span>
           </div>
-        </div>
+        )}
 
-        {/* SCAM REPORTS TAB */}
-        {filterStatus === 'reports' && (
-          reports.length === 0 ? (
-            <div className="text-center bg-white rounded-3xl border border-slate-200 text-xs text-slate-500 font-medium py-16 sm:py-20 px-4 shadow-sm">
-              No reported listings submitted by renters.
+        {currentView === 'dashboard' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center bg-white border border-[#f1f5f9] p-5 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
+              <div>
+                <h3 className="text-sm font-black text-slate-800">Your Active Portfolio</h3>
+                <p className="text-xs text-slate-400">Total Properties Registered: {myProperties.length}</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCreateClick}
+                className={`font-bold text-xs px-4 py-3 rounded-xl flex items-center gap-1.5 transition shadow-sm cursor-pointer ${
+                  verificationStatus === 'approved' 
+                    ? 'bg-[#00aa4f] hover:bg-[#009444] text-white' 
+                    : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                }`}
+              >
+                <Plus className="w-4 h-4" /> Add New Listing
+              </button>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {reports.map((rep) => (
-                <div key={rep.id} className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6 space-y-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="bg-rose-100 text-rose-800 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" /> Scam Alert
-                      </span>
-                      <span className="text-xs font-bold text-slate-500">
-                        {new Date(rep.created_at).toLocaleString('en-PH')}
-                      </span>
-                    </div>
 
-                    <h3 className="text-base font-black text-slate-900">
-                      Property: {rep.properties?.title || 'Unknown / Deleted Property'}
-                    </h3>
-
-                    <div className="space-y-1 text-xs">
-                      <p><strong className="text-slate-700">Reason:</strong> <span className="font-semibold text-rose-600">{rep.reason}</span></p>
-                      {rep.details && <p><strong className="text-slate-700">Explanation:</strong> "{rep.details}"</p>}
-                      {rep.reporter_email && <p><strong className="text-slate-700">Reporter Contact:</strong> {rep.reporter_email}</p>}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-                    <button
-                      type="button"
-                      disabled={actionLoadingId === rep.id}
-                      onClick={() => handleDismissReport(rep.id)}
-                      className="w-full sm:w-auto px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition text-center"
-                    >
-                      Dismiss Report
-                    </button>
-                    {rep.properties && rep.properties.status !== 'revoked' && (
-                      <button
-                        type="button"
-                        disabled={actionLoadingId === rep.properties.id}
-                        onClick={() => handleRevokeProperty(rep.properties!.id, rep.id)}
-                        className="w-full sm:w-auto px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center justify-center gap-1"
-                      >
-                        <XCircle className="w-4 h-4" /> Revoke Listing
-                      </button>
-                    )}
-                  </div>
+            {propertiesLoading ? (
+              <div className="text-center py-12 text-slate-400 text-xs font-bold uppercase tracking-widest">
+                Fetching structural items...
+              </div>
+            ) : myProperties.length === 0 ? (
+              <div className="border border-dashed border-slate-200 rounded-3xl p-16 text-center space-y-3 bg-white">
+                <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto text-[#00aa4f]">
+                  <Building2 className="w-6 h-6" />
                 </div>
-              ))}
-            </div>
-          )
-        )}
-
-        {/* PENDING LANDLORD VERIFICATIONS TAB */}
-        {filterStatus === 'pending_verifications' && (
-          pendingVerifications.length === 0 ? (
-            <div className="text-center bg-white rounded-3xl border border-slate-200 text-xs text-slate-500 font-medium py-16 sm:py-20 px-4 shadow-sm">
-              No pending identity verification submissions.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-3">
-              {pendingVerifications.map((ver) => {
-                const isExpanded = expandedVerificationId === ver.id
-                return (
-                  <div key={ver.id} className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 shadow-sm transition">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Landlord Legal Name</span>
-                        <h3 className="text-base font-black text-slate-900">{ver.full_name}</h3>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-300 shrink-0">
-                          {ver.status}
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => toggleExpandVerification(ver.id)}
-                          className="inline-flex items-center justify-center gap-1 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition cursor-pointer"
-                        >
-                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-slate-500" />}
-                          {isExpanded ? 'Hide Details' : 'View Verification Details'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {isExpanded && (
-                      <div className="pt-4 mt-4 border-t border-slate-100 space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase">1. Valid ID Photo</span>
-                            <a href={ver.id_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
-                              <img src={ver.id_photo_url} alt="ID Photo" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                              <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
-                                <ExternalLink className="w-3.5 h-3.5" /> Open
-                              </div>
-                            </a>
-                          </div>
-
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase">2. Selfie Holding ID</span>
-                            <a href={ver.selfie_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
-                              <img src={ver.selfie_photo_url} alt="Selfie with ID" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                              <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
-                                <ExternalLink className="w-3.5 h-3.5" /> Open
-                              </div>
-                            </a>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            type="button"
-                            disabled={actionLoadingId === ver.id}
-                            onClick={() => handleRejectVerification(ver.id)}
-                            className="w-full sm:w-1/2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-xs py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1"
-                          >
-                            <XCircle className="w-3.5 h-3.5" /> Reject
-                          </button>
-                          <button
-                            type="button"
-                            disabled={actionLoadingId === ver.id}
-                            onClick={() => handleApproveVerification(ver)}
-                            className="w-full sm:w-1/2 bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1 shadow-sm"
-                          >
-                            <CheckCircle className="w-3.5 h-3.5" /> Approve Identity
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )
-        )}
-
-        {/* APPROVED LANDLORD VERIFICATIONS TAB */}
-        {filterStatus === 'approved_verifications' && (
-          approvedVerifications.length === 0 ? (
-            <div className="text-center bg-white rounded-3xl border border-slate-200 text-xs text-slate-500 font-medium py-16 sm:py-20 px-4 shadow-sm">
-              No approved landlords found.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-3">
-              {approvedVerifications.map((ver) => {
-                const isExpanded = expandedVerificationId === ver.id
-                return (
-                  <div key={ver.id} className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 shadow-sm transition">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Landlord Legal Name</span>
-                        <h3 className="text-base font-black text-slate-900">{ver.full_name}</h3>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 shrink-0">
-                          APPROVED
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => toggleExpandVerification(ver.id)}
-                          className="inline-flex items-center justify-center gap-1 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition cursor-pointer"
-                        >
-                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-slate-500" />}
-                          {isExpanded ? 'Hide Details' : 'View Verification Details'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {isExpanded && (
-                      <div className="pt-4 mt-4 border-t border-slate-100 space-y-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase">1. Valid ID Photo</span>
-                            <a href={ver.id_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
-                              <img src={ver.id_photo_url} alt="ID Photo" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                              <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
-                                <ExternalLink className="w-3.5 h-3.5" /> Open
-                              </div>
-                            </a>
-                          </div>
-
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase">2. Selfie Holding ID</span>
-                            <a href={ver.selfie_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
-                              <img src={ver.selfie_photo_url} alt="Selfie with ID" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                              <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
-                                <ExternalLink className="w-3.5 h-3.5" /> Open
-                              </div>
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )
-        )}
-
-        {/* PROPERTY LISTINGS ACCORDION DATA GRID (ALPHABETICAL) */}
-        {(filterStatus === 'pending' || filterStatus === 'active' || filterStatus === 'all') && (
-          filteredProperties.length === 0 ? (
-            <div className="text-center bg-white rounded-3xl border border-slate-200 text-xs text-slate-500 font-medium py-16 sm:py-20 px-4 shadow-sm">
-              No property listings currently match this status filter profile.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-3">
-              {filteredProperties.map((item) => {
-                const isExpanded = expandedPropertyId === item.id
-                return (
-                  <div 
-                    key={item.id} 
-                    className={`bg-white rounded-3xl border transition shadow-sm overflow-hidden p-4 sm:p-5 ${isPending(item.status) ? 'border-amber-300' : 'border-slate-200'}`}
-                  >
-                    {/* Collapsed Header Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="space-y-0.5">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Property Listing Title</span>
-                        <h3 className="font-black text-base text-slate-950 tracking-tight">{item.title || 'Untitled Listing'}</h3>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shrink-0 ${isPending(item.status) ? 'bg-amber-50 text-amber-800 border border-amber-300' : item.status === 'revoked' ? 'bg-rose-50 text-rose-800 border border-rose-300' : 'bg-emerald-50 text-emerald-800 border border-emerald-300'}`}>
-                          {isPending(item.status) ? (
-                            <>
-                              <Clock className="w-3 h-3 text-amber-500" /> Pending
-                            </>
-                          ) : item.status === 'revoked' ? (
-                            <>
-                              <XCircle className="w-3 h-3 text-rose-500" /> Revoked
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle className="w-3 h-3 text-emerald-600" /> Live on Site
-                            </>
-                          )}
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => toggleExpandProperty(item.id)}
-                          className="inline-flex items-center justify-center gap-1 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition cursor-pointer shrink-0"
-                        >
-                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-slate-500" />}
-                          {isExpanded ? 'Hide Details' : 'View Listing Details'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Expandable Details Drawer */}
-                    {isExpanded && (
-                      <div className="pt-4 mt-4 border-t border-slate-100 grid grid-cols-1 lg:grid-cols-12 gap-4">
-                        <div className="lg:col-span-5 space-y-3">
-                          <div className="space-y-1.5 text-xs text-slate-600 font-medium">
-                            <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> <span className="truncate">{item.address || 'No Address Provided'}</span></div>
-                            <div className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-slate-400 shrink-0" /> ₱{item.price?.toLocaleString() || 0}/month • {item.property_type || 'N/A'}</div>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => setSelectedProperty(item)}
-                            className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition cursor-pointer w-full sm:w-auto"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5 text-slate-500" /> Open Full Modal View
-                          </button>
-                        </div>
-
-                        <div className="lg:col-span-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 flex flex-col justify-center space-y-2">
-                          <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                            <Hash className="w-3 h-3 text-blue-600" /> Declared Transaction Payload
-                          </span>
-                          
-                          <div className="text-xs text-slate-600 font-medium truncate">
-                            Reference #: <span className="font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded text-[11px] select-all inline-block truncate max-w-full align-bottom">{item.payment_reference || 'NULL'}</span>
-                          </div>
-                          
-                          <div className="pt-0.5">
-                            {item.payment_screenshot ? (
-                              <a 
-                                href={item.payment_screenshot} 
-                                target="_blank" 
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition cursor-pointer"
-                              >
-                                <ImageIcon className="w-3 h-3" /> View Payment Screenshot ↗
-                              </a>
-                            ) : (
-                              <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded font-semibold inline-block">
-                                No Screenshot Uploaded
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="lg:col-span-3 flex flex-col justify-center gap-2">
-                          {isPending(item.status) && (
-                            <button
-                              type="button"
-                              disabled={actionLoadingId === item.id}
-                              onClick={() => handleApprove(item.id)}
-                              className="w-full bg-slate-950 hover:bg-slate-900 disabled:bg-slate-300 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
-                            >
-                              {actionLoadingId === item.id ? 'Activating Trigger...' : 'Approve & Publish Live'}
-                            </button>
-                          )}
-
-                          {item.status === 'LIVE ON SITE' && (
-                            <button
-                              type="button"
-                              disabled={actionLoadingId === item.id}
-                              onClick={() => handleRevokeProperty(item.id)}
-                              className="w-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold py-2 rounded-xl transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
-                            >
-                              Revoke Visibility
-                            </button>
-                          )}
-
-                          <button
-                            type="button"
-                            disabled={actionLoadingId === item.id}
-                            onClick={() => handleDeleteProperty(item.id, item.title)}
-                            className="w-full bg-rose-50 hover:bg-rose-100 disabled:bg-slate-100 text-rose-600 border border-rose-200 text-xs font-bold py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" /> Delete Listing
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )
-        )}
-      </div>
-
-      {/* PROPERTY DETAILS MODAL */}
-      {selectedProperty && (
-        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl border border-slate-200 max-w-2xl w-full p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-2xl my-auto relative max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setSelectedProperty(null)}
-              className="absolute top-4 right-4 sm:top-5 sm:right-5 text-slate-400 hover:text-slate-700 p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition z-10"
-            >
-              <X className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-
-            <div className="space-y-1 pr-8">
-              <span className="inline-block text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md">
-                Listing Specification Payload
-              </span>
-              <h2 className="text-lg sm:text-xl font-black text-slate-950 pt-1 sm:pt-2">{selectedProperty.title || 'Untitled Property'}</h2>
-            </div>
-
-            {selectedProperty.images && selectedProperty.images.length > 0 ? (
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">Uploaded Property Gallery</span>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 sm:max-h-56 overflow-y-auto p-1 bg-slate-50 rounded-2xl border border-slate-200">
-                  {selectedProperty.images.map((imgUrl, index) => (
-                    <a key={index} href={imgUrl} target="_blank" rel="noreferrer" className="block relative group aspect-video bg-slate-200 rounded-xl overflow-hidden">
-                      <img src={imgUrl} alt={`Property Image ${index + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition" />
-                      <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-[10px] font-bold gap-1">
-                        <ExternalLink className="w-3 h-3" /> Expand
-                      </div>
-                    </a>
-                  ))}
-                </div>
+                <h3 className="text-sm font-black text-slate-700">No properties documented yet</h3>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">You have not posted any rental offerings under this account workspace. Click the button above to begin.</p>
               </div>
             ) : (
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center text-xs text-slate-500 font-medium">
-                No images attached to this property listing.
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {myProperties.map((property) => (
+                  <div key={property.id} className="bg-white border border-[#f1f5f9] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col justify-between relative">
+                    <div>
+                      {property.images && property.images.length > 0 ? (
+                        <div className="w-full h-40 overflow-hidden rounded-t-2xl">
+                          <img src={property.images[0]} alt="Property image" className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-full h-40 bg-slate-50 flex items-center justify-center text-slate-300 rounded-t-2xl">
+                          <ImageIcon className="w-8 h-8" />
+                        </div>
+                      )}
+                      <div className="p-5 space-y-2">
+                        <div className="flex justify-between items-start gap-2">
+                          <h4 className="text-sm font-black text-slate-800 line-clamp-1">{property.title}</h4>
+                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                            property.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
+                          }`}>
+                            {property.status === 'approved' ? 'LIVE ON SITE' : (property.status || 'pending')}
+                          </span>
+                        </div>
+                        <p className="text-xs font-black text-[#00aa4f]">₱{property.price.toLocaleString()} / mo</p>
+                        <div className="flex items-center gap-1.5 text-slate-400 text-xs">
+                          <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                          <span className="truncate">{property.manual_address}</span>
+                        </div>
+
+                        <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex items-center justify-between text-xs font-semibold text-slate-600">
+                          <span className="text-slate-400 text-[11px]">Time Remaining:</span>
+                          <span className={`font-black flex items-center gap-1 ${
+                            calculateDaysLeft(property.expires_at) <= 5 ? 'text-rose-600 animate-pulse' : 'text-slate-700'
+                          }`}>
+                            {calculateDaysLeft(property.expires_at)} days left
+                          </span>
+                        </div>
+
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col border-t border-slate-50 bg-slate-50/50 rounded-b-2xl">
+                      <div className="px-5 py-2.5 flex items-center justify-between text-[11px] font-semibold text-slate-400 border-b border-slate-100">
+                        <span>{property.property_type}</span>
+                        <span>{property.bedrooms} BR · {property.bathrooms} BA</span>
+                      </div>
+                      
+                      {/* ACTION CONTROLS WRAPPER CELL */}
+                      <div className="grid grid-cols-4 text-[10px] font-bold relative">
+                        
+                        {/* EDIT BUTTON */}
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(property)}
+                          className="py-3 flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 border-r border-slate-100 transition cursor-pointer rounded-bl-2xl"
+                        >
+                          <Edit2 className="w-3 h-3 text-slate-400" />
+                          Edit
+                        </button>
+
+                        {/* EXTEND BUTTON TRIGGER */}
+                        <div 
+                          className="flex border-r border-slate-100"
+                          onMouseEnter={() => setActiveExtendPopoverId(property.id)}
+                          onMouseLeave={() => setActiveExtendPopoverId(null)}
+                        >
+                          <button
+                            type="button"
+                            className="w-full py-3 flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                          >
+                            <RefreshCw className="w-3 h-3 text-slate-400" />
+                            Extend
+                          </button>
+                        </div>
+                        
+                        {/* BOOST BUTTON TRIGGER */}
+                        <div 
+                          className="flex border-r border-slate-100"
+                          onMouseEnter={() => setActiveBoostPopoverId(property.id)}
+                          onMouseLeave={() => setActiveBoostPopoverId(null)}
+                        >
+                          <button
+                            type="button"
+                            className="w-full py-3 flex items-center justify-center gap-1 text-[#00aa4f] hover:bg-emerald-50 transition cursor-pointer"
+                          >
+                            <Zap className="w-3 h-3 text-[#00aa4f]" />
+                            Boost
+                          </button>
+                        </div>
+                        
+                        {/* DELETE BUTTON */}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProperty(property.id)}
+                          className="py-3 flex items-center justify-center gap-1 text-rose-600 hover:bg-rose-50 transition cursor-pointer rounded-br-2xl"
+                        >
+                          <Trash2 className="w-3 h-3 text-rose-400" />
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* EXTEND POPOVER */}
+                    {activeExtendPopoverId === property.id && (
+                      <div 
+                        className="absolute bottom-[44px] left-4 right-4 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-50 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-150"
+                        onMouseEnter={() => setActiveExtendPopoverId(property.id)}
+                        onMouseLeave={() => setActiveExtendPopoverId(null)}
+                      >
+                        <p className="text-[10px] uppercase font-black tracking-wider text-slate-400 border-b border-slate-50 pb-1.5 px-1">
+                          Extension Options
+                        </p>
+                        
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/landlord/payment?total=0&propertyId=${property.id}&type=extension`)}
+                          className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                        >
+                          <div>
+                            <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">Standard 30-Day Extension</p>
+                            <p className="text-[9px] text-slate-400 font-medium">Extend listing presence</p>
+                          </div>
+                          <span className="text-slate-700 font-black text-[11px]">FREE</span>
+                        </button>
+
+                        <p className="text-[9px] uppercase font-black tracking-wider text-[#00aa4f] pt-1 px-1">
+                          Extend with Boost
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/landlord/payment?total=49&propertyId=${property.id}&type=extension&tier=5days`)}
+                          className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                        >
+                          <div>
+                            <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 5-Day Hot Boost</p>
+                            <p className="text-[9px] text-slate-400 font-medium">Extend + Blitz Promotion</p>
+                          </div>
+                          <span className="text-[#00aa4f] font-black text-[11px]">₱49</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/landlord/payment?total=99&propertyId=${property.id}&type=extension&tier=2weeks`)}
+                          className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                        >
+                          <div>
+                            <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 2-Week Visibility Surge</p>
+                            <p className="text-[9px] text-slate-400 font-medium">Extend + Horizon Lift</p>
+                          </div>
+                          <span className="text-[#00aa4f] font-black text-[11px]">₱99</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/landlord/payment?total=199&propertyId=${property.id}&type=extension&tier=1month`)}
+                          className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                        >
+                          <div>
+                            <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 1-Month Domination</p>
+                            <p className="text-[9px] text-slate-400 font-medium">Extend + Premium Pinning</p>
+                          </div>
+                          <span className="text-[#00aa4f] font-black text-[11px]">₱199</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* BOOST POPOVER */}
+                    {activeBoostPopoverId === property.id && (
+                      <div 
+                        className="absolute bottom-[44px] left-4 right-4 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-50 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-150"
+                        onMouseEnter={() => setActiveBoostPopoverId(property.id)}
+                        onMouseLeave={() => setActiveBoostPopoverId(null)}
+                      >
+                        <p className="text-[10px] uppercase font-black tracking-wider text-slate-400 border-b border-slate-50 pb-1.5 px-1">
+                          Optional Visibility Rank Upgrades
+                        </p>
+                        
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/landlord/payment?total=49&propertyId=${property.id}&type=boost&tier=5days`)}
+                          className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                        >
+                          <div>
+                            <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">5-Day Hot Boost</p>
+                            <p className="text-[9px] text-slate-400 font-medium">Elevate to landing headers</p>
+                          </div>
+                          <span className="text-[#00aa4f] font-black text-[11px]">+₱49</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/landlord/payment?total=99&propertyId=${property.id}&type=boost&tier=2weeks`)}
+                          className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                        >
+                          <div>
+                            <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">2-Week Visibility Surge</p>
+                            <p className="text-[9px] text-slate-400 font-medium">Maintain higher tier queue placement</p>
+                          </div>
+                          <span className="text-[#00aa4f] font-black text-[11px]">+₱99</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/landlord/payment?total=199&propertyId=${property.id}&type=boost&tier=1month`)}
+                          className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                        >
+                          <div>
+                            <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">1-Month Market Domination</p>
+                            <p className="text-[9px] text-slate-400 font-medium">Premium pinned placement exposure</p>
+                          </div>
+                          <span className="text-[#00aa4f] font-black text-[11px]">+₱199</span>
+                        </button>
+                      </div>
+                    )}
+
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentView === 'create' && (
+          <form onSubmit={handleSubmit} className="bg-white border border-[#f1f5f9] rounded-3xl p-6 shadow-[0_4px_30px_rgba(0,0,0,0.015)] space-y-8">
+            
+            {errorMessage && (
+              <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-xs font-bold">
+                {errorMessage}
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
-              <div className="bg-slate-50 p-3 sm:p-3.5 rounded-2xl border border-slate-200 space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">Property Type</span>
-                <p className="font-bold text-slate-800">{selectedProperty.property_type || 'N/A'}</p>
+            {/* 1. CORE SPECIFICATIONS */}
+            <div className="space-y-4">
+              <h2 className="text-xs font-black uppercase tracking-wider text-emerald-800/60 border-b border-slate-50 pb-2 flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-[#00aa4f]" /> 1. CORE SPECIFICATIONS
+              </h2>
+              
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">LISTING TITLE</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. Modern Minimalist Studio near SM"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                />
               </div>
 
-              <div className="bg-slate-50 p-3 sm:p-3.5 rounded-2xl border border-slate-200 space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">Monthly Rent Price</span>
-                <p className="font-bold text-emerald-700">₱{selectedProperty.price?.toLocaleString() || 0} / month</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">PROPERTY TYPE</label>
+                  <select 
+                    value={propertyType}
+                    onChange={(e) => setPropertyType(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  >
+                    <option>Apartment</option>
+                    <option>Condo Unit</option>
+                    <option>Dormitory Bedspace</option>
+                    <option>Single House</option>
+                    <option>Room Rental Only</option>
+                    <option>Boarding House</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">PRICE (PHP / MO)</label>
+                  <input 
+                    type="number"
+                    required
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="18500"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  />
+                </div>
               </div>
 
-              <div className="bg-slate-50 p-3 sm:p-3.5 rounded-2xl border border-slate-200 space-y-1 sm:col-span-2">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">Complete Address</span>
-                <p className="font-semibold text-slate-800">{selectedProperty.address || 'No Address Provided'}</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">BEDROOMS</label>
+                  <input 
+                    type="number"
+                    value={bedrooms}
+                    onChange={(e) => setBedrooms(e.target.value)}
+                    placeholder="1"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">BATHROOMS</label>
+                  <input 
+                    type="number"
+                    value={bathrooms}
+                    onChange={(e) => setBathrooms(e.target.value)}
+                    placeholder="1"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">AREA (SQM)</label>
+                  <input 
+                    type="number"
+                    value={area}
+                    onChange={(e) => setArea(e.target.value)}
+                    placeholder="30"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  />
+                </div>
               </div>
 
-              <div className="bg-slate-50 p-3 sm:p-3.5 rounded-2xl border border-slate-200 space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">Payment Reference ID</span>
-                <p className="font-mono font-bold text-blue-700 truncate">{selectedProperty.payment_reference || 'NULL'}</p>
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">RESTROOM PRIVACY</label>
+                  <select 
+                    value={restroomPrivacy}
+                    onChange={(e) => setRestroomPrivacy(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  >
+                    <option>Private (Own Toilet)</option>
+                    <option>Shared Restroom</option>
+                  </select>
+                </div>
 
-              <div className="bg-slate-50 p-3 sm:p-3.5 rounded-2xl border border-slate-200 space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">Date Created</span>
-                <p className="font-semibold text-slate-700">{selectedProperty.created_at ? new Date(selectedProperty.created_at).toLocaleString('en-PH') : 'N/A'}</p>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">BATHROOM PRIVACY</label>
+                  <select 
+                    value={bathroomPrivacy}
+                    onChange={(e) => setBathroomPrivacy(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  >
+                    <option>Private (Own Shower)</option>
+                    <option>Shared Bathroom</option>
+                  </select>
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-3 border-t border-slate-100">
+            {/* 2. ADDRESS LOCATION */}
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <h2 className="text-xs font-black uppercase tracking-wider text-emerald-800/60 border-b border-slate-50 pb-2 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-[#00aa4f]" /> 2. ADDRESS LOCATION
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">MANUAL ADDRESS</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={manualAddress}
+                    onChange={(e) => setManualAddress(e.target.value)}
+                    placeholder="Ecoland, Davao City"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">GOOGLE MAPS PLUS CODE (OPTIONAL)</label>
+                  <input 
+                    type="text" 
+                    value={plusCode}
+                    onChange={(e) => setPlusCode(e.target.value)}
+                    placeholder="e.g. VFF7+HQ Davao City"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 3. CONTACT PARAMETERS */}
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <h2 className="text-xs font-black uppercase tracking-wider text-emerald-800/60 border-b border-slate-50 pb-2 flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-[#00aa4f]" /> 3. CONTACT PARAMETERS
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">CONTACT NUMBER</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={contactNumber}
+                    onChange={(e) => setContactNumber(e.target.value)}
+                    placeholder="0917XXXXXXX"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">EMAIL ADDRESS</label>
+                  <input 
+                    type="email" 
+                    readOnly
+                    value={emailAddress}
+                    placeholder="landlord@email.com"
+                    className="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none cursor-not-allowed"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 4. DETAILED DESCRIPTION & RULES */}
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <h2 className="text-xs font-black uppercase tracking-wider text-emerald-800/60 border-b border-slate-50 pb-2 flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-[#00aa4f]" /> 4. DETAILED DESCRIPTION & RULES
+              </h2>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">PROPERTY DESCRIPTION & RULES</label>
+                <textarea 
+                  rows={4}
+                  value={descriptionRules}
+                  onChange={(e) => setDescriptionRules(e.target.value)}
+                  placeholder="Provide details about payment terms, utilities, and roommate rules..."
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition resize-y"
+                />
+              </div>
+            </div>
+
+            {/* 5. HIGH-RES PRESENTATION MEDIA */}
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <h2 className="text-xs font-black uppercase tracking-wider text-emerald-800/60 border-b border-slate-50 pb-2 flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-[#00aa4f]" /> 5. HIGH-RES PRESENTATION MEDIA
+              </h2>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">COVER IMAGE</label>
+                <div className="border border-slate-200 rounded-xl p-3 bg-slate-50 flex items-center gap-3">
+                  <label className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2 rounded-lg cursor-pointer transition shrink-0">
+                    Choose File
+                    <input type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" />
+                  </label>
+                  <span className="text-xs text-slate-400">
+                    {selectedFiles.length > 0 ? `${selectedFiles.length} file(s) selected` : 'No file chosen'}
+                  </span>
+                </div>
+
+                {selectedFiles.length > 0 && (
+                  <div className="grid grid-cols-4 md:grid-cols-6 gap-2 mt-3">
+                    {selectedFiles.map((item, idx) => (
+                      <div key={idx} className="relative group rounded-xl overflow-hidden h-20 border border-slate-200">
+                        <img src={item.previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(idx)}
+                          className="absolute top-1 right-1 bg-rose-600 text-white rounded-full p-1 opacity-90 hover:opacity-100 transition"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 6. LISTING PACKAGE & VISIBILITY RANK */}
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+                <h2 className="text-xs font-black uppercase tracking-wider text-emerald-800/60 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#00aa4f]" /> 6. LISTING PACKAGE & VISIBILITY RANK
+                </h2>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowTooltip(!showTooltip)}
+                    className="text-xs font-bold text-[#00aa4f] hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    What is boosting? <HelpCircle className="w-3.5 h-3.5" />
+                  </button>
+                  {showTooltip && (
+                    <div className="absolute right-0 top-6 bg-slate-900 text-white text-[11px] p-3 rounded-xl shadow-xl w-64 z-50">
+                      Boosting elevates your listing to the top of search results and homepage features for selected durations!
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">LISTING PACKAGE & VISIBILITY RANK</label>
+                <select 
+                  value={boostingOption}
+                  onChange={(e) => setBoostingOption(e.target.value)}
+                  className="w-full bg-slate-50 border-2 border-emerald-500/80 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                >
+                  <option value="none">Standard Listing — FREE (Active for 30 Days)</option>
+                  <option value="5days">5-Day Hot Boost — ₱49</option>
+                  <option value="2weeks">2-Week Visibility Surge — ₱99</option>
+                  <option value="1month">1-Month Domination — ₱199</option>
+                </select>
+                <p className="text-[10px] text-slate-400 mt-1">* Standard tier active timeline begins immediately upon submission.</p>
+              </div>
+            </div>
+
+            {/* Submit Control */}
+            <div className="pt-4 border-t border-slate-100">
               <button
-                type="button"
-                onClick={() => setSelectedProperty(null)}
-                className="w-full sm:w-auto px-4 py-2.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer text-center"
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs py-3.5 rounded-xl transition cursor-pointer shadow-md disabled:opacity-50"
               >
-                Close Window
+                {isSubmitting 
+                  ? 'Processing...' 
+                  : totalAmount > 0 
+                    ? `Proceed to Payment Allocation (₱${totalAmount})` 
+                    : 'Submit Free Listing'}
               </button>
+            </div>
+          </form>
+        )}
+
+      </main>
+
+      {/* IDENTITY VERIFICATION MODAL */}
+      {isVerificationModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative my-8">
+            <button
+              type="button"
+              onClick={() => setIsVerificationModalOpen(false)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+              <div className="w-10 h-10 bg-emerald-50 text-[#00aa4f] rounded-2xl flex items-center justify-center shrink-0">
+                <UserCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-800">Landlord Identity Verification</h3>
+                <p className="text-xs text-slate-400">Complete verification to unlock property listing privileges.</p>
+              </div>
+            </div>
+
+            {verificationError && (
+              <div className="mt-4 p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-xs font-bold">
+                {verificationError}
+              </div>
+            )}
+
+            <form onSubmit={handleVerificationSubmit} className="space-y-5 mt-5">
               
-              {isPending(selectedProperty.status) && (
+              {/* LANDLORD FULL NAME */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600 flex justify-between">
+                  <span>Full Name (as stated on Valid ID)</span>
+                  <span className="text-rose-500 font-normal text-[11px]">Must match ID</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={verificationFullName}
+                  onChange={(e) => setVerificationFullName(e.target.value)}
+                  placeholder="e.g., Juan Dela Cruz"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
+                />
+                <p className="text-[11px] text-slate-400">
+                  Your Landlord Name on property listings will be matched against this name.
+                </p>
+              </div>
+
+              {/* UPLOAD VALID ID */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600">1. Photo of Valid Government ID</label>
+                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-4 bg-slate-50/50 hover:bg-slate-50 transition text-center relative">
+                  {idPhoto ? (
+                    <div className="relative group">
+                      <img src={idPhoto.previewUrl} alt="Valid ID Preview" className="h-32 mx-auto rounded-xl object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setIdPhoto(null)}
+                        className="absolute top-1 right-1 bg-rose-600 text-white rounded-full p-1 shadow hover:bg-rose-700"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer flex flex-col items-center justify-center py-2">
+                      <Upload className="w-6 h-6 text-slate-400 mb-1" />
+                      <span className="text-xs font-bold text-slate-600">Upload Valid ID Photo</span>
+                      <span className="text-[10px] text-slate-400">Passport, Driver's License, UMID, National ID</span>
+                      <input type="file" accept="image/*" onChange={handleIdPhotoChange} className="hidden" />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* UPLOAD SELFIE HOLDING ID */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600">2. Photo of You Holding the Same Valid ID</label>
+                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-4 bg-slate-50/50 hover:bg-slate-50 transition text-center relative">
+                  {selfieWithIdPhoto ? (
+                    <div className="relative group">
+                      <img src={selfieWithIdPhoto.previewUrl} alt="Selfie with ID Preview" className="h-32 mx-auto rounded-xl object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setSelfieWithIdPhoto(null)}
+                        className="absolute top-1 right-1 bg-rose-600 text-white rounded-full p-1 shadow hover:bg-rose-700"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer flex flex-col items-center justify-center py-2">
+                      <Camera className="w-6 h-6 text-slate-400 mb-1" />
+                      <span className="text-xs font-bold text-slate-600">Upload Selfie holding ID</span>
+                      <span className="text-[10px] text-slate-400">Make sure face and ID details are clearly visible</span>
+                      <input type="file" accept="image/*" onChange={handleSelfiePhotoChange} className="hidden" />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2 flex gap-3">
                 <button
                   type="button"
-                  disabled={actionLoadingId === selectedProperty.id}
-                  onClick={() => handleApprove(selectedProperty.id)}
-                  className="w-full sm:w-auto px-5 py-2.5 bg-slate-950 hover:bg-slate-900 disabled:bg-slate-300 text-white text-xs font-bold rounded-xl shadow-sm transition cursor-pointer text-center"
+                  onClick={() => setIsVerificationModalOpen(false)}
+                  className="w-1/2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
                 >
-                  {actionLoadingId === selectedProperty.id ? 'Activating...' : 'Approve & Publish Live'}
+                  Cancel
                 </button>
-              )}
-            </div>
+                <button
+                  type="submit"
+                  disabled={isSubmittingVerification}
+                  className="w-1/2 py-3 bg-[#00aa4f] hover:bg-[#009444] text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-md disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  {isSubmittingVerification ? 'Submitting...' : 'Submit Verification'}
+                </button>
+              </div>
 
+            </form>
           </div>
         </div>
       )}
+
+      {/* EDIT MODAL */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative">
+            <button 
+              type="button" 
+              onClick={() => setIsEditModalOpen(false)} 
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <h3 className="text-base font-black text-slate-800 border-b border-slate-100 pb-3">Edit Listing Details</h3>
+            
+            <form onSubmit={handleUpdateProperty} className="space-y-4 mt-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500">Title</label>
+                <input 
+                  type="text" 
+                  value={editTitle} 
+                  onChange={(e) => setEditTitle(e.target.value)} 
+                  required 
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3 py-2 text-xs font-medium outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500">Price (PHP)</label>
+                  <input 
+                    type="number" 
+                    value={editPrice} 
+                    onChange={(e) => setEditPrice(e.target.value)} 
+                    required 
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3 py-2 text-xs font-medium outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500">Contact Number</label>
+                  <input 
+                    type="text" 
+                    value={editContactNumber} 
+                    onChange={(e) => setEditContactNumber(e.target.value)} 
+                    required 
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3 py-2 text-xs font-medium outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500">Address</label>
+                <input 
+                  type="text" 
+                  value={editManualAddress} 
+                  onChange={(e) => setEditManualAddress(e.target.value)} 
+                  required 
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3 py-2 text-xs font-medium outline-none"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button 
+                  type="button" 
+                  onClick={() => setIsEditModalOpen(false)} 
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting} 
+                  className="px-5 py-2 bg-[#00aa4f] hover:bg-[#009444] text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-sm disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
