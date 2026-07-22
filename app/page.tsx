@@ -354,29 +354,29 @@ export default function HomePage() {
       </header>
 
       {/* HERO SECTION */}
-      <section className="relative overflow-hidden bg-white pt-6 pb-12 md:pt-14 md:pb-20">
+      <section className="relative overflow-hidden bg-white pt-4 pb-10 md:pt-14 md:pb-20">
         
         {/* MOBILE HERO LAYOUT (Strictly Mobile Only) */}
-        <div className="block md:hidden relative w-full px-5 min-h-[260px]">
-          {/* Background Image restricted strictly to the Right Half */}
-          <div className="absolute top-0 right-0 w-[55%] h-full z-0 pointer-events-none">
+        <div className="block md:hidden relative w-full px-5 min-h-[190px]">
+          {/* Crisp background image on right half */}
+          <div className="absolute top-0 right-0 w-[50%] h-full z-0 pointer-events-none rounded-l-2xl overflow-hidden">
             <img 
               src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=1200" 
               alt="Interior Background" 
-              className="w-full h-full object-cover object-right"
+              className="w-full h-full object-cover object-center"
             />
-            {/* Crisp fade gradient from pure white left to transparent right */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent" />
+            {/* Subtle white fade only on the immediate left boundary of the image */}
+            <div className="absolute top-0 left-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent" />
           </div>
 
-          {/* Left-Aligned Mobile Text (Does not overlap photo) */}
-          <div className="relative z-10 max-w-[62%] pt-4 pb-6 flex flex-col items-start text-left">
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-[1.2] mb-2.5">
-              Mangita og<br />puy-an,<br />
-              <span className="text-emerald-600">madali na.</span>
+          {/* Left-Aligned Text using original wording */}
+          <div className="relative z-10 max-w-[58%] pt-2 pb-4 flex flex-col items-start text-left">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-[1.2] mb-2">
+              Find Rentals <br />
+              <span className="text-emerald-600">10X Faster</span>
             </h1>
-            <p className="text-slate-500 font-medium text-xs leading-relaxed max-w-[210px]">
-              Ang platform para sa renters sa tibuok Pilipinas.
+            <p className="text-slate-500 font-medium text-[11px] leading-relaxed">
+              Discover verified rental apartments, dynamic condominiums, and residential boarding rooms seamlessly.
             </p>
           </div>
         </div>
@@ -412,7 +412,7 @@ export default function HomePage() {
       </section>
 
       {/* SEARCH BAR */}
-      <section className="max-w-5xl mx-auto px-5 -mt-6 md:mt-0 mb-10 md:mb-16 relative z-20">
+      <section className="max-w-5xl mx-auto px-5 -mt-4 md:mt-0 mb-10 md:mb-16 relative z-20">
         <motion.form 
           onSubmit={handleApplyFilters} 
           initial={{ opacity: 0, y: 20 }} 
@@ -435,7 +435,7 @@ export default function HomePage() {
                     if (!locationDropdownOpen) setLocationDropdownOpen(true);
                   }} 
                   type="text" 
-                  placeholder="Asa ka nangita og puy-an?" 
+                  placeholder="Where do you want to live?" 
                   className="w-full bg-transparent text-xs font-medium text-slate-800 placeholder-slate-400 outline-none truncate" 
                 />
               </div>
