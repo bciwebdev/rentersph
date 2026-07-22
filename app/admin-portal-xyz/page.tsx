@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { ShieldAlert, CheckCircle, Clock, MapPin, Hash, DollarSign, LogOut, ImageIcon, Lock, Banknote, Trash2, UserCheck, XCircle, ExternalLink, Eye, X, Flag, AlertTriangle } from 'lucide-react'
+import { ShieldAlert, CheckCircle, Clock, MapPin, Hash, DollarSign, LogOut, ImageIcon, Lock, Banknote, Trash2, UserCheck, XCircle, ExternalLink, Eye, X, Flag, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -57,6 +57,7 @@ export default function AdminVerificationDashboard() {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
   
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
+  const [expandedVerificationId, setExpandedVerificationId] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<'pending' | 'active' | 'pending_verifications' | 'approved_verifications' | 'reports' | 'all'>('approved_verifications')
   
   const [email, setEmail] = useState('')
@@ -302,6 +303,10 @@ export default function AdminVerificationDashboard() {
     setUserEmail(null)
   }
 
+  const toggleExpandVerification = (id: string) => {
+    setExpandedVerificationId(prev => prev === id ? null : id)
+  }
+
   const isPending = (status: string) => {
     return status === 'pending' || status === 'pending_verification'
   }
@@ -537,63 +542,80 @@ export default function AdminVerificationDashboard() {
               No pending identity verification submissions.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {pendingVerifications.map((ver) => (
-                <div key={ver.id} className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6 space-y-4 shadow-sm flex flex-col justify-between">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-start gap-2">
-                      <div>
+            <div className="grid grid-cols-1 gap-3">
+              {pendingVerifications.map((ver) => {
+                const isExpanded = expandedVerificationId === ver.id
+                return (
+                  <div key={ver.id} className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 shadow-sm transition">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
                         <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Landlord Legal Name</span>
                         <h3 className="text-base font-black text-slate-900">{ver.full_name}</h3>
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
-                        {ver.status}
-                      </span>
-                    </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">1. Valid ID Photo</span>
-                        <a href={ver.id_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
-                          <img src={ver.id_photo_url} alt="ID Photo" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                          <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
-                            <ExternalLink className="w-3.5 h-3.5" /> Open
-                          </div>
-                        </a>
-                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                          {ver.status}
+                        </span>
 
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">2. Selfie Holding ID</span>
-                        <a href={ver.selfie_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
-                          <img src={ver.selfie_photo_url} alt="Selfie with ID" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                          <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
-                            <ExternalLink className="w-3.5 h-3.5" /> Open
-                          </div>
-                        </a>
+                        <button
+                          type="button"
+                          onClick={() => toggleExpandVerification(ver.id)}
+                          className="inline-flex items-center justify-center gap-1 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition cursor-pointer"
+                        >
+                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-slate-500" />}
+                          {isExpanded ? 'Hide Details' : 'View Verification Details'}
+                        </button>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-slate-100">
-                    <button
-                      type="button"
-                      disabled={actionLoadingId === ver.id}
-                      onClick={() => handleRejectVerification(ver.id)}
-                      className="w-full sm:w-1/2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1"
-                    >
-                      <XCircle className="w-3.5 h-3.5" /> Reject
-                    </button>
-                    <button
-                      type="button"
-                      disabled={actionLoadingId === ver.id}
-                      onClick={() => handleApproveVerification(ver)}
-                      className="w-full sm:w-1/2 bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1 shadow-sm"
-                    >
-                      <CheckCircle className="w-3.5 h-3.5" /> Approve Identity
-                    </button>
+                    {isExpanded && (
+                      <div className="pt-4 mt-4 border-t border-slate-100 space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">1. Valid ID Photo</span>
+                            <a href={ver.id_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
+                              <img src={ver.id_photo_url} alt="ID Photo" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                              <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
+                                <ExternalLink className="w-3.5 h-3.5" /> Open
+                              </div>
+                            </a>
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">2. Selfie Holding ID</span>
+                            <a href={ver.selfie_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
+                              <img src={ver.selfie_photo_url} alt="Selfie with ID" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                              <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
+                                <ExternalLink className="w-3.5 h-3.5" /> Open
+                              </div>
+                            </a>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            type="button"
+                            disabled={actionLoadingId === ver.id}
+                            onClick={() => handleRejectVerification(ver.id)}
+                            className="w-full sm:w-1/2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1"
+                          >
+                            <XCircle className="w-3.5 h-3.5" /> Reject
+                          </button>
+                          <button
+                            type="button"
+                            disabled={actionLoadingId === ver.id}
+                            onClick={() => handleApproveVerification(ver)}
+                            className="w-full sm:w-1/2 bg-[#00aa4f] hover:bg-[#009444] text-white font-bold text-xs py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" /> Approve Identity
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )
         )}
@@ -605,44 +627,61 @@ export default function AdminVerificationDashboard() {
               No approved landlords found.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {approvedVerifications.map((ver) => (
-                <div key={ver.id} className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6 space-y-4 shadow-sm flex flex-col justify-between">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-start gap-2">
-                      <div>
+            <div className="grid grid-cols-1 gap-3">
+              {approvedVerifications.map((ver) => {
+                const isExpanded = expandedVerificationId === ver.id
+                return (
+                  <div key={ver.id} className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 shadow-sm transition">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
                         <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Landlord Legal Name</span>
                         <h3 className="text-base font-black text-slate-900">{ver.full_name}</h3>
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                        APPROVED
-                      </span>
-                    </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">1. Valid ID Photo</span>
-                        <a href={ver.id_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
-                          <img src={ver.id_photo_url} alt="ID Photo" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                          <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
-                            <ExternalLink className="w-3.5 h-3.5" /> Open
-                          </div>
-                        </a>
-                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                          APPROVED
+                        </span>
 
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">2. Selfie Holding ID</span>
-                        <a href={ver.selfie_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
-                          <img src={ver.selfie_photo_url} alt="Selfie with ID" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                          <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
-                            <ExternalLink className="w-3.5 h-3.5" /> Open
-                          </div>
-                        </a>
+                        <button
+                          type="button"
+                          onClick={() => toggleExpandVerification(ver.id)}
+                          className="inline-flex items-center justify-center gap-1 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition cursor-pointer"
+                        >
+                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-slate-500" />}
+                          {isExpanded ? 'Hide Details' : 'View Verification Details'}
+                        </button>
                       </div>
                     </div>
+
+                    {isExpanded && (
+                      <div className="pt-4 mt-4 border-t border-slate-100 space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">1. Valid ID Photo</span>
+                            <a href={ver.id_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
+                              <img src={ver.id_photo_url} alt="ID Photo" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                              <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
+                                <ExternalLink className="w-3.5 h-3.5" /> Open
+                              </div>
+                            </a>
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">2. Selfie Holding ID</span>
+                            <a href={ver.selfie_photo_url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-36">
+                              <img src={ver.selfie_photo_url} alt="Selfie with ID" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                              <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
+                                <ExternalLink className="w-3.5 h-3.5" /> Open
+                              </div>
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )
         )}
