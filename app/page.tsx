@@ -354,55 +354,32 @@ export default function HomePage() {
       </header>
 
       {/* HERO SECTION */}
-      <section className="relative overflow-hidden bg-white pt-4 pb-10 md:pt-14 md:pb-20">
+      <section className="relative overflow-hidden bg-white pt-6 pb-12 md:pt-14 md:pb-20">
         
-        {/* MOBILE HERO LAYOUT (Strictly Mobile Only) */}
-        <div className="block md:hidden relative w-full px-5 min-h-[190px]">
-          {/* Crisp background image on right half */}
-          <div className="absolute top-0 right-0 w-[50%] h-full z-0 pointer-events-none rounded-l-2xl overflow-hidden">
-            <img 
-              src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=1200" 
-              alt="Interior Background" 
-              className="w-full h-full object-cover object-center"
-            />
-            {/* Subtle white fade only on the immediate left boundary of the image */}
-            <div className="absolute top-0 left-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent" />
-          </div>
-
-          {/* Left-Aligned Text using original wording */}
-          <div className="relative z-10 max-w-[58%] pt-2 pb-4 flex flex-col items-start text-left">
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-[1.2] mb-2">
-              Find Rentals <br />
-              <span className="text-emerald-600">10X Faster</span>
-            </h1>
-            <p className="text-slate-500 font-medium text-[11px] leading-relaxed">
-              Discover verified rental apartments, dynamic condominiums, and residential boarding rooms seamlessly.
-            </p>
-          </div>
+        {/* BACKGROUND IMAGE WITH SMOOTH FADE (Matches Reference Layout) */}
+        <div className="absolute top-0 right-0 w-[70%] sm:w-[60%] h-full z-0 pointer-events-none">
+          <img 
+            src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=1200" 
+            alt="Interior Background" 
+            className="w-full h-full object-cover object-right-bottom"
+          />
+          {/* Smooth left-to-right white gradient blur that matches reference photo */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent" />
         </div>
 
-        {/* DESKTOP HERO LAYOUT (Unchanged Desktop View) */}
-        <div className="hidden md:flex relative flex-col items-center justify-center text-center">
-          <div className="absolute top-0 right-0 w-1/2 h-full z-0 pointer-events-none">
-            <img 
-              src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=1200" 
-              alt="Interior Background" 
-              className="w-full h-full object-cover object-center opacity-85"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#f8fafc] via-[#f8fafc]/70 to-transparent" />
-          </div>
-
-          <div className="max-w-4xl mx-auto px-5 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col items-center">
+        {/* HERO CONTENT */}
+        <div className="max-w-[1600px] mx-auto px-5 sm:px-6 lg:px-8 relative z-10">
+          <div className="max-w-[260px] sm:max-w-md md:max-w-xl text-left">
             <motion.div 
-              initial={{ opacity: 0, y: 20 }} 
+              initial={{ opacity: 0, y: 15 }} 
               animate={{ opacity: 1, y: 0 }} 
-              transition={{ duration: 0.5 }}
-              className="flex flex-col items-center"
+              transition={{ duration: 0.4 }}
             >
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-3">
-                Find Rentals <span className="text-emerald-600">10X Faster</span>
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-[1.15] mb-2.5">
+                Find Rentals <br />
+                <span className="text-emerald-600">10X Faster</span>
               </h1>
-              <p className="text-slate-500 font-semibold text-xs sm:text-sm md:text-base max-w-xl mx-auto leading-relaxed">
+              <p className="text-slate-500 font-medium text-xs sm:text-sm md:text-base leading-relaxed">
                 Discover verified rental apartments, dynamic condominiums, and residential boarding rooms seamlessly.
               </p>
             </motion.div>
