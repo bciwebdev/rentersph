@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import { 
-  FileText, MapPin, Phone, Image as ImageIcon, ArrowRight, LogOut, HelpCircle, Upload, X, Plus, Building2, RefreshCw, Trash2, Zap, Edit2, ShieldAlert, ShieldCheck, UserCheck, Camera, CheckCircle2, Clock
+  FileText, MapPin, Phone, Image as ImageIcon, ArrowRight, LogOut, HelpCircle, Upload, X, Plus, Building2, RefreshCw, Trash2, Zap, Edit2, ShieldAlert, ShieldCheck, UserCheck, Camera, CheckCircle2, Clock, Share2
 } from 'lucide-react'
 
 type ViewState = 'dashboard' | 'create'
@@ -121,14 +121,12 @@ export default function LandlordPortalPage() {
         setEmailAddress(user.email || '')
         setCurrentView('dashboard')
         
-        // 1. Fetch Profile Verification Flag
         const { data: profile } = await supabase
           .from('profiles')
           .select('is_verified, full_name')
           .eq('id', user.id)
           .single()
 
-        // 2. Check Verification Queue Status
         const { data: verifications } = await supabase
           .from('landlord_verifications')
           .select('status')
@@ -228,7 +226,6 @@ export default function LandlordPortalPage() {
     setVerificationError(null)
 
     try {
-      // 1. Upload ID Photo
       const idExt = idPhoto.file.name.split('.').pop()
       const idFilePath = `verifications/${userId}_id_${Date.now()}.${idExt}`
       const { error: uploadIdErr } = await supabase.storage
@@ -241,7 +238,6 @@ export default function LandlordPortalPage() {
         .from('verification-docs')
         .getPublicUrl(idFilePath)
 
-      // 2. Upload Selfie Photo
       const selfieExt = selfieWithIdPhoto.file.name.split('.').pop()
       const selfieFilePath = `verifications/${userId}_selfie_${Date.now()}.${selfieExt}`
       const { error: uploadSelfieErr } = await supabase.storage
@@ -254,7 +250,6 @@ export default function LandlordPortalPage() {
         .from('verification-docs')
         .getPublicUrl(selfieFilePath)
 
-      // 3. Save to verification table
       const { error: verErr } = await supabase
         .from('landlord_verifications')
         .insert([{
@@ -267,7 +262,6 @@ export default function LandlordPortalPage() {
 
       if (verErr) throw verErr
 
-      // Update name on profile
       await supabase
         .from('profiles')
         .update({ full_name: verificationFullName.trim() })
@@ -322,7 +316,6 @@ export default function LandlordPortalPage() {
     }
   }
 
-  // Edit Feature States
   const openEditModal = (property: any) => {
     setEditingProperty(property)
     setEditTitle(property.title || '')
@@ -504,47 +497,50 @@ export default function LandlordPortalPage() {
   return (
     <div className="min-h-screen bg-[#fcfdfe] text-[#1e293b] antialiased font-sans pb-16">
       
-      {/* HEADER SECTION - Responsive mobile stack / Desktop flex-row */}
-      <header className="max-w-4xl mx-auto px-4 pt-6 md:pt-8 pb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0 border-b border-slate-100">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#0f172a]">
-              {currentView === 'dashboard' ? 'Landlord Dashboard' : 'Create Rental Listing'}
-            </h1>
-            {/* VERIFIED BADGE HEADER */}
-            {verificationStatus === 'approved' && (
-              <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] font-black px-2.5 py-1 rounded-full border border-emerald-200 shrink-0">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#00aa4f]" /> Verified
-              </span>
-            )}
+      {/* HEADER SECTION */}
+      <header className="max-w-4xl mx-auto px-4 pt-6 pb-6 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#0f172a]">
+                {currentView === 'dashboard' ? 'Landlord Dashboard' : 'Create Rental Listing'}
+              </h1>
+              {verificationStatus === 'approved' && (
+                <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] font-black px-2.5 py-1 rounded-full border border-emerald-200 shrink-0">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#00aa4f]" /> Verified
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-400">
+              {currentView === 'dashboard' ? 'Manage your registered active property profiles.' : 'Fill out the details below to add your unit to rentersPH.'}
+            </p>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {currentView === 'dashboard' ? 'Manage your registered active property profiles.' : 'Fill out the details below to add your unit to rentersPH.'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
-          {currentView === 'create' && (
+
+          <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+            {currentView === 'create' && (
+              <button 
+                type="button" 
+                onClick={() => { setCurrentView('dashboard'); resetForm(); }}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2.5 rounded-xl transition cursor-pointer"
+              >
+                Back to Dashboard
+              </button>
+            )}
             <button 
               type="button" 
-              onClick={() => { setCurrentView('dashboard'); resetForm(); }}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2 rounded-xl transition cursor-pointer"
+              onClick={handleSignOut}
+              className="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
             >
-              Back to Dashboard
+              <LogOut className="w-3.5 h-3.5" /> Sign Out
             </button>
-          )}
-          <button 
-            type="button" 
-            onClick={handleSignOut}
-            className="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5" /> Sign Out
-          </button>
+          </div>
+
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 mt-8">
         
-        {/* UNVERIFIED BANNER */}
         {verificationStatus === 'unverified' && (
           <div className="mb-6 bg-amber-50/80 border border-amber-200/80 p-5 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
             <div className="flex items-start gap-3.5">
@@ -568,7 +564,6 @@ export default function LandlordPortalPage() {
           </div>
         )}
 
-        {/* PENDING VERIFICATION BANNER */}
         {verificationStatus === 'pending' && (
           <div className="mb-6 bg-blue-50/80 border border-blue-200/80 p-5 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
             <div className="flex items-start gap-3.5">
@@ -622,222 +617,230 @@ export default function LandlordPortalPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {myProperties.map((property) => (
-                  <div key={property.id} className="bg-white border border-[#f1f5f9] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col justify-between relative">
-                    <div>
-                      {property.images && property.images.length > 0 ? (
-                        <div className="w-full h-40 overflow-hidden rounded-t-2xl">
-                          <img src={property.images[0]} alt="Property image" className="w-full h-full object-cover" />
-                        </div>
-                      ) : (
-                        <div className="w-full h-40 bg-slate-50 flex items-center justify-center text-slate-300 rounded-t-2xl">
-                          <ImageIcon className="w-8 h-8" />
-                        </div>
-                      )}
-                      <div className="p-5 space-y-2">
-                        <div className="flex justify-between items-start gap-2">
-                          <h4 className="text-sm font-black text-slate-800 line-clamp-1">{property.title}</h4>
-                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                            property.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
-                          }`}>
-                            {property.status === 'approved' ? 'LIVE ON SITE' : (property.status || 'pending')}
-                          </span>
-                        </div>
-                        <p className="text-xs font-black text-[#00aa4f]">₱{property.price.toLocaleString()} / mo</p>
-                        <div className="flex items-center gap-1.5 text-slate-400 text-xs">
-                          <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                          <span className="truncate">{property.manual_address}</span>
-                        </div>
+                {myProperties.map((property) => {
+                  const propertyUrl = typeof window !== 'undefined' ? `${window.location.origin}/property/${property.id}` : `https://rentersph.com/property/${property.id}`
+                  const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(propertyUrl)}`
 
-                        <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex items-center justify-between text-xs font-semibold text-slate-600">
-                          <span className="text-slate-400 text-[11px]">Time Remaining:</span>
-                          <span className={`font-black flex items-center gap-1 ${
-                            calculateDaysLeft(property.expires_at) <= 5 ? 'text-rose-600 animate-pulse' : 'text-slate-700'
-                          }`}>
-                            {calculateDaysLeft(property.expires_at)} days left
-                          </span>
-                        </div>
+                  return (
+                    <div key={property.id} className="bg-white border border-[#f1f5f9] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col justify-between relative">
+                      <div>
+                        {property.images && property.images.length > 0 ? (
+                          <div className="w-full h-40 overflow-hidden rounded-t-2xl">
+                            <img src={property.images[0]} alt="Property image" className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="w-full h-40 bg-slate-50 flex items-center justify-center text-slate-300 rounded-t-2xl">
+                            <ImageIcon className="w-8 h-8" />
+                          </div>
+                        )}
+                        <div className="p-5 space-y-2">
+                          <div className="flex justify-between items-start gap-2">
+                            <h4 className="text-sm font-black text-slate-800 line-clamp-1">{property.title}</h4>
+                            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                              property.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
+                            }`}>
+                              {property.status === 'approved' ? 'LIVE ON SITE' : (property.status || 'pending')}
+                            </span>
+                          </div>
+                          <p className="text-xs font-black text-[#00aa4f]">₱{property.price.toLocaleString()} / mo</p>
+                          <div className="flex items-center gap-1.5 text-slate-400 text-xs">
+                            <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                            <span className="truncate">{property.manual_address}</span>
+                          </div>
 
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col border-t border-slate-50 bg-slate-50/50 rounded-b-2xl">
-                      <div className="px-5 py-2.5 flex items-center justify-between text-[11px] font-semibold text-slate-400 border-b border-slate-100">
-                        <span>{property.property_type}</span>
-                        <span>{property.bedrooms} BR · {property.bathrooms} BA</span>
+                          <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex items-center justify-between text-xs font-semibold text-slate-600">
+                            <span className="text-slate-400 text-[11px]">Time Remaining:</span>
+                            <span className={`font-black flex items-center gap-1 ${
+                              calculateDaysLeft(property.expires_at) <= 5 ? 'text-rose-600 animate-pulse' : 'text-slate-700'
+                            }`}>
+                              {calculateDaysLeft(property.expires_at)} days left
+                            </span>
+                          </div>
+
+                        </div>
                       </div>
                       
-                      {/* ACTION CONTROLS WRAPPER CELL */}
-                      <div className="grid grid-cols-4 text-[10px] font-bold relative">
+                      <div className="flex flex-col border-t border-slate-50 bg-slate-50/50 rounded-b-2xl">
+                        <div className="px-5 py-2.5 flex items-center justify-between text-[11px] font-semibold text-slate-400 border-b border-slate-100">
+                          <span>{property.property_type}</span>
+                          <span>{property.bedrooms} BR · {property.bathrooms} BA</span>
+                        </div>
                         
-                        {/* EDIT BUTTON */}
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(property)}
-                          className="py-3 flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 border-r border-slate-100 transition cursor-pointer rounded-bl-2xl"
-                        >
-                          <Edit2 className="w-3 h-3 text-slate-400" />
-                          Edit
-                        </button>
+                        <div className="grid grid-cols-5 text-[10px] font-bold relative">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(property)}
+                            className="py-3 flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 border-r border-slate-100 transition cursor-pointer rounded-bl-2xl"
+                          >
+                            <Edit2 className="w-3 h-3 text-slate-400" />
+                            Edit
+                          </button>
 
-                        {/* EXTEND BUTTON TRIGGER */}
+                          <a
+                            href={facebookShareUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="py-3 flex items-center justify-center gap-1 text-blue-600 hover:bg-blue-50 border-r border-slate-100 transition cursor-pointer"
+                            title="Share to Facebook"
+                          >
+                            <Share2 className="w-3 h-3 text-blue-500" />
+                            Share
+                          </a>
+
+                          <div 
+                            className="flex border-r border-slate-100"
+                            onMouseEnter={() => setActiveExtendPopoverId(property.id)}
+                            onMouseLeave={() => setActiveExtendPopoverId(null)}
+                          >
+                            <button
+                              type="button"
+                              className="w-full py-3 flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                            >
+                              <RefreshCw className="w-3 h-3 text-slate-400" />
+                              Extend
+                            </button>
+                          </div>
+                          
+                          <div 
+                            className="flex border-r border-slate-100"
+                            onMouseEnter={() => setActiveBoostPopoverId(property.id)}
+                            onMouseLeave={() => setActiveBoostPopoverId(null)}
+                          >
+                            <button
+                              type="button"
+                              className="w-full py-3 flex items-center justify-center gap-1 text-[#00aa4f] hover:bg-emerald-50 transition cursor-pointer"
+                            >
+                              <Zap className="w-3 h-3 text-[#00aa4f]" />
+                              Boost
+                            </button>
+                          </div>
+                          
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteProperty(property.id)}
+                            className="py-3 flex items-center justify-center gap-1 text-rose-600 hover:bg-rose-50 transition cursor-pointer rounded-br-2xl"
+                          >
+                            <Trash2 className="w-3 h-3 text-rose-400" />
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+
+                      {activeExtendPopoverId === property.id && (
                         <div 
-                          className="flex border-r border-slate-100"
+                          className="absolute bottom-[44px] left-4 right-4 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-50 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-150"
                           onMouseEnter={() => setActiveExtendPopoverId(property.id)}
                           onMouseLeave={() => setActiveExtendPopoverId(null)}
                         >
+                          <p className="text-[10px] uppercase font-black tracking-wider text-slate-400 border-b border-slate-50 pb-1.5 px-1">
+                            Extension Options
+                          </p>
+                          
                           <button
                             type="button"
-                            className="w-full py-3 flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                            onClick={() => router.push(`/landlord/payment?total=0&propertyId=${property.id}&type=extension`)}
+                            className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
                           >
-                            <RefreshCw className="w-3 h-3 text-slate-400" />
-                            Extend
+                            <div>
+                              <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">Standard 30-Day Extension</p>
+                              <p className="text-[9px] text-slate-400 font-medium">Extend listing presence</p>
+                            </div>
+                            <span className="text-slate-700 font-black text-[11px]">FREE</span>
+                          </button>
+
+                          <p className="text-[9px] uppercase font-black tracking-wider text-[#00aa4f] pt-1 px-1">
+                            Extend with Boost
+                          </p>
+
+                          <button
+                            type="button"
+                            onClick={() => router.push(`/landlord/payment?total=49&propertyId=${property.id}&type=extension&tier=5days`)}
+                            className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                          >
+                            <div>
+                              <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 5-Day Hot Boost</p>
+                              <p className="text-[9px] text-slate-400 font-medium">Extend + Blitz Promotion</p>
+                            </div>
+                            <span className="text-[#00aa4f] font-black text-[11px]">₱49</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => router.push(`/landlord/payment?total=99&propertyId=${property.id}&type=extension&tier=2weeks`)}
+                            className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                          >
+                            <div>
+                              <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 2-Week Visibility Surge</p>
+                              <p className="text-[9px] text-slate-400 font-medium">Extend + Horizon Lift</p>
+                            </div>
+                            <span className="text-[#00aa4f] font-black text-[11px]">₱99</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => router.push(`/landlord/payment?total=199&propertyId=${property.id}&type=extension&tier=1month`)}
+                            className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                          >
+                            <div>
+                              <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 1-Month Domination</p>
+                              <p className="text-[9px] text-slate-400 font-medium">Extend + Premium Pinning</p>
+                            </div>
+                            <span className="text-[#00aa4f] font-black text-[11px]">₱199</span>
                           </button>
                         </div>
-                        
-                        {/* BOOST BUTTON TRIGGER */}
+                      )}
+
+                      {activeBoostPopoverId === property.id && (
                         <div 
-                          className="flex border-r border-slate-100"
+                          className="absolute bottom-[44px] left-4 right-4 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-50 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-150"
                           onMouseEnter={() => setActiveBoostPopoverId(property.id)}
                           onMouseLeave={() => setActiveBoostPopoverId(null)}
                         >
+                          <p className="text-[10px] uppercase font-black tracking-wider text-slate-400 border-b border-slate-50 pb-1.5 px-1">
+                            Optional Visibility Rank Upgrades
+                          </p>
+                          
                           <button
                             type="button"
-                            className="w-full py-3 flex items-center justify-center gap-1 text-[#00aa4f] hover:bg-emerald-50 transition cursor-pointer"
+                            onClick={() => router.push(`/landlord/payment?total=49&propertyId=${property.id}&type=boost&tier=5days`)}
+                            className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
                           >
-                            <Zap className="w-3 h-3 text-[#00aa4f]" />
-                            Boost
+                            <div>
+                              <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">5-Day Hot Boost</p>
+                              <p className="text-[9px] text-slate-400 font-medium">Elevate to landing headers</p>
+                            </div>
+                            <span className="text-[#00aa4f] font-black text-[11px]">+₱49</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => router.push(`/landlord/payment?total=99&propertyId=${property.id}&type=boost&tier=2weeks`)}
+                            className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                          >
+                            <div>
+                              <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">2-Week Visibility Surge</p>
+                              <p className="text-[9px] text-slate-400 font-medium">Maintain higher tier queue placement</p>
+                            </div>
+                            <span className="text-[#00aa4f] font-black text-[11px]">+₱99</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => router.push(`/landlord/payment?total=199&propertyId=${property.id}&type=boost&tier=1month`)}
+                            className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
+                          >
+                            <div>
+                              <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">1-Month Market Domination</p>
+                              <p className="text-[9px] text-slate-400 font-medium">Premium pinned placement exposure</p>
+                            </div>
+                            <span className="text-[#00aa4f] font-black text-[11px]">+₱199</span>
                           </button>
                         </div>
-                        
-                        {/* DELETE BUTTON */}
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteProperty(property.id)}
-                          className="py-3 flex items-center justify-center gap-1 text-rose-600 hover:bg-rose-50 transition cursor-pointer rounded-br-2xl"
-                        >
-                          <Trash2 className="w-3 h-3 text-rose-400" />
-                          Delete
-                        </button>
-                      </div>
+                      )}
+
                     </div>
-
-                    {/* EXTEND POPOVER */}
-                    {activeExtendPopoverId === property.id && (
-                      <div 
-                        className="absolute bottom-[44px] left-4 right-4 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-50 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-150"
-                        onMouseEnter={() => setActiveExtendPopoverId(property.id)}
-                        onMouseLeave={() => setActiveExtendPopoverId(null)}
-                      >
-                        <p className="text-[10px] uppercase font-black tracking-wider text-slate-400 border-b border-slate-50 pb-1.5 px-1">
-                          Extension Options
-                        </p>
-                        
-                        <button
-                          type="button"
-                          onClick={() => router.push(`/landlord/payment?total=0&propertyId=${property.id}&type=extension`)}
-                          className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
-                        >
-                          <div>
-                            <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">Standard 30-Day Extension</p>
-                            <p className="text-[9px] text-slate-400 font-medium">Extend listing presence</p>
-                          </div>
-                          <span className="text-slate-700 font-black text-[11px]">FREE</span>
-                        </button>
-
-                        <p className="text-[9px] uppercase font-black tracking-wider text-[#00aa4f] pt-1 px-1">
-                          Extend with Boost
-                        </p>
-
-                        <button
-                          type="button"
-                          onClick={() => router.push(`/landlord/payment?total=49&propertyId=${property.id}&type=extension&tier=5days`)}
-                          className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
-                        >
-                          <div>
-                            <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 5-Day Hot Boost</p>
-                            <p className="text-[9px] text-slate-400 font-medium">Extend + Blitz Promotion</p>
-                          </div>
-                          <span className="text-[#00aa4f] font-black text-[11px]">₱49</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => router.push(`/landlord/payment?total=99&propertyId=${property.id}&type=extension&tier=2weeks`)}
-                          className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
-                        >
-                          <div>
-                            <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 2-Week Visibility Surge</p>
-                            <p className="text-[9px] text-slate-400 font-medium">Extend + Horizon Lift</p>
-                          </div>
-                          <span className="text-[#00aa4f] font-black text-[11px]">₱99</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => router.push(`/landlord/payment?total=199&propertyId=${property.id}&type=extension&tier=1month`)}
-                          className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
-                        >
-                          <div>
-                            <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">with 1-Month Domination</p>
-                            <p className="text-[9px] text-slate-400 font-medium">Extend + Premium Pinning</p>
-                          </div>
-                          <span className="text-[#00aa4f] font-black text-[11px]">₱199</span>
-                        </button>
-                      </div>
-                    )}
-
-                    {/* BOOST POPOVER */}
-                    {activeBoostPopoverId === property.id && (
-                      <div 
-                        className="absolute bottom-[44px] left-4 right-4 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-50 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-150"
-                        onMouseEnter={() => setActiveBoostPopoverId(property.id)}
-                        onMouseLeave={() => setActiveBoostPopoverId(null)}
-                      >
-                        <p className="text-[10px] uppercase font-black tracking-wider text-slate-400 border-b border-slate-50 pb-1.5 px-1">
-                          Optional Visibility Rank Upgrades
-                        </p>
-                        
-                        <button
-                          type="button"
-                          onClick={() => router.push(`/landlord/payment?total=49&propertyId=${property.id}&type=boost&tier=5days`)}
-                          className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
-                        >
-                          <div>
-                            <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">5-Day Hot Boost</p>
-                            <p className="text-[9px] text-slate-400 font-medium">Elevate to landing headers</p>
-                          </div>
-                          <span className="text-[#00aa4f] font-black text-[11px]">+₱49</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => router.push(`/landlord/payment?total=99&propertyId=${property.id}&type=boost&tier=2weeks`)}
-                          className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
-                        >
-                          <div>
-                            <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">2-Week Visibility Surge</p>
-                            <p className="text-[9px] text-slate-400 font-medium">Maintain higher tier queue placement</p>
-                          </div>
-                          <span className="text-[#00aa4f] font-black text-[11px]">+₱99</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => router.push(`/landlord/payment?total=199&propertyId=${property.id}&type=boost&tier=1month`)}
-                          className="w-full text-left p-2.5 rounded-xl border border-slate-100 hover:border-[#00aa4f] hover:bg-emerald-50/30 transition flex justify-between items-center group cursor-pointer"
-                        >
-                          <div>
-                            <p className="text-slate-800 font-black text-xs group-hover:text-[#00aa4f]">1-Month Market Domination</p>
-                            <p className="text-[9px] text-slate-400 font-medium">Premium pinned placement exposure</p>
-                          </div>
-                          <span className="text-[#00aa4f] font-black text-[11px]">+₱199</span>
-                        </button>
-                      </div>
-                    )}
-
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
@@ -852,7 +855,6 @@ export default function LandlordPortalPage() {
               </div>
             )}
 
-            {/* 1. CORE SPECIFICATIONS */}
             <div className="space-y-4">
               <h2 className="text-xs font-black uppercase tracking-wider text-emerald-800/60 border-b border-slate-50 pb-2 flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-[#00aa4f]" /> 1. CORE SPECIFICATIONS
@@ -962,7 +964,6 @@ export default function LandlordPortalPage() {
               </div>
             </div>
 
-            {/* 2. ADDRESS LOCATION */}
             <div className="space-y-4 pt-4 border-t border-slate-100">
               <h2 className="text-xs font-black uppercase tracking-wider text-emerald-800/60 border-b border-slate-50 pb-2 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-[#00aa4f]" /> 2. ADDRESS LOCATION
@@ -994,7 +995,6 @@ export default function LandlordPortalPage() {
               </div>
             </div>
 
-            {/* 3. CONTACT PARAMETERS */}
             <div className="space-y-4 pt-4 border-t border-slate-100">
               <h2 className="text-xs font-black uppercase tracking-wider text-emerald-800/60 border-b border-slate-50 pb-2 flex items-center gap-1.5">
                 <Phone className="w-3.5 h-3.5 text-[#00aa4f]" /> 3. CONTACT PARAMETERS
@@ -1026,7 +1026,6 @@ export default function LandlordPortalPage() {
               </div>
             </div>
 
-            {/* 4. DETAILED DESCRIPTION & RULES */}
             <div className="space-y-4 pt-4 border-t border-slate-100">
               <h2 className="text-xs font-black uppercase tracking-wider text-emerald-800/60 border-b border-slate-50 pb-2 flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-[#00aa4f]" /> 4. DETAILED DESCRIPTION & RULES
@@ -1044,7 +1043,6 @@ export default function LandlordPortalPage() {
               </div>
             </div>
 
-            {/* 5. HIGH-RES PRESENTATION MEDIA */}
             <div className="space-y-4 pt-4 border-t border-slate-100">
               <h2 className="text-xs font-black uppercase tracking-wider text-emerald-800/60 border-b border-slate-50 pb-2 flex items-center gap-1.5">
                 <ImageIcon className="w-3.5 h-3.5 text-[#00aa4f]" /> 5. HIGH-RES PRESENTATION MEDIA
@@ -1081,7 +1079,6 @@ export default function LandlordPortalPage() {
               </div>
             </div>
 
-            {/* 6. LISTING PACKAGE & VISIBILITY RANK */}
             <div className="space-y-4 pt-4 border-t border-slate-100">
               <div className="flex justify-between items-center border-b border-slate-50 pb-2">
                 <h2 className="text-xs font-black uppercase tracking-wider text-emerald-800/60 flex items-center gap-1.5">
@@ -1119,7 +1116,6 @@ export default function LandlordPortalPage() {
               </div>
             </div>
 
-            {/* Submit Control */}
             <div className="pt-4 border-t border-slate-100">
               <button
                 type="submit"
@@ -1138,7 +1134,6 @@ export default function LandlordPortalPage() {
 
       </main>
 
-      {/* IDENTITY VERIFICATION MODAL */}
       {isVerificationModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative my-8">
@@ -1168,7 +1163,6 @@ export default function LandlordPortalPage() {
 
             <form onSubmit={handleVerificationSubmit} className="space-y-5 mt-5">
               
-              {/* LANDLORD FULL NAME */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-600 flex justify-between">
                   <span>Full Name (as stated on Valid ID)</span>
@@ -1187,7 +1181,6 @@ export default function LandlordPortalPage() {
                 </p>
               </div>
 
-              {/* UPLOAD VALID ID */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-600">1. Photo of Valid Government ID</label>
                 <div className="border-2 border-dashed border-slate-200 rounded-2xl p-4 bg-slate-50/50 hover:bg-slate-50 transition text-center relative">
@@ -1213,7 +1206,6 @@ export default function LandlordPortalPage() {
                 </div>
               </div>
 
-              {/* UPLOAD SELFIE HOLDING ID */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-600">2. Photo of You Holding the Same Valid ID</label>
                 <div className="border-2 border-dashed border-slate-200 rounded-2xl p-4 bg-slate-50/50 hover:bg-slate-50 transition text-center relative">
@@ -1261,7 +1253,6 @@ export default function LandlordPortalPage() {
         </div>
       )}
 
-      {/* EDIT MODAL */}
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative">
