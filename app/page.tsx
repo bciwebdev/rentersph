@@ -6,7 +6,7 @@ import { createBrowserClient } from '@supabase/ssr'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, MapPin, Home, Building2, Bed, Bath, Heart,
-  Sparkles, CheckCircle, Menu, X, ChevronDown, ChevronLeft, Flag, Bell, ArrowRight
+  CheckCircle, Menu, X, ChevronDown, ChevronLeft, Flag, Bell, ArrowRight
 } from 'lucide-react'
 
 const supabase = createBrowserClient(
@@ -356,14 +356,13 @@ export default function HomePage() {
       {/* HERO SECTION */}
       <section className="relative overflow-hidden bg-white pt-6 pb-12 md:pt-14 md:pb-20">
         
-        {/* BACKGROUND IMAGE WITH SMOOTH FADE (Matches Reference Layout) */}
+        {/* BACKGROUND IMAGE WITH SMOOTH FADE */}
         <div className="absolute top-0 right-0 w-[70%] sm:w-[60%] h-full z-0 pointer-events-none">
           <img 
             src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=1200" 
             alt="Interior Background" 
             className="w-full h-full object-cover object-right-bottom"
           />
-          {/* Smooth left-to-right white gradient blur that matches reference photo */}
           <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent" />
         </div>
 
@@ -405,6 +404,7 @@ export default function HomePage() {
               <MapPin className="w-5 h-5 text-slate-700 shrink-0" />
               <div className="flex-1 text-left min-w-0">
                 <label className="hidden md:block text-[10px] font-black uppercase tracking-wider text-slate-400">Location</label>
+                {/* Mobile Input */}
                 <input 
                   value={search} 
                   onChange={(e) => {
@@ -413,7 +413,18 @@ export default function HomePage() {
                   }} 
                   type="text" 
                   placeholder="Where do you want to live?" 
-                  className="w-full bg-transparent text-xs font-medium text-slate-800 placeholder-slate-400 outline-none truncate" 
+                  className="md:hidden w-full bg-transparent text-xs font-medium text-slate-800 placeholder-slate-400 outline-none truncate" 
+                />
+                {/* Desktop Input */}
+                <input 
+                  value={search} 
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    if (!locationDropdownOpen) setLocationDropdownOpen(true);
+                  }} 
+                  type="text" 
+                  placeholder="Enter Location" 
+                  className="hidden md:block w-full bg-transparent text-xs font-medium text-slate-800 placeholder-slate-400 outline-none truncate" 
                 />
               </div>
               <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 hidden md:block ${locationDropdownOpen ? 'rotate-180' : ''}`} />
