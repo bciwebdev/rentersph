@@ -353,42 +353,48 @@ export default function HomePage() {
         </AnimatePresence>
       </header>
 
-      {/* HERO SECTION WITH BACKGROUND IMAGE AND FORMATTED TITLE */}
-      <section className="relative overflow-hidden min-h-[360px] md:min-h-[460px] flex items-center pt-8 md:pt-12 pb-16 md:pb-24">
+      {/* HERO SECTION WITH HALF-WIDTH BACKGROUND IMAGE AND DESKTOP TITLE */}
+      <section className="relative overflow-hidden pt-8 md:pt-14 pb-12 md:pb-20 flex flex-col items-center justify-center text-center">
         
-        {/* Background Image Container with Smooth Fade Gradient Overlay */}
-        <div className="absolute inset-0 z-0">
+        {/* Background Image Container - Restricted to Right Half (w-1/2) */}
+        <div className="absolute top-0 right-0 w-1/2 h-full z-0 pointer-events-none">
           <img 
-            src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=2000" 
+            src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=1200" 
             alt="Interior Background" 
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-cover object-center opacity-85"
           />
-          {/* Linear gradient fade ensuring high legibility for left-side typography */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 sm:via-white/80 to-transparent" />
+          {/* Smooth left-to-right fade overlay to blend into background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#f8fafc] via-[#f8fafc]/70 to-transparent" />
         </div>
 
-        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 text-left relative z-10 w-full">
+        <div className="max-w-4xl mx-auto px-5 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col items-center">
           <motion.div 
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.5 }}
-            className="max-w-lg"
+            className="flex flex-col items-center"
           >
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-[1.12] mb-3 md:mb-4">
-              Mangita og <br />
-              puy-an, <br />
-              <span className="text-emerald-600">madali</span> na.
+            {/* Verified Badge */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] md:text-xs font-extrabold uppercase tracking-wider mb-4 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Verified Property Ecosystem</span>
+            </div>
+
+            {/* Restored Desktop Title */}
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-3">
+              Find Rentals <span className="text-emerald-600">10X Faster</span>
             </h1>
             
-            <p className="text-slate-600 font-semibold text-sm sm:text-base md:text-lg leading-snug">
-              Ang platform para sa renters sa tibuok Pilipinas.
+            {/* Restored Desktop Subtitle */}
+            <p className="text-slate-500 font-semibold text-xs sm:text-sm md:text-base max-w-xl mx-auto leading-relaxed">
+              Discover verified rental apartments, dynamic condominiums, and residential boarding rooms seamlessly.
             </p>
           </motion.div>
         </div>
       </section>
 
       {/* SEARCH BAR */}
-      <section className="max-w-5xl mx-auto px-5 -mt-8 md:-mt-12 mb-10 md:mb-16 relative z-20">
+      <section className="max-w-5xl mx-auto px-5 mb-10 md:mb-16 relative z-20">
         <motion.form 
           onSubmit={handleApplyFilters} 
           initial={{ opacity: 0, y: 20 }} 
@@ -411,7 +417,7 @@ export default function HomePage() {
                     if (!locationDropdownOpen) setLocationDropdownOpen(true);
                   }} 
                   type="text" 
-                  placeholder="Asa ka nangita og puy-an?" 
+                  placeholder="e.g. Davao City, Condominium..." 
                   className="w-full bg-transparent text-sm md:text-xs font-semibold md:font-bold text-slate-800 placeholder-slate-400 outline-none truncate" 
                 />
               </div>
@@ -610,7 +616,7 @@ export default function HomePage() {
             className="hidden md:flex bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-8 py-3.5 rounded-full items-center justify-center gap-2 transition duration-200 cursor-pointer shadow-md shadow-emerald-600/30 shrink-0"
           >
             <Search className="w-4 h-4" />
-            <span>Search Rentals</span>
+            <span>Apply Filters</span>
           </button>
         </motion.form>
       </section>
@@ -661,7 +667,6 @@ export default function HomePage() {
                   </button>
                 </div>
 
-                {/* Side-scrolling carousel on mobile, 3-column grid on desktop */}
                 <div className="flex md:grid overflow-x-auto md:overflow-visible gap-2.5 sm:gap-4 md:gap-6 pb-3 md:pb-0 scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:grid-cols-3">
                   {featuredItems.map((p) => {
                     const img = getDisplayImage(p)
@@ -673,7 +678,6 @@ export default function HomePage() {
                         href={`/property/${p.id}`}
                         className="w-[155px] sm:w-[200px] md:w-full group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col shrink-0 md:shrink"
                       >
-                        {/* Strictly fixed 4:3 Aspect Ratio Image Container */}
                         <div className="w-full aspect-[4/3] bg-slate-100 relative overflow-hidden shrink-0">
                           <span className="absolute top-2 left-2 z-20 text-[9px] sm:text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-1.5 py-0.5 rounded-md shadow-sm">
                             For Rent
@@ -742,9 +746,9 @@ export default function HomePage() {
             {/* ALL AVAILABLE PROPERTIES */}
             <div>
               <div className="mb-3 sm:mb-6">
-                <h2 className="text-lg md:text-2xl font-black text-slate-900 tracking-tight">Available Units</h2>
+                <h2 className="text-lg md:text-2xl font-black text-slate-900 tracking-tight">Latest Available Rental Units</h2>
                 <p className="text-[10px] sm:text-xs font-semibold text-slate-400 mt-0.5">
-                  Showing {regularItems.length} matching rentals found
+                  Showing {regularItems.length} active matching options found
                 </p>
               </div>
 
@@ -760,7 +764,6 @@ export default function HomePage() {
                         href={`/property/${p.id}`}
                         className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full w-full max-w-[155px] sm:max-w-none justify-self-start"
                       >
-                        {/* Strictly fixed 4:3 Aspect Ratio Image Container */}
                         <div className="w-full aspect-[4/3] bg-slate-100 relative overflow-hidden shrink-0">
                           <span className="absolute top-2 left-2 z-20 text-[9px] sm:text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-1.5 py-0.5 rounded-md shadow-sm">
                             For Rent
