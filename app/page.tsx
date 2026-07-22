@@ -353,17 +353,17 @@ export default function HomePage() {
         </AnimatePresence>
       </header>
 
-      {/* HERO SECTION WITH HALF-WIDTH BACKGROUND IMAGE AND DESKTOP TITLE */}
+      {/* HERO SECTION */}
       <section className="relative overflow-hidden pt-8 md:pt-14 pb-12 md:pb-20 flex flex-col items-center justify-center text-center">
         
-        {/* Background Image Container - Restricted to Right Half (w-1/2) */}
+        {/* Background Image Container - Restricted to Right Half */}
         <div className="absolute top-0 right-0 w-1/2 h-full z-0 pointer-events-none">
           <img 
             src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=1200" 
             alt="Interior Background" 
             className="w-full h-full object-cover object-center opacity-85"
           />
-          {/* Smooth left-to-right fade overlay to blend into background */}
+          {/* Smooth left-to-right fade overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#f8fafc] via-[#f8fafc]/70 to-transparent" />
         </div>
 
@@ -374,18 +374,12 @@ export default function HomePage() {
             transition={{ duration: 0.5 }}
             className="flex flex-col items-center"
           >
-            {/* Verified Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] md:text-xs font-extrabold uppercase tracking-wider mb-4 shadow-sm">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Verified Property Ecosystem</span>
-            </div>
-
-            {/* Restored Desktop Title */}
+            {/* Title */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-3">
               Find Rentals <span className="text-emerald-600">10X Faster</span>
             </h1>
             
-            {/* Restored Desktop Subtitle */}
+            {/* Subtitle */}
             <p className="text-slate-500 font-semibold text-xs sm:text-sm md:text-base max-w-xl mx-auto leading-relaxed">
               Discover verified rental apartments, dynamic condominiums, and residential boarding rooms seamlessly.
             </p>
@@ -417,7 +411,7 @@ export default function HomePage() {
                     if (!locationDropdownOpen) setLocationDropdownOpen(true);
                   }} 
                   type="text" 
-                  placeholder="e.g. Davao City, Condominium..." 
+                  placeholder="enter the city" 
                   className="w-full bg-transparent text-sm md:text-xs font-semibold md:font-bold text-slate-800 placeholder-slate-400 outline-none truncate" 
                 />
               </div>
