@@ -354,14 +354,15 @@ export default function HomePage() {
       {/* HERO SECTION */}
       <section className="relative overflow-hidden bg-white pt-6 pb-12 md:pt-14 md:pb-20">
         
-        {/* BACKGROUND IMAGE WITH SMOOTH FADE */}
-        <div className="absolute top-0 right-0 w-[70%] sm:w-[60%] h-full z-0 pointer-events-none">
+        {/* BACKGROUND IMAGE WITH TIGHT FADE */}
+        <div className="absolute top-0 right-0 w-[80%] sm:w-[65%] md:w-[60%] h-full z-0 pointer-events-none">
           <img 
             src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=1200" 
             alt="Interior Background" 
             className="w-full h-full object-cover object-right-bottom"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent" />
+          {/* Focused, narrow overlay to blend text legibility with maximum photo exposure */}
+          <div className="absolute top-0 left-0 w-[45%] sm:w-[35%] md:w-[30%] h-full bg-gradient-to-r from-white via-white/70 to-transparent" />
         </div>
 
         {/* HERO CONTENT */}
@@ -650,7 +651,7 @@ export default function HomePage() {
           })}
         </div>
 
-        {/* MOBILE UI ONLY: Original grid design preserved strictly unchanged */}
+        {/* MOBILE UI ONLY */}
         <div className="grid md:hidden grid-cols-5 gap-2.5 sm:gap-4 max-w-2xl mx-auto">
           {propertyTypes.filter(t => t.label !== 'All Types').map((type) => {
             const isSelected = propertyType === type.label;
