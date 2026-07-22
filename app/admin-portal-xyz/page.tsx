@@ -285,20 +285,23 @@ export default function AdminVerificationDashboard() {
     setActionLoadingId(id)
     try {
       // 1. Revert verification status in profiles
-      await supabase
+      const { error: profErr } = await supabase
         .from('profiles')
         .update({ is_verified: false })
         .eq('id', userId)
 
-      // 2. Delete verification record
-      const { error } = await supabase
+      if (profErr) throw profErr
+
+      // 2. Delete ALL verification records associated with this landlord user_id
+      const { error: verErr } = await supabase
         .from('landlord_verifications')
         .delete()
-        .eq('id', id)
+        .eq('user_id', userId)
 
-      if (error) throw error
+      if (verErr) throw verErr
 
-      setVerifications(prev => prev.filter(item => item.id !== id))
+      // Remove all records for this user_id from local state
+      setVerifications(prev => prev.filter(item => item.user_id !== userId))
       alert(`Landlord "${name}" deleted successfully.`)
     } catch (err: any) {
       alert(`Delete rejected: ${err.message}`)
