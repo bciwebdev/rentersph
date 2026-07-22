@@ -111,7 +111,6 @@ export default function HomePage() {
     setFavorites(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
-  // Check if property is admin-approved & actively boosted
   const checkIsBoosted = (p: any) => {
     const tierValue = p.boosting_tier || p.boost_tier
     if (!tierValue) return false
@@ -130,7 +129,6 @@ export default function HomePage() {
     return true
   }
 
-  // Check if standard listing is active (<= 30 days old)
   const checkIsListingActive = (p: any) => {
     if (checkIsBoosted(p)) return true;
 
@@ -387,23 +385,24 @@ export default function HomePage() {
 
       </section>
 
-      {/* SEARCH BAR */}
-      <section className="max-w-5xl mx-auto px-5 -mt-4 md:mt-0 mb-10 md:mb-16 relative z-20">
+      {/* SLIM & ORGANIZED SEARCH BAR */}
+      <section className="max-w-4xl mx-auto px-5 -mt-4 md:mt-0 mb-10 md:mb-16 relative z-20">
         <motion.form 
           onSubmit={handleApplyFilters} 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ delay: 0.1, duration: 0.5 }} 
-          className="bg-white p-2 md:px-5 md:py-2.5 rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/50 flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-4"
+          className="bg-white p-1.5 md:p-2 rounded-2xl md:rounded-full border border-slate-200/80 shadow-lg shadow-slate-200/40 flex flex-col md:flex-row items-stretch md:items-center gap-1.5 md:gap-3"
         >
-          <div className="flex items-center w-full gap-2" ref={locDropdownRef}>
+          {/* LOCATION INPUT */}
+          <div className="flex items-center w-full gap-2 flex-1 min-w-0" ref={locDropdownRef}>
             <div 
               onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
-              className="flex items-center gap-3 px-3.5 md:px-4 py-2.5 border-b-0 md:border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-2xl transition duration-150 select-none flex-1 min-w-0"
+              className="flex items-center gap-3 px-3.5 md:px-5 py-1.5 md:py-2 border-b-0 md:border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-xl md:rounded-l-full transition duration-150 select-none flex-1 min-w-0"
             >
-              <MapPin className="w-5 h-5 text-slate-700 shrink-0" />
+              <MapPin className="w-4 h-4 text-slate-500 shrink-0" />
               <div className="flex-1 text-left min-w-0">
-                <label className="hidden md:block text-[10px] font-black uppercase tracking-wider text-slate-400">Location</label>
+                <label className="hidden md:block text-[9px] font-black uppercase tracking-wider text-slate-400">Location</label>
                 {/* Mobile Input */}
                 <input 
                   value={search} 
@@ -424,18 +423,18 @@ export default function HomePage() {
                   }} 
                   type="text" 
                   placeholder="Enter Location" 
-                  className="hidden md:block w-full bg-transparent text-xs font-medium text-slate-800 placeholder-slate-400 outline-none truncate" 
+                  className="hidden md:block w-full bg-transparent text-xs font-bold text-slate-800 placeholder-slate-400 outline-none truncate" 
                 />
               </div>
-              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 hidden md:block ${locationDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 hidden md:block ${locationDropdownOpen ? 'rotate-180' : ''}`} />
             </div>
 
             {/* Mobile Action Button */}
             <button 
               type="submit" 
-              className="md:hidden bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-2xl flex items-center justify-center transition shrink-0 shadow-md shadow-emerald-600/30"
+              className="md:hidden bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-xl flex items-center justify-center transition shrink-0 shadow-md shadow-emerald-600/30"
             >
-              <Search className="w-5 h-5" />
+              <Search className="w-4 h-4" />
             </button>
           </div>
 
@@ -560,22 +559,22 @@ export default function HomePage() {
             )}
           </AnimatePresence>
 
-          {/* Desktop Property Type Filter */}
-          <div className="hidden md:flex flex-1 relative" ref={dropdownRef}>
+          {/* ORGANIZED PROPERTY TYPE FIELD */}
+          <div className="hidden md:flex relative min-w-[200px]" ref={dropdownRef}>
             <div 
               onClick={() => setPropertyDropdownOpen(!propertyDropdownOpen)}
-              className="flex items-center justify-between gap-3 px-4 py-2 border-b md:border-b-0 md:border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-xl md:rounded-none transition duration-150 select-none w-full"
+              className="flex items-center gap-3 px-4 py-1.5 border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-xl transition duration-150 select-none w-full"
             >
-              <div className="flex items-center gap-3 overflow-hidden">
-                <Building2 className="w-5 h-5 text-slate-400 shrink-0" />
-                <div className="flex-1 text-left">
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Property Type</label>
-                  <span className="block text-xs font-bold text-slate-800 mt-0.5 truncate">
-                    {propertyType}
-                  </span>
+              <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
+              <div className="flex-1 text-left min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 whitespace-nowrap">Property Type</label>
+                  <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 shrink-0 ${propertyDropdownOpen ? 'rotate-180' : ''}`} />
                 </div>
+                <span className="block text-xs font-bold text-slate-800 truncate">
+                  {propertyType}
+                </span>
               </div>
-              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${propertyDropdownOpen ? 'rotate-180' : ''}`} />
             </div>
 
             <AnimatePresence>
@@ -585,7 +584,7 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute left-0 right-0 md:left-4 mt-2 min-w-[210px] bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 p-1.5 overflow-hidden"
+                  className="absolute left-0 mt-2 min-w-[210px] bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 p-1.5 overflow-hidden"
                 >
                   {propertyTypes.map((type) => {
                     const isSelected = propertyType === type.label;
@@ -597,7 +596,7 @@ export default function HomePage() {
                           setPropertyType(type.label);
                           setPropertyDropdownOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-2.5 text-xs font-bold rounded-xl transition-all duration-150 flex items-center justify-between ${
+                        className={`w-full text-left px-4 py-2 text-xs font-bold rounded-xl transition-all duration-150 flex items-center justify-between ${
                           isSelected 
                             ? 'bg-emerald-50 text-emerald-700 font-black' 
                             : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -619,9 +618,9 @@ export default function HomePage() {
 
           <button 
             type="submit" 
-            className="hidden md:flex bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-8 py-3.5 rounded-full items-center justify-center gap-2 transition duration-200 cursor-pointer shadow-md shadow-emerald-600/30 shrink-0"
+            className="hidden md:flex bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-6 py-2.5 rounded-full items-center justify-center gap-2 transition duration-200 cursor-pointer shadow-md shadow-emerald-600/30 shrink-0"
           >
-            <Search className="w-4 h-4" />
+            <Search className="w-3.5 h-3.5" />
             <span>Apply Filters</span>
           </button>
         </motion.form>
