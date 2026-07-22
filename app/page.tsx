@@ -742,7 +742,10 @@ export default function HomePage() {
                             </div>
 
                             <div className="text-xs sm:text-sm md:text-base font-black text-emerald-600 mt-1">
-                              ₱{p.price?.toLocaleString()}<span className="text-[9px] sm:text-[10px] font-normal text-slate-400"> / month</span>
+                              ₱{p.price?.toLocaleString()}
+                              <span className="text-[9px] sm:text-[10px] font-normal text-slate-400">
+                                / {p.price_type === 'daily' || p.price_type === 'day' || p.price_type === 'per_day' ? 'day' : 'month'}
+                              </span>
                             </div>
                           </div>
 
@@ -828,7 +831,10 @@ export default function HomePage() {
                             </div>
 
                             <div className="text-xs sm:text-sm md:text-base font-black text-emerald-600 mt-1">
-                              ₱{p.price?.toLocaleString()}<span className="text-[9px] sm:text-[10px] font-normal text-slate-400"> / month</span>
+                              ₱{p.price?.toLocaleString()}
+                              <span className="text-[9px] sm:text-[10px] font-normal text-slate-400">
+                                / {p.price_type === 'daily' || p.price_type === 'day' || p.price_type === 'per_day' ? 'day' : 'month'}
+                              </span>
                             </div>
                           </div>
 
