@@ -7,7 +7,7 @@ import {
   MapPin, Bed, ShowerHead, Maximize2, 
   ShieldCheck, Heart, Share2, 
   ChevronLeft, ChevronRight, User, CheckCircle2,
-  AlertTriangle, Phone, Mail, Info, FileText
+  AlertTriangle, Phone, Mail, Info, ChevronDown, Layers, Building, FileText
 } from 'lucide-react'
 
 // Initialize client-side Supabase
@@ -25,6 +25,7 @@ export default function PropertyDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [isFavorited, setIsFavorited] = useState(false)
+  const [showFullDescription, setShowFullDescription] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -32,7 +33,6 @@ export default function PropertyDetailsPage() {
     async function fetchPropertyData() {
       setLoading(true)
       
-      // 1. Fetch current property record matching the correct structural columns
       const { data, error } = await supabase
         .from('properties')
         .select('*')
@@ -42,7 +42,6 @@ export default function PropertyDetailsPage() {
       if (!error && data) {
         setProperty(data)
         
-        // 2. Fetch similar listings within the same property type
         const { data: similar } = await supabase
           .from('properties')
           .select('*')
@@ -60,7 +59,6 @@ export default function PropertyDetailsPage() {
     fetchPropertyData()
   }, [id])
 
-  // Extract clean image array matching your structural parsing logic
   const getCleanImages = (propData: any): string[] => {
     if (!propData) return []
     
@@ -93,7 +91,7 @@ export default function PropertyDetailsPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-3">
         <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-slate-500 font-bold text-sm">Parsing property registration metadata...</p>
+        <p className="text-slate-500 font-bold text-sm">Loading listing details...</p>
       </div>
     )
   }
@@ -114,147 +112,232 @@ export default function PropertyDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans antialiased pb-24">
+    <div className="min-h-screen bg-white lg:bg-slate-50/50 text-slate-900 font-sans antialiased pb-28 lg:pb-24">
       
-      {/* Dynamic Context Header */}
-      <div className="bg-white border-b border-slate-100 py-4 px-4 sm:px-6 lg:px-8">
+      {/* Dynamic Header */}
+      <div className="bg-white border-b border-slate-100 sticky top-0 z-40 py-3.5 px-4 sm:px-6 lg:px-8 shadow-xs">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <a href="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-emerald-600 transition">
-            <ChevronLeft className="w-4 h-4" /> Back to Discover feed
+          
+          {/* Mobile Back Arrow Button */}
+          <a href="/" className="p-2 rounded-full border border-slate-200 lg:border-none bg-white text-slate-700 lg:text-slate-500 hover:text-emerald-600 transition flex items-center justify-center">
+            <ChevronLeft className="w-5 h-5 lg:w-4 lg:h-4" /> 
+            <span className="hidden lg:inline text-xs font-bold ml-1">Back to Discover feed</span>
           </a>
-          <div className="flex items-center gap-3">
+
+          {/* Logo (Centered on Mobile) */}
+          <a href="/" className="lg:hidden flex items-center gap-1.5 font-black text-lg text-emerald-600 tracking-tight">
+            <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-xs">
+              🏠
+            </div>
+            <span className="text-slate-900">renters<span className="text-emerald-600">ph</span></span>
+          </a>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 lg:gap-3">
             <button 
               onClick={() => setIsFavorited(!isFavorited)} 
-              className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
+              className={`p-2 lg:px-3 lg:py-2 rounded-full lg:rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
                 isFavorited 
                   ? 'bg-rose-50 border-rose-200 text-rose-600' 
                   : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
-              <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} /> 
-              {isFavorited ? 'Saved to Favorites' : 'Save Unit'}
+              <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current text-rose-600' : ''}`} /> 
+              <span className="hidden lg:inline">{isFavorited ? 'Saved' : 'Save Unit'}</span>
             </button>
-            <button className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-bold flex items-center gap-1.5 hover:bg-slate-50 transition">
-              <Share2 className="w-4 h-4" /> Share
+            <button className="p-2 lg:px-3 lg:py-2 rounded-full lg:rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-bold flex items-center gap-1.5 hover:bg-slate-50 transition">
+              <Share2 className="w-4 h-4" /> 
+              <span className="hidden lg:inline">Share</span>
             </button>
           </div>
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 lg:mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
         
-        {/* Main Details Panel (Left Column spanning 2 blocks) */}
-        <div className="lg:col-span-2 space-y-8">
+        {/* Main Section */}
+        <div className="lg:col-span-2 space-y-6 lg:space-y-8">
           
-          {/* Custom Image Gallery Presentation Platform */}
-          <div className="relative bg-slate-900 aspect-[16/10] sm:aspect-[16/9] rounded-3xl overflow-hidden shadow-lg border border-slate-200 group">
-            {images.length > 0 ? (
-              <>
-                <img 
-                  src={images[activeImageIndex]} 
-                  alt={`${property.title} View`} 
-                  className="w-full h-full object-cover transition duration-300"
-                />
-                
-                {images.length > 1 && (
-                  <>
-                    <button onClick={handlePrevImage} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 backdrop-blur-sm rounded-xl text-slate-800 shadow-md hover:bg-white transition opacity-0 group-hover:opacity-100">
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button onClick={handleNextImage} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 backdrop-blur-sm rounded-xl text-slate-800 shadow-md hover:bg-white transition opacity-0 group-hover:opacity-100">
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                    <div className="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-xl text-[10px] font-black tracking-wider">
-                      {activeImageIndex + 1} / {images.length} IMAGES
-                    </div>
-                  </>
-                )}
-              </>
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 gap-2">
-                <Info className="w-8 h-8 opacity-40" />
-                <span className="text-xs font-bold">No High-Res Imagery Provided</span>
+          {/* Image Gallery Hero Section */}
+          <div className="space-y-3">
+            <div className="relative bg-slate-900 aspect-[4/3] sm:aspect-[16/10] lg:aspect-[16/9] rounded-2xl lg:rounded-3xl overflow-hidden shadow-sm border border-slate-200 group">
+              {images.length > 0 ? (
+                <>
+                  <img 
+                    src={images[activeImageIndex]} 
+                    alt={`${property.title} View`} 
+                    className="w-full h-full object-cover transition duration-300"
+                  />
+
+                  {/* For Rent Badge Overlay */}
+                  <div className="absolute top-3 left-3 bg-emerald-600 text-white font-bold text-[11px] px-3 py-1 rounded-md shadow-sm">
+                    For Rent
+                  </div>
+                  
+                  {images.length > 1 && (
+                    <>
+                      <button onClick={handlePrevImage} className="hidden lg:flex absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 backdrop-blur-sm rounded-xl text-slate-800 shadow-md hover:bg-white transition opacity-0 group-hover:opacity-100">
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <button onClick={handleNextImage} className="hidden lg:flex absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 backdrop-blur-sm rounded-xl text-slate-800 shadow-md hover:bg-white transition opacity-0 group-hover:opacity-100">
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+
+                      {/* Image Counter Badge */}
+                      <div className="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-sm text-white px-2.5 py-1 rounded-lg text-[11px] font-bold tracking-wider">
+                        {activeImageIndex + 1} / {images.length}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 gap-2">
+                  <Info className="w-8 h-8 opacity-40" />
+                  <span className="text-xs font-bold">No Photos Provided</span>
+                </div>
+              )}
+            </div>
+
+            {/* Thumbnail Navigation Row */}
+            {images.length > 1 && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                {images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={`relative flex-shrink-0 w-16 h-14 sm:w-20 sm:h-16 rounded-xl overflow-hidden border-2 transition ${
+                      activeImageIndex === idx ? 'border-emerald-600' : 'border-transparent opacity-70'
+                    }`}
+                  >
+                    <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Heading Information Wrapper */}
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-md">
-                {property.property_type || 'Residential Unit'}
-              </span>
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified Host
-              </span>
-            </div>
+          {/* Heading & Price Block */}
+          <div className="lg:bg-white lg:p-8 lg:rounded-3xl lg:border lg:border-slate-200/80 lg:shadow-sm space-y-4">
             
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
-              {property.title}
-            </h1>
-            
-            <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
-              <MapPin className="w-4 h-4 text-emerald-600 shrink-0" /> {property.manual_address || property.address}
-            </div>
-
-            <hr className="border-slate-100" />
-
-            {/* Core Blueprint Parameters Layout */}
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <div className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider">Bedrooms</div>
-                <div className="text-slate-900 font-black text-base sm:text-lg flex items-center justify-center gap-1.5 mt-0.5">
-                  <Bed className="w-4 h-4 text-emerald-600" /> {property.bedrooms || 0} BR
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight leading-snug">
+                  {property.title}
+                </h1>
+                <div className="text-xs sm:text-sm font-semibold text-slate-500 flex items-center gap-1">
+                  <MapPin className="w-4 h-4 text-emerald-600 shrink-0" /> {property.manual_address || property.address}
                 </div>
               </div>
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <div className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider">Bathrooms</div>
-                <div className="text-slate-900 font-black text-base sm:text-lg flex items-center justify-center gap-1.5 mt-0.5">
-                  <ShowerHead className="w-4 h-4 text-emerald-600" /> {property.bathrooms || 0} BA
+
+              {/* Price Tag Alignment */}
+              <div className="text-right shrink-0">
+                <div className="text-lg sm:text-2xl font-black text-emerald-600">
+                  ₱{property.price?.toLocaleString() || '0'}
+                </div>
+                <div className="text-[10px] font-bold text-slate-400">/ month</div>
+              </div>
+            </div>
+
+            {/* Key Feature Badges Grid */}
+            <div className="grid grid-cols-4 gap-2 pt-2">
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-center flex flex-col items-center justify-center">
+                <Bed className="w-4 h-4 text-emerald-600 mb-1" />
+                <span className="text-xs font-bold text-slate-900">{property.bedrooms || 0}</span>
+                <span className="text-[10px] text-slate-400 font-medium">Bedrooms</span>
+              </div>
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-center flex flex-col items-center justify-center">
+                <ShowerHead className="w-4 h-4 text-emerald-600 mb-1" />
+                <span className="text-xs font-bold text-slate-900">{property.bathrooms || 0}</span>
+                <span className="text-[10px] text-slate-400 font-medium">Baths</span>
+              </div>
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-center flex flex-col items-center justify-center">
+                <Maximize2 className="w-4 h-4 text-emerald-600 mb-1" />
+                <span className="text-xs font-bold text-slate-900 truncate max-w-full px-1">{property.bathroom_privacy || 'Private'}</span>
+                <span className="text-[10px] text-slate-400 font-medium">Bath Type</span>
+              </div>
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-center flex flex-col items-center justify-center">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 mb-1" />
+                <span className="text-xs font-bold text-slate-900">Verified</span>
+                <span className="text-[10px] text-slate-400 font-medium">Host</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Description Section with See More toggle */}
+          <div className="border-t border-slate-100 lg:border-none pt-4 lg:pt-0 lg:bg-white lg:p-8 lg:rounded-3xl lg:border lg:border-slate-200/80 lg:shadow-sm space-y-2">
+            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">Description</h3>
+            <div className="relative">
+              <p className={`text-slate-600 text-xs sm:text-sm leading-relaxed whitespace-pre-line ${!showFullDescription ? 'line-clamp-3' : ''}`}>
+                {property.description_rules || property.description || "No description provided for this property listing."}
+              </p>
+              {(property.description_rules || property.description)?.length > 120 && (
+                <button 
+                  onClick={() => setShowFullDescription(!showFullDescription)}
+                  className="mt-1 text-emerald-600 font-bold text-xs flex items-center gap-1 hover:underline"
+                >
+                  {showFullDescription ? 'See less' : 'See more'} <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showFullDescription ? 'rotate-180' : ''}`} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Property Specifications Table Grid */}
+          <div className="border-t border-slate-100 lg:border-none pt-4 lg:pt-0 lg:bg-white lg:p-8 lg:rounded-3xl lg:border lg:border-slate-200/80 lg:shadow-sm space-y-3">
+            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">Property Details</h3>
+            
+            <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-slate-400 shrink-0" />
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Property ID</span>
+                  <span className="font-bold text-slate-800">RP-{property.id}</span>
                 </div>
               </div>
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <div className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider">Bathroom Type</div>
-                <div className="text-slate-900 font-black text-[11px] truncate flex items-center justify-center gap-1 mt-1">
-                  {property.bathroom_privacy || 'Standard'}
+              <div className="flex items-center gap-2">
+                <Building className="w-4 h-4 text-slate-400 shrink-0" />
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Property Type</span>
+                  <span className="font-bold text-slate-800">{property.property_type || 'Residential'}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Contact</span>
+                  <span className="font-bold text-slate-800">{property.contact_number || 'Available on Request'}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Email Inquiry</span>
+                  <span className="font-bold text-slate-800 truncate max-w-[120px] sm:max-w-none block">{property.email_address || 'Supported'}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Description Section */}
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
-            <h3 className="text-lg font-black text-slate-900 tracking-tight">About this Rental Space</h3>
-            <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-line">
-              {property.description_rules || property.description || "No detailed rules or descriptions provided."}
-            </p>
-          </div>
-
-          {/* Geographical Location View Wrapper */}
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
-            <h3 className="text-lg font-black text-slate-900 tracking-tight">Geographical Location</h3>
-            <div className="relative aspect-[16/7] w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
+          {/* Geographical Location Card */}
+          <div className="border-t border-slate-100 lg:border-none pt-4 lg:pt-0 lg:bg-white lg:p-8 lg:rounded-3xl lg:border lg:border-slate-200/80 lg:shadow-sm space-y-3">
+            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">Location</h3>
+            <div className="relative aspect-[16/8] sm:aspect-[16/7] w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
               <div className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px] opacity-60" />
               <div className="relative z-10 text-center space-y-2 max-w-sm px-4">
-                <div className="inline-flex p-3 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 shadow-sm animate-bounce">
+                <div className="inline-flex p-2.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 shadow-sm animate-bounce">
                   <MapPin className="w-5 h-5 fill-current" />
                 </div>
-                <div className="text-xs font-bold text-slate-800">{property.manual_address || property.address}</div>
-                {property.plus_code && (
-                  <div className="inline-block bg-white border border-slate-200 text-slate-700 font-mono text-[10px] px-2 py-0.5 rounded-md mt-1 shadow-sm">
-                    Plus Code: {property.plus_code}
-                  </div>
-                )}
+                <div className="text-xs font-bold text-slate-800 bg-white/90 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-slate-200 shadow-xs">
+                  {property.manual_address || property.address}
+                </div>
               </div>
             </div>
           </div>
 
         </div>
 
-        {/* Free Renter Connection Action Panel (Right Column) */}
-        <div className="space-y-6">
-          
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-md p-6 sticky top-8 space-y-6">
+        {/* Desktop Sidebar Panel */}
+        <div className="hidden lg:block space-y-6">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-md p-6 sticky top-24 space-y-6">
             <div>
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Monthly Rent</div>
               <div className="text-3xl font-black text-slate-950 flex items-baseline gap-1 mt-0.5">
@@ -265,7 +348,6 @@ export default function PropertyDetailsPage() {
 
             <hr className="border-slate-100" />
 
-            {/* Account Card */}
             <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
               <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center text-slate-600 shrink-0">
                 <User className="w-5 h-5" />
@@ -278,7 +360,6 @@ export default function PropertyDetailsPage() {
               </div>
             </div>
 
-            {/* Free Offline Communication Channel Triggers */}
             <div className="space-y-3 pt-2">
               <div className="space-y-1">
                 <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Connect with Host</h4>
@@ -287,7 +368,6 @@ export default function PropertyDetailsPage() {
                 </p>
               </div>
 
-              {/* Direct Call Anchor */}
               <a 
                 href={`tel:${property.contact_number}`}
                 className="flex items-center justify-center gap-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3.5 rounded-xl uppercase tracking-wider transition-all shadow-sm"
@@ -295,7 +375,6 @@ export default function PropertyDetailsPage() {
                 <Phone className="w-4 h-4" /> Call Landlord ({property.contact_number})
               </a>
 
-              {/* Direct Email Link */}
               <a 
                 href={`mailto:${property.email_address}?subject=Inquiry regarding ${encodeURIComponent(property.title)}`}
                 className="flex items-center justify-center gap-2 w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs py-3.5 rounded-xl uppercase tracking-wider transition-all"
@@ -312,28 +391,27 @@ export default function PropertyDetailsPage() {
               </div>
             </div>
           </div>
-
         </div>
 
       </main>
 
       {/* Similar Listings Carousel Recommendations Section */}
       {similarProperties.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 pt-12 border-t border-slate-200">
-          <div className="mb-8">
-            <h2 className="text-xl font-black text-slate-900 tracking-tight">Similar Rental Options</h2>
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 lg:mt-16 pt-8 lg:pt-12 border-t border-slate-200">
+          <div className="mb-6 lg:mb-8">
+            <h2 className="text-lg lg:text-xl font-black text-slate-900 tracking-tight">Similar Rental Options</h2>
             <p className="text-xs text-slate-400 font-medium mt-0.5">Comparable configurations matching this specific profile tier.</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             {similarProperties.map((p) => {
               const imgArray = getCleanImages(p)
               const displayImg = imgArray.length > 0 ? imgArray[0] : null
               
               return (
-                <a key={p.id} href={`/property/${p.id}`} className="group bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col h-full">
+                <a key={p.id} href={`/property/${p.id}`} className="group bg-white rounded-2xl lg:rounded-3xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition flex flex-col h-full">
                   <div className="aspect-[16/11] bg-slate-100 relative overflow-hidden">
-                    <span className="absolute top-3 left-3 z-20 text-[10px] font-black uppercase tracking-wider text-slate-700 bg-white/95 px-2.5 py-1 rounded-md shadow-sm">
+                    <span className="absolute top-3 left-3 z-20 text-[10px] font-black uppercase tracking-wider text-slate-700 bg-white/95 px-2.5 py-1 rounded-md shadow-xs">
                       {p.property_type || 'Unit'}
                     </span>
                     {displayImg ? (
@@ -342,9 +420,9 @@ export default function PropertyDetailsPage() {
                       <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">No Photo</div>
                     )}
                   </div>
-                  <div className="p-5 flex flex-col justify-between flex-grow space-y-3">
+                  <div className="p-4 lg:p-5 flex flex-col justify-between flex-grow space-y-3">
                     <div>
-                      <div className="text-xl font-black text-slate-950">₱{p.price?.toLocaleString()}</div>
+                      <div className="text-lg lg:text-xl font-black text-slate-950">₱{p.price?.toLocaleString()}</div>
                       <h3 className="text-xs font-bold text-slate-800 line-clamp-1 mt-0.5 group-hover:text-emerald-600 transition-colors">{p.title}</h3>
                       <div className="text-[11px] text-slate-400 truncate mt-0.5">📍 {p.manual_address || p.address}</div>
                     </div>
@@ -355,6 +433,23 @@ export default function PropertyDetailsPage() {
           </div>
         </section>
       )}
+
+      {/* Sticky Mobile Fixed Footer Action Bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 p-3 px-4 flex items-center gap-2 shadow-lg">
+        <a 
+          href={`mailto:${property.email_address}?subject=Inquiry regarding ${encodeURIComponent(property.title)}`}
+          className="flex-1 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-bold text-xs py-3 rounded-xl flex items-center justify-center gap-1.5 transition text-center"
+        >
+          <Mail className="w-4 h-4 text-slate-600" /> Message Landlord
+        </a>
+        <a 
+          href={`tel:${property.contact_number}`}
+          className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-3 rounded-xl flex items-center justify-center gap-1.5 transition text-center shadow-xs"
+        >
+          <Phone className="w-4 h-4" /> Call Landlord
+        </a>
+      </div>
+
     </div>
   )
 }
