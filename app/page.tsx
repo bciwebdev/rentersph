@@ -354,47 +354,71 @@ export default function HomePage() {
       </header>
 
       {/* HERO SECTION */}
-      <section className="relative overflow-hidden pt-8 md:pt-14 pb-12 md:pb-20 flex flex-col items-center justify-center text-center">
+      <section className="relative overflow-hidden bg-white pt-6 pb-12 md:pt-14 md:pb-20">
         
-        {/* Background Image Container - Restricted to Right Half */}
-        <div className="absolute top-0 right-0 w-1/2 h-full z-0 pointer-events-none">
-          <img 
-            src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=1200" 
-            alt="Interior Background" 
-            className="w-full h-full object-cover object-center opacity-85"
-          />
-          {/* Smooth left-to-right fade overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#f8fafc] via-[#f8fafc]/70 to-transparent" />
+        {/* MOBILE HERO LAYOUT (Strictly Mobile Only) */}
+        <div className="block md:hidden relative w-full px-5 min-h-[260px]">
+          {/* Background Image restricted strictly to the Right Half */}
+          <div className="absolute top-0 right-0 w-[55%] h-full z-0 pointer-events-none">
+            <img 
+              src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=1200" 
+              alt="Interior Background" 
+              className="w-full h-full object-cover object-right"
+            />
+            {/* Crisp fade gradient from pure white left to transparent right */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent" />
+          </div>
+
+          {/* Left-Aligned Mobile Text (Does not overlap photo) */}
+          <div className="relative z-10 max-w-[62%] pt-4 pb-6 flex flex-col items-start text-left">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-[1.2] mb-2.5">
+              Mangita og<br />puy-an,<br />
+              <span className="text-emerald-600">madali na.</span>
+            </h1>
+            <p className="text-slate-500 font-medium text-xs leading-relaxed max-w-[210px]">
+              Ang platform para sa renters sa tibuok Pilipinas.
+            </p>
+          </div>
         </div>
 
-        <div className="max-w-4xl mx-auto px-5 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col items-center">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            transition={{ duration: 0.5 }}
-            className="flex flex-col items-center"
-          >
-            {/* Title */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-3">
-              Find Rentals <span className="text-emerald-600">10X Faster</span>
-            </h1>
-            
-            {/* Subtitle */}
-            <p className="text-slate-500 font-semibold text-xs sm:text-sm md:text-base max-w-xl mx-auto leading-relaxed">
-              Discover verified rental apartments, dynamic condominiums, and residential boarding rooms seamlessly.
-            </p>
-          </motion.div>
+        {/* DESKTOP HERO LAYOUT (Unchanged Desktop View) */}
+        <div className="hidden md:flex relative flex-col items-center justify-center text-center">
+          <div className="absolute top-0 right-0 w-1/2 h-full z-0 pointer-events-none">
+            <img 
+              src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=1200" 
+              alt="Interior Background" 
+              className="w-full h-full object-cover object-center opacity-85"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#f8fafc] via-[#f8fafc]/70 to-transparent" />
+          </div>
+
+          <div className="max-w-4xl mx-auto px-5 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col items-center">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ duration: 0.5 }}
+              className="flex flex-col items-center"
+            >
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-3">
+                Find Rentals <span className="text-emerald-600">10X Faster</span>
+              </h1>
+              <p className="text-slate-500 font-semibold text-xs sm:text-sm md:text-base max-w-xl mx-auto leading-relaxed">
+                Discover verified rental apartments, dynamic condominiums, and residential boarding rooms seamlessly.
+              </p>
+            </motion.div>
+          </div>
         </div>
+
       </section>
 
       {/* SEARCH BAR */}
-      <section className="max-w-5xl mx-auto px-5 mb-10 md:mb-16 relative z-20">
+      <section className="max-w-5xl mx-auto px-5 -mt-6 md:mt-0 mb-10 md:mb-16 relative z-20">
         <motion.form 
           onSubmit={handleApplyFilters} 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ delay: 0.1, duration: 0.5 }} 
-          className="bg-white/95 backdrop-blur-md p-2 md:px-5 md:py-2.5 rounded-3xl border border-slate-200/80 shadow-lg shadow-slate-200/50 flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-4"
+          className="bg-white p-2 md:px-5 md:py-2.5 rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/50 flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-4"
         >
           <div className="flex items-center w-full gap-2" ref={locDropdownRef}>
             <div 
@@ -411,8 +435,8 @@ export default function HomePage() {
                     if (!locationDropdownOpen) setLocationDropdownOpen(true);
                   }} 
                   type="text" 
-                  placeholder="Enter Location" 
-                  className="w-full bg-transparent text-sm md:text-xs font-semibold md:font-bold text-slate-800 placeholder-slate-400 outline-none truncate" 
+                  placeholder="Asa ka nangita og puy-an?" 
+                  className="w-full bg-transparent text-xs font-medium text-slate-800 placeholder-slate-400 outline-none truncate" 
                 />
               </div>
               <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 hidden md:block ${locationDropdownOpen ? 'rotate-180' : ''}`} />
@@ -421,7 +445,7 @@ export default function HomePage() {
             {/* Mobile Action Button */}
             <button 
               type="submit" 
-              className="md:hidden bg-emerald-600 hover:bg-emerald-700 text-white p-3.5 rounded-2xl flex items-center justify-center transition shrink-0 shadow-md shadow-emerald-600/30"
+              className="md:hidden bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-2xl flex items-center justify-center transition shrink-0 shadow-md shadow-emerald-600/30"
             >
               <Search className="w-5 h-5" />
             </button>
