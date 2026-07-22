@@ -504,15 +504,16 @@ export default function LandlordPortalPage() {
   return (
     <div className="min-h-screen bg-[#fcfdfe] text-[#1e293b] antialiased font-sans pb-16">
       
-      <header className="max-w-4xl mx-auto px-4 pt-8 pb-6 flex justify-between items-center border-b border-slate-100">
+      {/* HEADER SECTION - Responsive mobile stack / Desktop flex-row */}
+      <header className="max-w-4xl mx-auto px-4 pt-6 md:pt-8 pb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0 border-b border-slate-100">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-[#0f172a]">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#0f172a]">
               {currentView === 'dashboard' ? 'Landlord Dashboard' : 'Create Rental Listing'}
             </h1>
             {/* VERIFIED BADGE HEADER */}
             {verificationStatus === 'approved' && (
-              <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] font-black px-2.5 py-1 rounded-full border border-emerald-200">
+              <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] font-black px-2.5 py-1 rounded-full border border-emerald-200 shrink-0">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#00aa4f]" /> Verified
               </span>
             )}
@@ -521,7 +522,7 @@ export default function LandlordPortalPage() {
             {currentView === 'dashboard' ? 'Manage your registered active property profiles.' : 'Fill out the details below to add your unit to rentersPH.'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
           {currentView === 'create' && (
             <button 
               type="button" 
