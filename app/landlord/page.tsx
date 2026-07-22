@@ -62,6 +62,7 @@ export default function LandlordPortalPage() {
   const [title, setTitle] = useState('')
   const [propertyType, setPropertyType] = useState('Apartment')
   const [price, setPrice] = useState('')
+  const [priceType, setPriceType] = useState<'monthly' | 'daily'>('monthly')
   const [bedrooms, setBedrooms] = useState('1')
   const [bathrooms, setBathrooms] = useState('1')
   const [area, setArea] = useState('30')
@@ -83,6 +84,7 @@ export default function LandlordPortalPage() {
   const [editTitle, setEditTitle] = useState('')
   const [editPropertyType, setEditPropertyType] = useState('Apartment')
   const [editPrice, setEditPrice] = useState('')
+  const [editPriceType, setEditPriceType] = useState<'monthly' | 'daily'>('monthly')
   const [editBedrooms, setEditBedrooms] = useState('1')
   const [editBathrooms, setEditBathrooms] = useState('1')
   const [editArea, setEditArea] = useState('30')
@@ -321,6 +323,7 @@ export default function LandlordPortalPage() {
     setEditTitle(property.title || '')
     setEditPropertyType(property.property_type || 'Apartment')
     setEditPrice(property.price?.toString() || '')
+    setEditPriceType(property.price_type || 'monthly')
     setEditBedrooms(property.bedrooms?.toString() || '1')
     setEditBathrooms(property.bathrooms?.toString() || '1')
     setEditArea(property.area_sqm?.toString() || '30')
@@ -348,6 +351,7 @@ export default function LandlordPortalPage() {
           title: editTitle.trim(),
           property_type: editPropertyType,
           price: parsedPrice,
+          price_type: editPriceType,
           bedrooms: parseInt(editBedrooms, 10) || 0,
           bathrooms: parseInt(editBathrooms, 10) || 0,
           area_sqm: parsedArea,
@@ -370,6 +374,7 @@ export default function LandlordPortalPage() {
               title: editTitle.trim(),
               property_type: editPropertyType,
               price: parsedPrice,
+              price_type: editPriceType,
               bedrooms: parseInt(editBedrooms, 10) || 0,
               bathrooms: parseInt(editBathrooms, 10) || 0,
               area_sqm: parsedArea,
@@ -399,6 +404,7 @@ export default function LandlordPortalPage() {
     setTitle('')
     setPropertyType('Apartment')
     setPrice('')
+    setPriceType('monthly')
     setBedrooms('1')
     setBathrooms('1')
     setArea('30')
@@ -457,6 +463,7 @@ export default function LandlordPortalPage() {
             title: title.trim(),
             property_type: propertyType,
             price: parsedPrice, 
+            price_type: priceType,
             bedrooms: parseInt(bedrooms, 10) || 0,
             bathrooms: parseInt(bathrooms, 10) || 0,
             area_sqm: parseFloat(area) || 0,
@@ -642,7 +649,9 @@ export default function LandlordPortalPage() {
                               {property.status === 'approved' ? 'LIVE ON SITE' : (property.status || 'pending')}
                             </span>
                           </div>
-                          <p className="text-xs font-black text-[#00aa4f]">₱{property.price.toLocaleString()} / mo</p>
+                          <p className="text-xs font-black text-[#00aa4f]">
+                            ₱{property.price.toLocaleString()} / {property.price_type === 'daily' ? 'day' : 'mo'}
+                          </p>
                           <div className="flex items-center gap-1.5 text-slate-400 text-xs">
                             <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
                             <span className="truncate">{property.manual_address}</span>
@@ -890,13 +899,25 @@ export default function LandlordPortalPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">PRICE (PHP / MO)</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      PRICE ({priceType === 'daily' ? 'PHP / DAY' : 'PHP / MO'})
+                    </label>
+                    <select
+                      value={priceType}
+                      onChange={(e) => setPriceType(e.target.value as 'monthly' | 'daily')}
+                      className="text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md outline-none cursor-pointer border border-slate-200 transition"
+                    >
+                      <option value="monthly">Monthly Rate</option>
+                      <option value="daily">Per Day Rate</option>
+                    </select>
+                  </div>
                   <input 
                     type="number"
                     required
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    placeholder="18500"
+                    placeholder={priceType === 'daily' ? '1500' : '18500'}
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   />
                 </div>
@@ -1280,7 +1301,19 @@ export default function LandlordPortalPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500">Price (PHP)</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-500">
+                      Price ({editPriceType === 'daily' ? 'PHP / DAY' : 'PHP / MO'})
+                    </label>
+                    <select
+                      value={editPriceType}
+                      onChange={(e) => setEditPriceType(e.target.value as 'monthly' | 'daily')}
+                      className="text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-1.5 py-0.5 rounded outline-none cursor-pointer border border-slate-200 transition"
+                    >
+                      <option value="monthly">Monthly</option>
+                      <option value="daily">Per Day</option>
+                    </select>
+                  </div>
                   <input 
                     type="number" 
                     value={editPrice} 
