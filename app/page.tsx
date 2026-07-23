@@ -831,7 +831,7 @@ export default function HomePage() {
               </div>
 
               {regularItems.length > 0 ? (
-                <div className="grid grid-cols-5 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
                   {regularItems.map((p) => {
                     const img = getDisplayImage(p)
                     const isFav = !!favorites[p.id]
@@ -840,7 +840,7 @@ export default function HomePage() {
                       <Link 
                         key={p.id} 
                         href={`/property/${p.id}`}
-                        className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full w-full max-w-[155px] sm:max-w-none justify-self-start"
+                        className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full w-full justify-self-start"
                       >
                         <div className="w-full aspect-[4/3] bg-slate-100 relative overflow-hidden shrink-0">
                           <span className="absolute top-2 left-2 z-20 text-[9px] sm:text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-1.5 py-0.5 rounded-md shadow-sm">
