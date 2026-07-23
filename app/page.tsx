@@ -430,7 +430,7 @@ export default function HomePage() {
       </section>
 
       {/* SLIM & ORGANIZED SEARCH BAR */}
-      <section className="max-w-4xl mx-auto px-5 mt-6 md:mt-8 mb-6 md:mb-10 relative z-20">
+      <section className="max-w-4xl mx-auto px-5 mt-6 md:mt-8 mb-6 md:mb-10 relative z-30">
         <motion.form 
           onSubmit={handleApplyFilters} 
           initial={{ opacity: 0, y: 20 }} 
@@ -490,7 +490,7 @@ export default function HomePage() {
                   exit={{ opacity: 0, y: 10 }}
                   transition={{ duration: 0.15 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="absolute left-0 right-0 top-full mt-2 min-w-[280px] md:min-w-[340px] bg-white rounded-2xl shadow-2xl border border-slate-200/80 z-50 p-4"
+                  className="absolute left-0 right-0 top-full mt-2 min-w-[280px] md:min-w-[340px] bg-white rounded-2xl shadow-2xl border border-slate-200/80 z-[100] p-4"
                 >
                   <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-3">
                     {locStep !== 'region' && (
