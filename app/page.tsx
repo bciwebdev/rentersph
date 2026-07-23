@@ -206,9 +206,11 @@ export default function HomePage() {
   }
 
   // Handle Location Step Transitions with Async Fetching
-  const handleSelectRegion = async (region: any) => {
+  const handleSelectRegion = async (e: React.MouseEvent, region: any) => {
+    e.stopPropagation()
     setSelectedRegion(region)
     setIsLoadingLocs(true)
+    setLocationDropdownOpen(true)
     try {
       const res = await fetch(`https://psgc.gitlab.io/api/regions/${region.code}/provinces.json`)
       let data = await res.json()
@@ -230,9 +232,11 @@ export default function HomePage() {
     }
   }
 
-  const handleSelectProvince = async (province: any) => {
+  const handleSelectProvince = async (e: React.MouseEvent, province: any) => {
+    e.stopPropagation()
     setSelectedProvince(province)
     setIsLoadingLocs(true)
+    setLocationDropdownOpen(true)
     try {
       const res = await fetch(`https://psgc.gitlab.io/api/provinces/${province.code}/cities-municipalities.json`)
       const data = await res.json()
@@ -245,9 +249,11 @@ export default function HomePage() {
     }
   }
 
-  const handleSelectCity = async (city: any) => {
+  const handleSelectCity = async (e: React.MouseEvent, city: any) => {
+    e.stopPropagation()
     setSelectedCity(city)
     setIsLoadingLocs(true)
+    setLocationDropdownOpen(true)
     try {
       const res = await fetch(`https://psgc.gitlab.io/api/cities-municipalities/${city.code}/barangays.json`)
       const data = await res.json()
@@ -260,7 +266,8 @@ export default function HomePage() {
     }
   }
 
-  const handleSelectBarangay = (barangay: any) => {
+  const handleSelectBarangay = (e: React.MouseEvent, barangay: any) => {
+    e.stopPropagation()
     const provName = selectedProvince ? `, ${selectedProvince.name}` : ''
     const fullString = `${barangay.name}, ${selectedCity.name}${provName}`
     setSearch(fullString)
@@ -278,7 +285,8 @@ export default function HomePage() {
     setBarangaysList([])
   }
 
-  const goBackLocStep = () => {
+  const goBackLocStep = (e: React.MouseEvent) => {
+    e.stopPropagation()
     if (locStep === 'province') {
       setLocStep('region')
       setSelectedRegion(null)
@@ -431,9 +439,9 @@ export default function HomePage() {
           className="bg-white p-2 md:p-2.5 rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3"
         >
           {/* LOCATION INPUT */}
-          <div className="flex items-center w-full gap-2 flex-1 min-w-0" ref={locDropdownRef}>
+          <div className="flex items-center w-full gap-2 flex-1 min-w-0 relative" ref={locDropdownRef}>
             <div 
-              onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
+              onClick={() => setLocationDropdownOpen(prev => !prev)}
               className="flex items-center gap-3 px-3.5 md:px-5 py-2 border-b-0 md:border-r border-slate-100 cursor-pointer hover:bg-slate-50/80 rounded-xl transition duration-150 select-none flex-1 min-w-0"
             >
               <MapPin className="w-4 h-4 text-slate-500 shrink-0" />
@@ -472,131 +480,132 @@ export default function HomePage() {
             >
               <Search className="w-4 h-4" />
             </button>
-          </div>
 
-          {/* Location Flow Dropdown */}
-          <AnimatePresence>
-            {locationDropdownOpen && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                transition={{ duration: 0.15 }}
-                className="absolute left-4 right-4 md:left-0 md:right-0 top-full mt-2 min-w-[280px] md:min-w-[340px] bg-white rounded-2xl shadow-2xl border border-slate-200/80 z-50 p-4"
-              >
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-3">
-                  {locStep !== 'region' && (
-                    <button 
-                      type="button" 
-                      onClick={goBackLocStep} 
-                      className="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition shrink-0"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                  )}
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate flex items-center gap-1">
-                    <span className={locStep === 'region' ? 'text-emerald-600 font-extrabold' : ''}>PH</span>
-                    {selectedRegion && (
-                      <>
-                        <span>/</span>
-                        <span className={locStep === 'province' ? 'text-emerald-600 font-extrabold' : ''}>{selectedRegion.name}</span>
-                      </>
+            {/* Location Flow Dropdown */}
+            <AnimatePresence>
+              {locationDropdownOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.15 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute left-0 right-0 top-full mt-2 min-w-[280px] md:min-w-[340px] bg-white rounded-2xl shadow-2xl border border-slate-200/80 z-50 p-4"
+                >
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-3">
+                    {locStep !== 'region' && (
+                      <button 
+                        type="button" 
+                        onClick={goBackLocStep} 
+                        className="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition shrink-0"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
                     )}
-                    {selectedProvince && (
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate flex items-center gap-1">
+                      <span className={locStep === 'region' ? 'text-emerald-600 font-extrabold' : ''}>PH</span>
+                      {selectedRegion && (
+                        <>
+                          <span>/</span>
+                          <span className={locStep === 'province' ? 'text-emerald-600 font-extrabold' : ''}>{selectedRegion.name}</span>
+                        </>
+                      )}
+                      {selectedProvince && (
+                        <>
+                          <span>/</span>
+                          <span className={locStep === 'city' ? 'text-emerald-600 font-extrabold' : ''}>{selectedProvince.name}</span>
+                        </>
+                      )}
+                      {selectedCity && (
+                        <>
+                          <span>/</span>
+                          <span className={locStep === 'barangay' ? 'text-emerald-600 font-extrabold' : ''}>{selectedCity.name}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
+                    {isLoadingLocs ? (
+                      <div className="py-6 text-center text-xs font-semibold text-slate-400 flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                        <span>Loading locations...</span>
+                      </div>
+                    ) : (
                       <>
-                        <span>/</span>
-                        <span className={locStep === 'city' ? 'text-emerald-600 font-extrabold' : ''}>{selectedProvince.name}</span>
-                      </>
-                    )}
-                    {selectedCity && (
-                      <>
-                        <span>/</span>
-                        <span className={locStep === 'barangay' ? 'text-emerald-600 font-extrabold' : ''}>{selectedCity.name}</span>
+                        {locStep === 'region' && (
+                          <>
+                            <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Region:</div>
+                            {regionsList.map((region) => (
+                              <button
+                                type="button"
+                                key={region.code}
+                                onClick={(e) => handleSelectRegion(e, region)}
+                                className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
+                              >
+                                <span>{region.name}</span>
+                                <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
+                                  {region.regionName}
+                                </span>
+                              </button>
+                            ))}
+                          </>
+                        )}
+
+                        {locStep === 'province' && selectedRegion && (
+                          <>
+                            <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Province:</div>
+                            {provincesList.map((province) => (
+                              <button
+                                type="button"
+                                key={province.code}
+                                onClick={(e) => handleSelectProvince(e, province)}
+                                className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
+                              >
+                                <span>{province.name}</span>
+                              </button>
+                            ))}
+                          </>
+                        )}
+
+                        {locStep === 'city' && selectedRegion && (
+                          <>
+                            <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select City / Municipality:</div>
+                            {citiesList.map((city) => (
+                              <button
+                                type="button"
+                                key={city.code}
+                                onClick={(e) => handleSelectCity(e, city)}
+                                className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
+                              >
+                                <span>{city.name}</span>
+                              </button>
+                            ))}
+                          </>
+                        )}
+
+                        {locStep === 'barangay' && selectedCity && (
+                          <>
+                            <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Barangay:</div>
+                            {barangaysList.map((brgy) => (
+                              <button
+                                type="button"
+                                key={brgy.code}
+                                onClick={(e) => handleSelectBarangay(e, brgy)}
+                                className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-white hover:bg-emerald-600 rounded-xl transition duration-150"
+                              >
+                                {brgy.name}
+                              </button>
+                            ))}
+                          </>
+                        )}
                       </>
                     )}
                   </div>
-                </div>
-
-                <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
-                  {isLoadingLocs ? (
-                    <div className="py-6 text-center text-xs font-semibold text-slate-400 flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-                      <span>Loading locations...</span>
-                    </div>
-                  ) : (
-                    <>
-                      {locStep === 'region' && (
-                        <>
-                          <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Region:</div>
-                          {regionsList.map((region) => (
-                            <button
-                              type="button"
-                              key={region.code}
-                              onClick={() => handleSelectRegion(region)}
-                              className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
-                            >
-                              <span>{region.name}</span>
-                              <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
-                                {region.regionName}
-                              </span>
-                            </button>
-                          ))}
-                        </>
-                      )}
-
-                      {locStep === 'province' && selectedRegion && (
-                        <>
-                          <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Province:</div>
-                          {provincesList.map((province) => (
-                            <button
-                              type="button"
-                              key={province.code}
-                              onClick={() => handleSelectProvince(province)}
-                              className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
-                            >
-                              <span>{province.name}</span>
-                            </button>
-                          ))}
-                        </>
-                      )}
-
-                      {locStep === 'city' && selectedRegion && (
-                        <>
-                          <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select City / Municipality:</div>
-                          {citiesList.map((city) => (
-                            <button
-                              type="button"
-                              key={city.code}
-                              onClick={() => handleSelectCity(city)}
-                              className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
-                            >
-                              <span>{city.name}</span>
-                            </button>
-                          ))}
-                        </>
-                      )}
-
-                      {locStep === 'barangay' && selectedCity && (
-                        <>
-                          <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Barangay:</div>
-                          {barangaysList.map((brgy) => (
-                            <button
-                              type="button"
-                              key={brgy.code}
-                              onClick={() => handleSelectBarangay(brgy)}
-                              className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-white hover:bg-emerald-600 rounded-xl transition duration-150"
-                            >
-                              {brgy.name}
-                            </button>
-                          ))}
-                        </>
-                      )}
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* ORGANIZED PROPERTY TYPE FIELD */}
           <div className="hidden md:flex relative min-w-[200px]" ref={dropdownRef}>
