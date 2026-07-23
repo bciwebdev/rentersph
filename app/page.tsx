@@ -742,7 +742,7 @@ export default function HomePage() {
                   </button>
                 </div>
 
-                <div className="flex md:grid overflow-x-auto md:overflow-visible gap-2.5 sm:gap-4 md:gap-6 pb-3 md:pb-0 scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4">
+                <div className="flex md:grid overflow-x-auto md:overflow-visible gap-2.5 sm:gap-4 md:gap-6 pb-3 md:pb-0 scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:grid-cols-3 lg:grid-cols-4">
                   {featuredItems.map((p) => {
                     const img = getDisplayImage(p)
                     const isFav = !!favorites[p.id]
@@ -831,7 +831,7 @@ export default function HomePage() {
               </div>
 
               {regularItems.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
+                <div className="grid grid-cols-5 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
                   {regularItems.map((p) => {
                     const img = getDisplayImage(p)
                     const isFav = !!favorites[p.id]
