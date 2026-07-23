@@ -831,79 +831,91 @@ export default function HomePage() {
               </div>
 
               {regularItems.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
-                  {regularItems.map((p) => {
-                    const img = getDisplayImage(p)
-                    const isFav = !!favorites[p.id]
+                <div className="space-y-4 sm:space-y-6">
+                  {/* Chunk items into groups of up to 5 properties per row */}
+                  {Array.from({ length: Math.ceil(regularItems.length / 5) }).map((_, rowIndex) => {
+                    const rowItems = regularItems.slice(rowIndex * 5, (rowIndex + 1) * 5)
 
                     return (
-                      <Link 
-                        key={p.id} 
-                        href={`/property/${p.id}`}
-                        className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full w-full justify-self-start"
+                      <div 
+                        key={`regular-row-${rowIndex}`}
+                        className="flex md:grid overflow-x-auto md:overflow-visible gap-2.5 sm:gap-4 md:gap-6 pb-2 md:pb-0 scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:grid-cols-3 lg:grid-cols-4"
                       >
-                        <div className="w-full aspect-[4/3] bg-slate-100 relative overflow-hidden shrink-0">
-                          <span className="absolute top-2 left-2 z-20 text-[9px] sm:text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-1.5 py-0.5 rounded-md shadow-sm">
-                            For Rent
-                          </span>
+                        {rowItems.map((p) => {
+                          const img = getDisplayImage(p)
+                          const isFav = !!favorites[p.id]
 
-                          <button
-                            onClick={(e) => toggleFavorite(p.id, e)}
-                            className="absolute top-2 right-2 z-20 bg-white/80 hover:bg-white text-slate-700 p-1.5 rounded-full backdrop-blur-md transition-all shadow-sm"
-                          >
-                            <Heart className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isFav ? 'fill-red-500 text-red-500' : 'text-slate-600'}`} />
-                          </button>
-
-                          {img ? (
-                            <img 
-                              src={img} 
-                              alt={p.title} 
-                              className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
-                              loading="lazy" 
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-semibold">No Image</div>
-                          )}
-                        </div>
-
-                        <div className="p-2.5 sm:p-3.5 flex flex-col justify-between flex-grow space-y-1.5">
-                          <div>
-                            <h3 className="text-[11px] sm:text-xs md:text-sm font-bold text-slate-900 truncate leading-tight">{p.title}</h3>
-                            <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5 font-medium">
-                              <MapPin className="w-2.5 h-2.5 text-slate-400 shrink-0" /> 
-                              <span className="truncate">{p.address || p.manual_address || `${p.city || ''}, ${p.province || ''}`}</span>
-                            </div>
-
-                            <div className="text-xs sm:text-sm md:text-base font-black text-emerald-600 mt-1">
-                              ₱{p.price?.toLocaleString()}
-                              <span className="text-[9px] sm:text-[10px] font-normal text-slate-400">
-                                / {p.price_type === 'daily' || p.price_type === 'day' || p.price_type === 'per_day' ? 'day' : 'month'}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="pt-1.5 border-t border-slate-50 flex items-center justify-between text-[10px] font-semibold text-slate-500">
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-0.5">
-                                <Bed className="w-3 h-3 text-slate-400" />
-                                <span>{p.bedrooms ?? 1}</span>
-                              </div>
-                              <div className="flex items-center gap-0.5">
-                                <Bath className="w-3 h-3 text-slate-400" />
-                                <span>{p.bathrooms ?? 1}</span>
-                              </div>
-                            </div>
-
-                            <button
-                              onClick={(e) => openReportModal(p, e)}
-                              className="text-slate-300 hover:text-red-500 transition-colors p-0.5"
-                              title="Report Listing"
+                          return (
+                            <Link 
+                              key={p.id} 
+                              href={`/property/${p.id}`}
+                              className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full w-full max-w-[155px] sm:max-w-none justify-self-start shrink-0 md:shrink"
                             >
-                              <Flag className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
-                      </Link>
+                              <div className="w-full aspect-[4/3] bg-slate-100 relative overflow-hidden shrink-0">
+                                <span className="absolute top-2 left-2 z-20 text-[9px] sm:text-[10px] font-bold text-white bg-emerald-600/90 backdrop-blur-md px-1.5 py-0.5 rounded-md shadow-sm">
+                                  For Rent
+                                </span>
+
+                                <button
+                                  onClick={(e) => toggleFavorite(p.id, e)}
+                                  className="absolute top-2 right-2 z-20 bg-white/80 hover:bg-white text-slate-700 p-1.5 rounded-full backdrop-blur-md transition-all shadow-sm"
+                                >
+                                  <Heart className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isFav ? 'fill-red-500 text-red-500' : 'text-slate-600'}`} />
+                                </button>
+
+                                {img ? (
+                                  <img 
+                                    src={img} 
+                                    alt={p.title} 
+                                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
+                                    loading="lazy" 
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-semibold">No Image</div>
+                                )}
+                              </div>
+
+                              <div className="p-2.5 sm:p-3.5 flex flex-col justify-between flex-grow space-y-1.5">
+                                <div>
+                                  <h3 className="text-[11px] sm:text-xs md:text-sm font-bold text-slate-900 truncate leading-tight">{p.title}</h3>
+                                  <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5 font-medium">
+                                    <MapPin className="w-2.5 h-2.5 text-slate-400 shrink-0" /> 
+                                    <span className="truncate">{p.address || p.manual_address || `${p.city || ''}, ${p.province || ''}`}</span>
+                                  </div>
+
+                                  <div className="text-xs sm:text-sm md:text-base font-black text-emerald-600 mt-1">
+                                    ₱{p.price?.toLocaleString()}
+                                    <span className="text-[9px] sm:text-[10px] font-normal text-slate-400">
+                                      / {p.price_type === 'daily' || p.price_type === 'day' || p.price_type === 'per_day' ? 'day' : 'month'}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="pt-1.5 border-t border-slate-50 flex items-center justify-between text-[10px] font-semibold text-slate-500">
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-0.5">
+                                      <Bed className="w-3 h-3 text-slate-400" />
+                                      <span>{p.bedrooms ?? 1}</span>
+                                    </div>
+                                    <div className="flex items-center gap-0.5">
+                                      <Bath className="w-3 h-3 text-slate-400" />
+                                      <span>{p.bathrooms ?? 1}</span>
+                                    </div>
+                                  </div>
+
+                                  <button
+                                    onClick={(e) => openReportModal(p, e)}
+                                    className="text-slate-300 hover:text-red-500 transition-colors p-0.5"
+                                    title="Report Listing"
+                                  >
+                                    <Flag className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            </Link>
+                          )
+                        })}
+                      </div>
                     )
                   })}
                 </div>
