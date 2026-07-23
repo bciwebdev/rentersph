@@ -14,44 +14,6 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const PHILIPPINES_LOCATIONS: Record<string, Record<string, Record<string, string[]>>> = {
-  'Luzon': {
-    'Metro Manila': {
-      'Taguig': ['BGC', 'Fort Bonifacio', 'Western Bicutan', 'Pinagsama'],
-      'Manila': ['Malate', 'Ermita', 'Sampaloc', 'Binondo'],
-      'Quezon City': ['Diliman', 'Katipunan', 'Cubao', 'Commonwealth'],
-      'Makati': ['Bel-Air', 'Poblacion', 'San Lorenzo', 'Guadalupe Nuevo']
-    },
-    'Benguet': {
-      'Baguio City': ['Camp 7', 'Bakakeng Central', 'Magsaysay', 'Session Road']
-    },
-    'Pampanga': {
-      'Angeles City': ['Balibago', 'Malabanias', 'Cutcut']
-    }
-  },
-  'Visayas': {
-    'Cebu': {
-      'Cebu City': ['Lahug', 'Mabolo', 'Banilad', 'Capitol Site'],
-      'Lapu-Lapu City': ['Mactan', 'Maribago', 'Basak'],
-      'Mandaue City': ['Subangdaku', 'Tipolo', 'Bakilid']
-    },
-    'Iloilo': {
-      'Iloilo City': ['Mandurriao', 'Jaro', 'Molo', 'Arevalo']
-    }
-  },
-  'Mindanao': {
-    'Davao del Sur': {
-      'Davao City': ['Buhangin', 'Talomo', 'Poblacion', 'Agdao', 'Matina']
-    },
-    'Misamis Oriental': {
-      'Cagayan de Oro': ['Nazareth', 'Carmen', 'Kauswagan', 'Patag']
-    },
-    'Zamboanga del Sur': {
-      'Zamboanga City': ['Pasonanca', 'Tetuan', 'Canelar']
-    }
-  }
-}
-
 export default function HomePage() {
   const [properties, setProperties] = useState<any[]>([])
   const [filteredProperties, setFilteredProperties] = useState<any[]>([])
@@ -63,10 +25,18 @@ export default function HomePage() {
   const [propertyDropdownOpen, setPropertyDropdownOpen] = useState(false)
   
   const [locationDropdownOpen, setLocationDropdownOpen] = useState(false)
-  const [locStep, setLocStep] = useState<'island' | 'province' | 'city' | 'barangay'>('island')
-  const [selectedIsland, setSelectedIsland] = useState<string | null>(null)
-  const [selectedProvince, setSelectedProvince] = useState<string | null>(null)
-  const [selectedCity, setSelectedCity] = useState<string | null>(null)
+  const [locStep, setLocStep] = useState<'region' | 'province' | 'city' | 'barangay'>('region')
+  
+  // Dynamic PSGC Location States
+  const [regionsList, setRegionsList] = useState<any[]>([])
+  const [provincesList, setProvincesList] = useState<any[]>([])
+  const [citiesList, setCitiesList] = useState<any[]>([])
+  const [barangaysList, setBarangaysList] = useState<any[]>([])
+  const [isLoadingLocs, setIsLoadingLocs] = useState(false)
+
+  const [selectedRegion, setSelectedRegion] = useState<any | null>(null)
+  const [selectedProvince, setSelectedProvince] = useState<any | null>(null)
+  const [selectedCity, setSelectedCity] = useState<any | null>(null)
 
   // Favorites state
   const [favorites, setFavorites] = useState<Record<string, boolean>>({})
@@ -91,6 +61,23 @@ export default function HomePage() {
     { label: 'House', value: 'Single House', icon: Home },
     { label: 'Commercial', value: 'Commercial', icon: Building2 }
   ]
+
+  // Initial Fetch for Regions from CDN
+  useEffect(() => {
+    async function fetchRegions() {
+      try {
+        setIsLoadingLocs(true)
+        const res = await fetch('https://psgc.gitlab.io/api/regions.json')
+        const data = await res.json()
+        setRegionsList(data || [])
+      } catch (err) {
+        console.error('Error fetching regions:', err)
+      } finally {
+        setIsLoadingLocs(false)
+      }
+    }
+    fetchRegions()
+  }, [])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -218,42 +205,91 @@ export default function HomePage() {
     return null
   }
 
-  const handleSelectIsland = (island: string) => {
-    setSelectedIsland(island)
-    setLocStep('province')
+  // Handle Location Step Transitions with Async Fetching
+  const handleSelectRegion = async (region: any) => {
+    setSelectedRegion(region)
+    setIsLoadingLocs(true)
+    try {
+      const res = await fetch(`https://psgc.gitlab.io/api/regions/${region.code}/provinces.json`)
+      let data = await res.json()
+      
+      // NCR and special regions don't have provinces, fetch cities directly
+      if (!data || data.length === 0) {
+        const cityRes = await fetch(`https://psgc.gitlab.io/api/regions/${region.code}/cities-municipalities.json`)
+        const cityData = await cityRes.json()
+        setCitiesList(cityData || [])
+        setLocStep('city')
+      } else {
+        setProvincesList(data || [])
+        setLocStep('province')
+      }
+    } catch (err) {
+      console.error('Error fetching provinces:', err)
+    } finally {
+      setIsLoadingLocs(false)
+    }
   }
 
-  const handleSelectProvince = (province: string) => {
+  const handleSelectProvince = async (province: any) => {
     setSelectedProvince(province)
-    setLocStep('city')
+    setIsLoadingLocs(true)
+    try {
+      const res = await fetch(`https://psgc.gitlab.io/api/provinces/${province.code}/cities-municipalities.json`)
+      const data = await res.json()
+      setCitiesList(data || [])
+      setLocStep('city')
+    } catch (err) {
+      console.error('Error fetching cities:', err)
+    } finally {
+      setIsLoadingLocs(false)
+    }
   }
 
-  const handleSelectCity = (city: string) => {
+  const handleSelectCity = async (city: any) => {
     setSelectedCity(city)
-    setLocStep('barangay')
+    setIsLoadingLocs(true)
+    try {
+      const res = await fetch(`https://psgc.gitlab.io/api/cities-municipalities/${city.code}/barangays.json`)
+      const data = await res.json()
+      setBarangaysList(data || [])
+      setLocStep('barangay')
+    } catch (err) {
+      console.error('Error fetching barangays:', err)
+    } finally {
+      setIsLoadingLocs(false)
+    }
   }
 
-  const handleSelectBarangay = (barangay: string) => {
-    const fullString = `${barangay}, ${selectedCity}, ${selectedProvince}`
+  const handleSelectBarangay = (barangay: any) => {
+    const provName = selectedProvince ? `, ${selectedProvince.name}` : ''
+    const fullString = `${barangay.name}, ${selectedCity.name}${provName}`
     setSearch(fullString)
     setLocationDropdownOpen(false)
     resetLocFlow()
   }
 
   const resetLocFlow = () => {
-    setLocStep('island')
-    setSelectedIsland(null)
+    setLocStep('region')
+    setSelectedRegion(null)
     setSelectedProvince(null)
     setSelectedCity(null)
+    setProvincesList([])
+    setCitiesList([])
+    setBarangaysList([])
   }
 
   const goBackLocStep = () => {
     if (locStep === 'province') {
-      setLocStep('island')
-      setSelectedIsland(null)
+      setLocStep('region')
+      setSelectedRegion(null)
     } else if (locStep === 'city') {
-      setLocStep('province')
-      setSelectedProvince(null)
+      if (selectedProvince) {
+        setLocStep('province')
+        setSelectedProvince(null)
+      } else {
+        setLocStep('region')
+        setSelectedRegion(null)
+      }
     } else if (locStep === 'barangay') {
       setLocStep('city')
       setSelectedCity(null)
@@ -361,7 +397,6 @@ export default function HomePage() {
             alt="Interior Background" 
             className="w-full h-full object-cover object-right-bottom"
           />
-          {/* Mobile gradient overlay left completely untouched; Desktop gradient narrowed specifically to md:w-[30%] */}
           <div className="absolute top-0 left-0 w-full md:w-[30%] h-full bg-gradient-to-r from-white via-white/70 to-transparent" />
         </div>
 
@@ -373,7 +408,6 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }} 
               transition={{ duration: 0.4 }}
             >
-              {/* UPDATED MOBILE TITLE & TEXT DESIGN */}
               <h1 className="text-[32px] leading-[1.15] sm:text-4xl md:text-6xl lg:text-7xl font-black tracking-tight mb-3">
                 <span className="text-[#0d141c]">Find Rentals</span> <br />
                 <span className="text-[#059669]">10X Faster</span>
@@ -451,7 +485,7 @@ export default function HomePage() {
                 className="absolute left-4 right-4 md:left-0 md:right-0 top-full mt-2 min-w-[280px] md:min-w-[340px] bg-white rounded-2xl shadow-2xl border border-slate-200/80 z-50 p-4"
               >
                 <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-3">
-                  {locStep !== 'island' && (
+                  {locStep !== 'region' && (
                     <button 
                       type="button" 
                       onClick={goBackLocStep} 
@@ -461,99 +495,102 @@ export default function HomePage() {
                     </button>
                   )}
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate flex items-center gap-1">
-                    <span className={locStep === 'island' ? 'text-emerald-600 font-extrabold' : ''}>PH</span>
-                    {selectedIsland && (
+                    <span className={locStep === 'region' ? 'text-emerald-600 font-extrabold' : ''}>PH</span>
+                    {selectedRegion && (
                       <>
                         <span>/</span>
-                        <span className={locStep === 'province' ? 'text-emerald-600 font-extrabold' : ''}>{selectedIsland}</span>
+                        <span className={locStep === 'province' ? 'text-emerald-600 font-extrabold' : ''}>{selectedRegion.name}</span>
                       </>
                     )}
                     {selectedProvince && (
                       <>
                         <span>/</span>
-                        <span className={locStep === 'city' ? 'text-emerald-600 font-extrabold' : ''}>{selectedProvince}</span>
+                        <span className={locStep === 'city' ? 'text-emerald-600 font-extrabold' : ''}>{selectedProvince.name}</span>
                       </>
                     )}
                     {selectedCity && (
                       <>
                         <span>/</span>
-                        <span className={locStep === 'barangay' ? 'text-emerald-600 font-extrabold' : ''}>{selectedCity}</span>
+                        <span className={locStep === 'barangay' ? 'text-emerald-600 font-extrabold' : ''}>{selectedCity.name}</span>
                       </>
                     )}
                   </div>
                 </div>
 
                 <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
-                  {locStep === 'island' && (
+                  {isLoadingLocs ? (
+                    <div className="py-6 text-center text-xs font-semibold text-slate-400 flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                      <span>Loading locations...</span>
+                    </div>
+                  ) : (
                     <>
-                      <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Region:</div>
-                      {Object.keys(PHILIPPINES_LOCATIONS).map((island) => (
-                        <button
-                          type="button"
-                          key={island}
-                          onClick={() => handleSelectIsland(island)}
-                          className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
-                        >
-                          <span>{island}</span>
-                          <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
-                            {Object.keys(PHILIPPINES_LOCATIONS[island]).length} Provinces
-                          </span>
-                        </button>
-                      ))}
-                    </>
-                  )}
+                      {locStep === 'region' && (
+                        <>
+                          <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Region:</div>
+                          {regionsList.map((region) => (
+                            <button
+                              type="button"
+                              key={region.code}
+                              onClick={() => handleSelectRegion(region)}
+                              className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
+                            >
+                              <span>{region.name}</span>
+                              <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
+                                {region.regionName}
+                              </span>
+                            </button>
+                          ))}
+                        </>
+                      )}
 
-                  {locStep === 'province' && selectedIsland && (
-                    <>
-                      <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Province:</div>
-                      {Object.keys(PHILIPPINES_LOCATIONS[selectedIsland]).map((province) => (
-                        <button
-                          type="button"
-                          key={province}
-                          onClick={() => handleSelectProvince(province)}
-                          className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
-                        >
-                          <span>{province}</span>
-                          <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
-                            {Object.keys(PHILIPPINES_LOCATIONS[selectedIsland][province]).length} Cities
-                          </span>
-                        </button>
-                      ))}
-                    </>
-                  )}
+                      {locStep === 'province' && selectedRegion && (
+                        <>
+                          <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Province:</div>
+                          {provincesList.map((province) => (
+                            <button
+                              type="button"
+                              key={province.code}
+                              onClick={() => handleSelectProvince(province)}
+                              className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
+                            >
+                              <span>{province.name}</span>
+                            </button>
+                          ))}
+                        </>
+                      )}
 
-                  {locStep === 'city' && selectedIsland && selectedProvince && (
-                    <>
-                      <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select City / Municipality:</div>
-                      {Object.keys(PHILIPPINES_LOCATIONS[selectedIsland][selectedProvince]).map((city) => (
-                        <button
-                          type="button"
-                          key={city}
-                          onClick={() => handleSelectCity(city)}
-                          className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
-                        >
-                          <span>{city}</span>
-                          <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
-                            {PHILIPPINES_LOCATIONS[selectedIsland][selectedProvince][city].length} Barangays
-                          </span>
-                        </button>
-                      ))}
-                    </>
-                  )}
+                      {locStep === 'city' && selectedRegion && (
+                        <>
+                          <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select City / Municipality:</div>
+                          {citiesList.map((city) => (
+                            <button
+                              type="button"
+                              key={city.code}
+                              onClick={() => handleSelectCity(city)}
+                              className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition duration-150 flex items-center justify-between"
+                            >
+                              <span>{city.name}</span>
+                            </button>
+                          ))}
+                        </>
+                      )}
 
-                  {locStep === 'barangay' && selectedIsland && selectedProvince && selectedCity && (
-                    <>
-                      <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Barangay:</div>
-                      {PHILIPPINES_LOCATIONS[selectedIsland][selectedProvince][selectedCity].map((brgy) => (
-                        <button
-                          type="button"
-                          key={brgy}
-                          onClick={() => handleSelectBarangay(brgy)}
-                          className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-white hover:bg-emerald-600 rounded-xl transition duration-150"
-                        >
-                          {brgy}
-                        </button>
-                      ))}
+                      {locStep === 'barangay' && selectedCity && (
+                        <>
+                          <div className="text-[10px] font-bold text-slate-400 mb-2 px-1">Select Barangay:</div>
+                          {barangaysList.map((brgy) => (
+                            <button
+                              type="button"
+                              key={brgy.code}
+                              onClick={() => handleSelectBarangay(brgy)}
+                              className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:text-white hover:bg-emerald-600 rounded-xl transition duration-150"
+                            >
+                              {brgy.name}
+                            </button>
+                          ))}
+                        </>
+                      )}
                     </>
                   )}
                 </div>
@@ -630,8 +667,6 @@ export default function HomePage() {
 
       {/* CATEGORY SELECTOR SECTION */}
       <section className="max-w-[1600px] mx-auto px-5 sm:px-6 lg:px-8 mb-10">
-        
-        {/* DESKTOP UI ONLY: Compact, low-profile horizontal text pills */}
         <div className="hidden md:flex items-center justify-center gap-2 flex-wrap">
           {propertyTypes.filter(t => t.label !== 'All Types').map((type) => {
             const isSelected = propertyType === type.label;
