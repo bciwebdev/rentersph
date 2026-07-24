@@ -62,7 +62,7 @@ export default function LandlordPortalPage() {
   const [title, setTitle] = useState('')
   const [propertyType, setPropertyType] = useState('Apartment')
   const [price, setPrice] = useState('')
-  const [priceType, setPriceType] = useState<'monthly' | 'daily'>('monthly')
+  const [priceType, setPriceType] = useState<'monthly' | 'daily' | 'yearly' | 'fixed'>('monthly')
   const [bedrooms, setBedrooms] = useState('1')
   const [bathrooms, setBathrooms] = useState('1')
   const [area, setArea] = useState('30')
@@ -84,7 +84,7 @@ export default function LandlordPortalPage() {
   const [editTitle, setEditTitle] = useState('')
   const [editPropertyType, setEditPropertyType] = useState('Apartment')
   const [editPrice, setEditPrice] = useState('')
-  const [editPriceType, setEditPriceType] = useState<'monthly' | 'daily'>('monthly')
+  const [editPriceType, setEditPriceType] = useState<'monthly' | 'daily' | 'yearly' | 'fixed'>('monthly')
   const [editBedrooms, setEditBedrooms] = useState('1')
   const [editBathrooms, setEditBathrooms] = useState('1')
   const [editArea, setEditArea] = useState('30')
@@ -488,6 +488,25 @@ export default function LandlordPortalPage() {
     }
   }
 
+  const getPriceLabel = (type: string) => {
+    switch(type) {
+      case 'daily': return 'PHP / DAY'
+      case 'yearly': return 'PHP / YR'
+      case 'fixed': return 'FIXED PRICE'
+      default: return 'PHP / MO'
+    }
+  }
+
+  const getCardPriceDisplay = (p: any) => {
+    const formatted = p.price?.toLocaleString() || '0'
+    switch(p.price_type) {
+      case 'daily': return `₱${formatted} / day`
+      case 'yearly': return `₱${formatted} / yr`
+      case 'fixed': return `₱${formatted} (Fixed)`
+      default: return `₱${formatted} / mo`
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#fcfdfe] text-[#1e293b] antialiased font-sans pb-16">
       
@@ -633,7 +652,7 @@ export default function LandlordPortalPage() {
                             </span>
                           </div>
                           <p className="text-xs font-black text-[#00aa4f]">
-                            ₱{property.price.toLocaleString()} / {property.price_type === 'daily' ? 'day' : 'mo'}
+                            {getCardPriceDisplay(property)}
                           </p>
                           <div className="flex items-center gap-1.5 text-slate-400 text-xs">
                             <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
@@ -884,15 +903,17 @@ export default function LandlordPortalPage() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                      PRICE ({priceType === 'daily' ? 'PHP / DAY' : 'PHP / MO'})
+                      PRICE ({getPriceLabel(priceType)})
                     </label>
                     <select
                       value={priceType}
-                      onChange={(e) => setPriceType(e.target.value as 'monthly' | 'daily')}
+                      onChange={(e) => setPriceType(e.target.value as 'monthly' | 'daily' | 'yearly' | 'fixed')}
                       className="text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md outline-none cursor-pointer border border-slate-200 transition"
                     >
                       <option value="monthly">Monthly Rate</option>
                       <option value="daily">Per Day Rate</option>
+                      <option value="yearly">Yearly Rate</option>
+                      <option value="fixed">Fixed Price</option>
                     </select>
                   </div>
                   <input 
@@ -1286,15 +1307,17 @@ export default function LandlordPortalPage() {
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-500">
-                      Price ({editPriceType === 'daily' ? 'PHP / DAY' : 'PHP / MO'})
+                      Price ({getPriceLabel(editPriceType)})
                     </label>
                     <select
                       value={editPriceType}
-                      onChange={(e) => setEditPriceType(e.target.value as 'monthly' | 'daily')}
+                      onChange={(e) => setEditPriceType(e.target.value as 'monthly' | 'daily' | 'yearly' | 'fixed')}
                       className="text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-1.5 py-0.5 rounded outline-none cursor-pointer border border-slate-200 transition"
                     >
                       <option value="monthly">Monthly</option>
                       <option value="daily">Per Day</option>
+                      <option value="yearly">Yearly</option>
+                      <option value="fixed">Fixed Price</option>
                     </select>
                   </div>
                   <input 

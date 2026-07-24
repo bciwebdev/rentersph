@@ -32,19 +32,8 @@ export default function AddPropertyForm() {
       <div className="space-y-4">
         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider border-b pb-2">Primary Info</h3>
         <input name="title" placeholder="Property Title" required className="w-full p-3 border border-gray-300 rounded-xl" />
-        
-        {/* PRICE & PRICE TYPE SECTION */}
         <div className="grid grid-cols-2 gap-4">
           <input name="price" type="number" placeholder="Price (PHP)" required className="w-full p-3 border border-gray-300 rounded-xl" />
-          <select name="price_type" className="w-full p-3 border border-gray-300 rounded-xl bg-white" required>
-            <option value="monthly">Monthly Rate</option>
-            <option value="daily">Per Day Rate</option>
-            <option value="yearly">Yearly Rate</option>
-            <option value="fixed">Fixed Price</option>
-          </select>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4">
           <select name="property_type" className="w-full p-3 border border-gray-300 rounded-xl bg-white" required>
             <option value="Apartment">Apartment</option>
             <option value="Condominium">Condominium</option>
@@ -53,7 +42,6 @@ export default function AddPropertyForm() {
             <option value="Boarding House">Boarding House</option>
           </select>
         </div>
-
         <input name="address" placeholder="Full Address" required className="w-full p-3 border border-gray-300 rounded-xl" />
       </div>
 
