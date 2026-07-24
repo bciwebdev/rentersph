@@ -62,6 +62,28 @@ export default function HomePage() {
     { label: 'Commercial', value: 'Commercial', icon: Building2 }
   ]
 
+  // Helper function to format price suffix dynamically
+  const formatPriceSuffix = (priceType?: string) => {
+    switch (priceType) {
+      case 'daily':
+      case 'day':
+      case 'per_day':
+        return '/ day'
+      case 'yearly':
+      case 'year':
+      case 'per_year':
+        return '/ yr'
+      case 'fixed':
+      case 'fixed_price':
+        return '(Fixed)'
+      case 'monthly':
+      case 'month':
+      case 'per_month':
+      default:
+        return '/ mo'
+    }
+  }
+
   // Initial Fetch for Regions from CDN
   useEffect(() => {
     async function fetchRegions() {
@@ -788,7 +810,7 @@ export default function HomePage() {
                             <div className="text-xs sm:text-sm md:text-base font-black text-emerald-600 mt-1">
                               ₱{p.price?.toLocaleString()}
                               <span className="text-[9px] sm:text-[10px] font-normal text-slate-400">
-                                / {p.price_type === 'daily' || p.price_type === 'day' || p.price_type === 'per_day' ? 'day' : 'month'}
+                                {` ${formatPriceSuffix(p.price_type)}`}
                               </span>
                             </div>
                           </div>
@@ -886,7 +908,7 @@ export default function HomePage() {
                                   <div className="text-xs sm:text-sm md:text-base font-black text-emerald-600 mt-1">
                                     ₱{p.price?.toLocaleString()}
                                     <span className="text-[9px] sm:text-[10px] font-normal text-slate-400">
-                                      / {p.price_type === 'daily' || p.price_type === 'day' || p.price_type === 'per_day' ? 'day' : 'month'}
+                                      {` ${formatPriceSuffix(p.price_type)}`}
                                     </span>
                                   </div>
                                 </div>
