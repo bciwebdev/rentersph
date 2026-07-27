@@ -120,7 +120,6 @@ export default function LandlordPortalPage() {
         }
         
         setUserId(user.id)
-        setEmailAddress(user.email || '')
         setCurrentView('dashboard')
         
         const { data: profile } = await supabase
@@ -405,6 +404,7 @@ export default function LandlordPortalPage() {
     setManualAddress('')
     setPlusCode('')
     setContactNumber('')
+    setEmailAddress('')
     setDescriptionRules('')
     selectedFiles.forEach(item => URL.revokeObjectURL(item.previewUrl))
     setSelectedFiles([])
@@ -1042,10 +1042,11 @@ export default function LandlordPortalPage() {
                   <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">EMAIL ADDRESS</label>
                   <input 
                     type="email" 
-                    readOnly
+                    required
                     value={emailAddress}
+                    onChange={(e) => setEmailAddress(e.target.value)}
                     placeholder="landlord@email.com"
-                    className="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none cursor-not-allowed"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   />
                 </div>
               </div>
