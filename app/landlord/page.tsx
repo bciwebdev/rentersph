@@ -9,6 +9,7 @@ import {
 
 type ViewState = 'dashboard' | 'create'
 type VerificationStatus = 'unverified' | 'pending' | 'approved'
+type PriceType = 'monthly' | 'daily' | 'yearly' | 'fixed' | 'inquiry'
 
 interface SelectedFile {
   file: File
@@ -62,7 +63,7 @@ export default function LandlordPortalPage() {
   const [title, setTitle] = useState('')
   const [propertyType, setPropertyType] = useState('Apartment')
   const [price, setPrice] = useState('')
-  const [priceType, setPriceType] = useState<'monthly' | 'daily' | 'yearly' | 'fixed'>('monthly')
+  const [priceType, setPriceType] = useState<PriceType>('monthly')
   const [bedrooms, setBedrooms] = useState('1')
   const [bathrooms, setBathrooms] = useState('1')
   const [area, setArea] = useState('30')
@@ -84,7 +85,7 @@ export default function LandlordPortalPage() {
   const [editTitle, setEditTitle] = useState('')
   const [editPropertyType, setEditPropertyType] = useState('Apartment')
   const [editPrice, setEditPrice] = useState('')
-  const [editPriceType, setEditPriceType] = useState<'monthly' | 'daily' | 'yearly' | 'fixed'>('monthly')
+  const [editPriceType, setEditPriceType] = useState<PriceType>('monthly')
   const [editBedrooms, setEditBedrooms] = useState('1')
   const [editBathrooms, setEditBathrooms] = useState('1')
   const [editArea, setEditArea] = useState('30')
@@ -313,7 +314,7 @@ export default function LandlordPortalPage() {
     setEditingProperty(property)
     setEditTitle(property.title || '')
     setEditPropertyType(property.property_type || 'Apartment')
-    setEditPrice(property.price?.toString() || '')
+    setEditPrice(property.price_type === 'inquiry' ? '' : (property.price?.toString() || ''))
     setEditPriceType(property.price_type || 'monthly')
     setEditBedrooms(property.bedrooms?.toString() || '1')
     setEditBathrooms(property.bathrooms?.toString() || '1')
@@ -332,7 +333,7 @@ export default function LandlordPortalPage() {
     if (!editingProperty) return
     setIsSubmitting(true)
 
-    const parsedPrice = parseInt(editPrice, 10) || 0
+    const parsedPrice = editPriceType === 'inquiry' ? 0 : (parseInt(editPrice, 10) || 0)
     const parsedArea = parseFloat(editArea) || 0
 
     try {
@@ -417,7 +418,7 @@ export default function LandlordPortalPage() {
     setIsSubmitting(true)
     setErrorMessage(null)
 
-    const parsedPrice = parseInt(price, 10) || 0
+    const parsedPrice = priceType === 'inquiry' ? 0 : (parseInt(price, 10) || 0)
     const uploadedImageUrls: string[] = []
 
     try {
@@ -493,11 +494,13 @@ export default function LandlordPortalPage() {
       case 'daily': return 'PHP / DAY'
       case 'yearly': return 'PHP / YR'
       case 'fixed': return 'FIXED PRICE'
+      case 'inquiry': return 'FOR INQUIRY'
       default: return 'PHP / MO'
     }
   }
 
   const getCardPriceDisplay = (p: any) => {
+    if (p.price_type === 'inquiry') return 'Price : Contact Owner'
     const formatted = p.price?.toLocaleString() || '0'
     switch(p.price_type) {
       case 'daily': return `₱${formatted} / day`
@@ -907,21 +910,27 @@ export default function LandlordPortalPage() {
                     </label>
                     <select
                       value={priceType}
-                      onChange={(e) => setPriceType(e.target.value as 'monthly' | 'daily' | 'yearly' | 'fixed')}
+                      onChange={(e) => {
+                        const val = e.target.value as PriceType
+                        setPriceType(val)
+                        if (val === 'inquiry') setPrice('')
+                      }}
                       className="text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md outline-none cursor-pointer border border-slate-200 transition"
                     >
                       <option value="monthly">Monthly Rate</option>
                       <option value="daily">Per Day Rate</option>
                       <option value="yearly">Yearly Rate</option>
                       <option value="fixed">Fixed Price</option>
+                      <option value="inquiry">For Inquiry</option>
                     </select>
                   </div>
                   <input 
                     type="number"
-                    required
+                    required={priceType !== 'inquiry'}
+                    disabled={priceType === 'inquiry'}
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    placeholder={priceType === 'daily' ? '1500' : '18500'}
+                    placeholder={priceType === 'inquiry' ? 'Contact Owner' : priceType === 'daily' ? '1500' : '18500'}
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium outline-none transition"
                   />
                 </div>
@@ -1312,20 +1321,27 @@ export default function LandlordPortalPage() {
                     </label>
                     <select
                       value={editPriceType}
-                      onChange={(e) => setEditPriceType(e.target.value as 'monthly' | 'daily' | 'yearly' | 'fixed')}
+                      onChange={(e) => {
+                        const val = e.target.value as PriceType
+                        setEditPriceType(val)
+                        if (val === 'inquiry') setEditPrice('')
+                      }}
                       className="text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-1.5 py-0.5 rounded outline-none cursor-pointer border border-slate-200 transition"
                     >
                       <option value="monthly">Monthly</option>
                       <option value="daily">Per Day</option>
                       <option value="yearly">Yearly</option>
                       <option value="fixed">Fixed Price</option>
+                      <option value="inquiry">For Inquiry</option>
                     </select>
                   </div>
                   <input 
                     type="number" 
                     value={editPrice} 
                     onChange={(e) => setEditPrice(e.target.value)} 
-                    required 
+                    required={editPriceType !== 'inquiry'}
+                    disabled={editPriceType === 'inquiry'}
+                    placeholder={editPriceType === 'inquiry' ? 'Contact Owner' : ''}
                     className="w-full bg-slate-50 border border-slate-200 focus:border-[#00aa4f] focus:bg-white rounded-xl px-3 py-2 text-xs font-medium outline-none"
                   />
                 </div>
